@@ -45,7 +45,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .b-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 0.9fr); gap: 14px; flex: 1; min-height: 0; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
 .b-parts { display: flex; flex-direction: column; }
-.tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); }
+.tabs { display: grid; grid-template-columns: repeat(5, 1fr); border-bottom: 1px solid var(--line); }
 .tab { background: none; border: 0; padding: 10px 8px 8px; text-align: left; border-bottom: 3px solid transparent; display: flex; flex-direction: column; gap: 0; }
 .tab .t-sec { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .tab .t-pick { font-family: var(--f-display); font-size: 24px; line-height: 1; font-weight: 600; }
@@ -122,7 +122,8 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   .part .pn { font-size: 19px; }
   .part .pp { font-size: 12px; }
   .tab .t-sec { font-size: 10.5px; letter-spacing: 0.08em; }
-  .tab .t-pick { font-size: 21px; }
+  .tab .t-pick { font-size: 19px; }
+  .tabs { grid-template-columns: repeat(3, 1fr); }
   .pv-name { font-size: 22px; }
   .logo { font-size: 38px; }
 }
@@ -220,7 +221,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 <section id="builder" aria-label="Fighter builder">
   <div class="top-bar">
     <h1 class="logo">FORGE <span>ARENA</span></h1>
-    <p class="tagline">Build a fighter from a Top, a Middle and a Bottom, each in Light, Middle or Heavy, then arm it with three weapons.</p>
+    <p class="tagline">Pick a head, then build Arms, a Middle and a Bottom, each in Light, Middle or Heavy, and add three weapons.</p>
   </div>
   <div class="b-grid">
     <div class="card b-parts">
@@ -336,13 +337,27 @@ const WEIGHTS = ['light', 'middle', 'heavy'];
 const WLABEL = { light: 'Light', middle: 'Middle', heavy: 'Heavy' };
 const WCOLOR = { light: 'var(--w-light)', middle: 'var(--w-middle)', heavy: 'var(--w-heavy)' };
 const SECTIONS = {
-  top:    { label: 'Top', sub: 'Head & arms', desc: 'Your Top sets health, guard strength and how fast your special charges. Its weight class also decides your special move.',
+  top:    { label: 'Arms', sub: 'Perks & special', desc: 'Your Arms set health, guard strength and how fast your special charges. Their weight class also decides your special move.',
             effect: { light: 'Faster energy, less health, weaker guard', middle: 'Balanced, with a little extra health and energy', heavy: 'More health and a stronger guard, slower energy' } },
   middle: { label: 'Middle', sub: 'Torso', desc: 'Your Middle trades attack power for attack speed.',
             effect: { light: 'Fast attacks, less power', middle: 'Balanced', heavy: 'Big power, slower attacks' } },
   bottom: { label: 'Bottom', sub: 'Legs', desc: 'Your Bottom trades movement speed for defense and stability.',
             effect: { light: 'Quick movement and dodges, less defense', middle: 'Balanced', heavy: 'High defense, hard to knock back or stagger, slow' } },
 };
+// heads are cosmetic: any head fits any build. Size only changes the look
+const HEADS = [
+  { id: 'hawk',     name: 'Hawk',     size: 0, desc: 'Round dome with a beak and fin' },
+  { id: 'wisp',     name: 'Wisp',     size: 0, desc: 'Orb with a glowing halo' },
+  { id: 'viper',    name: 'Viper',    size: 0, desc: 'Angular faceted head with swept fins' },
+  { id: 'sentinel', name: 'Sentinel', size: 1, desc: 'Boxy helmet with ear sensors' },
+  { id: 'ronin',    name: 'Ronin',    size: 1, desc: 'Samurai helmet with a crest' },
+  { id: 'warden',   name: 'Warden',   size: 1, desc: 'Gem-cut head with twin antennae' },
+  { id: 'bastion',  name: 'Bastion',  size: 2, desc: 'Wide armored block with a visor' },
+  { id: 'titan',    name: 'Titan',    size: 2, desc: 'Dome sunk into an armored collar' },
+  { id: 'golem',    name: 'Golem',    size: 2, desc: 'Low, heavy slab with round eyes' },
+];
+const HEAD_SIZES = ['Sleek', 'Helmet', 'Armored'];
+const headById = id => HEADS.find(h => h.id === id);
 const SPECIALS = {
   light:  { id: 'blink',   name: 'Blink Strike', desc: 'Dash in untouchable and land a guard-breaking hit.' },
   middle: { id: 'pulse',   name: 'Shock Pulse',  desc: 'An unblockable burst that blasts nearby fighters away.' },
@@ -356,7 +371,7 @@ const PARTS = {
     { id: 'sentinel', w: 'middle', name: 'Sentinel', perk: '+12 health',               mod: { hp: 12 }, color: 0x5f7fb0 },
     { id: 'ronin',    w: 'middle', name: 'Ronin',    perk: '+10% power',               mod: { powerMul: 0.10 }, color: 0xa8483e },
     { id: 'warden',   w: 'middle', name: 'Warden',   perk: '+10% guard, +12 health', mod: { blockRed: 0.10, hp: 12 }, color: 0x3f8c8a },
-    { id: 'bastion',  w: 'heavy',  name: 'Bastion',  perk: '+22 health',               mod: { hp: 22 }, color: 0x5a6272 },
+    { id: 'bastion',  w: 'heavy',  name: 'Bastion',  perk: '+16 health',               mod: { hp: 16 }, color: 0x5a6272 },
     { id: 'titan',    w: 'heavy',  name: 'Titan',    perk: '+25% heavy attack damage (huge fists)', mod: { heavyMul: 0.25 }, color: 0xb07a3c },
     { id: 'golem',    w: 'heavy',  name: 'Golem',    perk: '+5% defense',              mod: { def: 0.05 }, color: 0x6f7a55 },
   ],
@@ -377,7 +392,7 @@ const PARTS = {
     { id: 'phantom',  w: 'light',  name: 'Phantom',  perk: 'Hovers. 25% faster dodge recharge', mod: { dodgeCdMul: -0.25 }, color: 0xb7b4e6, type: 'hover' },
     { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 health. Kicks with a long, sweeping tail whip',               mod: { hp: 10 }, color: 0x6f7f96, type: 'snake' },
     { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x6e8a4e, type: 'legs', r: 0.115, len: 1.0, kneeGlow: true },
-    { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+4% defense',              mod: { def: 0.04 }, color: 0x7a6f9a, type: 'legs', r: 0.13, len: 0.92, armor: true },
+    { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+4% defense. Kicks with a stab from its two front legs', mod: { def: 0.04 }, color: 0x7a6f9a, type: 'spider' },
     { id: 'treads',   w: 'heavy',  name: 'Treads',   perk: 'Tank treads. +30% knockback resistance, +8% defense, +8 health', mod: { kbRes: 0.3, def: 0.08, hp: 8 }, color: 0x4a4f44, type: 'treads' },
     { id: 'pillar',   w: 'heavy',  name: 'Pillar',   perk: '+18 health',               mod: { hp: 18 }, color: 0x1f2124, type: 'roller' },
     { id: 'juggernaut', w: 'heavy', name: 'Juggernaut', perk: '+10% guard, +14 health', mod: { blockRed: 0.10, hp: 14 }, color: 0x7a4636, type: 'legs', r: 0.22, len: 0.88, armor: true },
@@ -434,16 +449,16 @@ const WEAPON_GROUPS = [
   { slot: 'arms',  label: 'Arms',     effect: 'Forearm guns and blades', color: '#ffb547' },
 ];
 const WEAPONS = [
-  { id: 'laser',   slot: 'head',  name: 'Laser Eyes',      desc: 'Twin eye beams that burn the target at long range.', cd: 7,  w: 0.25, a: 0.6,  r: 0.25, move: 0.5,  kind: 'beam',  from: 'eyes',  tick: 0.1,  mult: 0.42, kb: 0.4, range: 14, color: 0xff3b3b },
-  { id: 'fire',    slot: 'head',  name: 'Fire Breath',     desc: 'A cone of flame up close that leaves the target burning.', cd: 9, w: 0.2, a: 0.9, r: 0.3, move: 0.45, kind: 'cone', tick: 0.1, mult: 0.23, range: 4.2, burn: 3, color: 0xff7a1a },
+  { id: 'laser',   slot: 'head',  name: 'Laser Eyes',      desc: 'Twin eye beams that burn the target at long range.', cd: 7,  w: 0.25, a: 0.6,  r: 0.25, move: 0.5,  kind: 'beam',  from: 'eyes',  tick: 0.1,  mult: 0.46, kb: 0.4, range: 14, color: 0xff3b3b },
+  { id: 'fire',    slot: 'head',  name: 'Fire Breath',     desc: 'A cone of flame up close that leaves the target burning.', cd: 9, w: 0.2, a: 0.9, r: 0.3, move: 0.45, kind: 'cone', tick: 0.1, mult: 0.26, range: 4.2, burn: 3, color: 0xff7a1a },
   { id: 'tesla',   slot: 'head',  name: 'Tesla Crown',     desc: 'Lightning leaps to a nearby target and stuns it.', cd: 10, w: 0.3, a: 0.1, r: 0.35, move: 0.3, kind: 'zap', range: 5.5, mult: 1.2, kb: 3, stun: 0.9, color: 0x8fd8ff },
   { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 0.7, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
   { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Pods pop up and launch four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 0.68, kb: 4, homing: 2.4, color: 0xffb547 },
   { id: 'frost',   slot: 'chest', name: 'Frost Cannon',    desc: 'A shoulder cannon fires an ice shell that slows the target for 3 seconds.', cd: 9, w: 0.3, a: 0.1, r: 0.35, move: 0.4, kind: 'proj', proj: 'frost', count: 1, speed: 17, mult: 1.45, kb: 3, slow: 3, color: 0x9fe8ff },
   { id: 'shield',  slot: 'chest', name: 'Energy Shield',   desc: 'A dome that stops shots and halves damage for 3 seconds.', cd: 15, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 2.5, color: 0x7fb6ff },
-  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Each forearm fires a heavy shell with big knockback.', cd: 6, w: 0.3, a: 0.15, r: 0.35, move: 0.3, kind: 'proj', proj: 'shell', count: 2, speed: 20, mult: 0.7, kb: 9, stun: 0.3, color: 0xffd27a },
+  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Each forearm fires a heavy shell with big knockback.', cd: 6, w: 0.3, a: 0.15, r: 0.35, move: 0.3, kind: 'proj', proj: 'shell', count: 2, speed: 20, mult: 0.65, kb: 9, stun: 0.3, color: 0xffd27a },
   { id: 'pistols', slot: 'arms',  name: 'Dual Pistols',    desc: 'Wrist pistols fire a rapid stream of bullets.', cd: 6, w: 0.12, a: 0.8, r: 0.2, move: 0.75, kind: 'proj', proj: 'bullet', count: 10, speed: 32, mult: 0.27, kb: 0.6, color: 0xfff1a8 },
-  { id: 'blades',  slot: 'arms',  name: 'Arm Blades',      desc: 'Forearm swords for a wide, hard double slash.', cd: 5, w: 0.18, a: 0.12, r: 0.32, move: 0.4, kind: 'melee', reach: 0.7, arc: 0.0, mult: 1.5, kb: 7, stun: 0.4, color: 0xd8f0ff },
+  { id: 'blades',  slot: 'arms',  name: 'Arm Blades',      desc: 'Forearm swords for a wide, hard double slash.', cd: 5, w: 0.18, a: 0.12, r: 0.32, move: 0.4, kind: 'melee', reach: 0.7, arc: 0.0, mult: 1.4, kb: 7, stun: 0.4, color: 0xd8f0ff },
   { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Saws rev up and grind through anything close.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
   { id: 'grapple', slot: 'arms',  name: 'Grapple Hook',    desc: 'Fires a hook that drags the target in and stuns it.', cd: 9, w: 0.15, a: 0.1, r: 0.35, move: 0.3, kind: 'proj', proj: 'hook', count: 1, speed: 28, mult: 0.45, kb: 0, stun: 0.7, pull: true, range: 11, color: 0xc8ccd6 },
 ];
@@ -451,7 +466,7 @@ const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
 const MAX_WEAPONS = 3;
 const cleanWeapons = ws => Array.isArray(ws) ? [...new Set(ws.filter(id => WEAPON[id]))].slice(0, MAX_WEAPONS) : null;
 const randomWeapons = () => { const pool = WEAPONS.map(w => w.id); const out = []; while (out.length < MAX_WEAPONS) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]); return out; };
-const randomBuild = () => ({ top: pick(PARTS.top).id, middle: pick(PARTS.middle).id, bottom: pick(PARTS.bottom).id, weapons: randomWeapons() });
+const randomBuild = () => ({ head: pick(HEADS).id, top: pick(PARTS.top).id, middle: pick(PARTS.middle).id, bottom: pick(PARTS.bottom).id, weapons: randomWeapons() });
 const buildName = b => `${partById('top', b.top).name} · ${partById('middle', b.middle).name} · ${partById('bottom', b.bottom).name}`;
 
 /* ======================= MODELS ======================= */
@@ -897,6 +912,44 @@ function makeFighterModel(build, accent) {
     halo(body, ac, 0, hipY - 0.85, 0, 0.9, 0.9);
     for (const s of [-1, 1]) { const fin = mesh(rbox(0.05, 0.42, 0.3, 0.02), dark, body, s * 0.33, hipY - 0.22, -0.06); fin.rotation.z = s * 0.38; }
     mesh(rbox(0.5, 0.18, 0.36, 0.06), dark, body, 0, hipY + 0.02, 0);
+  } else if (B.type === 'spider') {
+    // Middle: eight mechanical legs on a hub that swivels under the midsection, so the body keeps facing the fight while the legs walk any way
+    hipY = 0.98; rig.spiderLegs = [];
+    mesh(rbox(0.4, 0.13, 0.34, 0.05), dark, body, 0, hipY - 0.01, 0);
+    mesh(new THREE.CylinderGeometry(0.075, 0.09, 0.22, 12), joint, body, 0, hipY - 0.17, 0);
+    const tr = mesh(new THREE.TorusGeometry(0.12, 0.025, 8, 24), joint, body, 0, hipY - 0.26, 0); tr.rotation.x = Math.PI / 2;
+    const sg = new THREE.Group(); root.add(sg);
+    const HY = 0.62;
+    // hub: armoured dome with a ring of sockets, a cluster of glowing sensor eyes at the front, and a spinning turntable on top
+    const dome = [[0, -0.16], [0.2, -0.15], [0.3, -0.08], [0.32, 0.02], [0.26, 0.11], [0.14, 0.17], [0, 0.18]];
+    mesh(new THREE.LatheGeometry(dome.map(([r, y]) => new THREE.Vector2(r, y)), 16), botM, sg, 0, HY, 0);
+    const rim = mesh(new THREE.TorusGeometry(0.31, 0.025, 8, 32), dark, sg, 0, HY - 0.02, 0); rim.rotation.x = Math.PI / 2;
+    const top = mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.05, 20), joint, sg, 0, HY + 0.19, 0);
+    const tg = mesh(new THREE.TorusGeometry(0.16, 0.007, 6, 28), g, sg, 0, HY + 0.2, 0); tg.rotation.x = Math.PI / 2;
+    for (const [x, y, r] of [[-0.06, 0.06, 0.03], [0.06, 0.06, 0.03], [-0.12, 0.02, 0.02], [0.12, 0.02, 0.02], [0, 0.0, 0.022]]) mesh(new THREE.SphereGeometry(r, 10, 8), g, sg, x, HY + y, 0.29);
+    for (const sx of [-1, 1]) mesh(rbox(0.012, 0.012, 0.36, 0.004), g, sg, sx * 0.24, HY + 0.07, -0.02);
+    // legs: each is a socket, an armoured femur and a long tapered shin ending in a spike. The front pair are longer stabbing blades
+    const angles = [0.38, 1.05, 1.8, 2.5];
+    const seg = (len, w, mat, blade) => {
+      const grp = new THREE.Group(); sg.add(grp);
+      if (blade) {
+        const b1 = mesh(new THREE.CylinderGeometry(w * 0.2, w * 0.7, 1, 4), mat, grp); b1.scale.set(1, 1, 0.45);
+        mesh(rbox(0.008, 0.85, 0.008, 0.003), g, grp, 0, -0.02, w * 0.32);
+      } else {
+        mesh(rbox(w, 1, w * 1.1, w * 0.3), mat, grp);
+        mesh(rbox(w * 0.3, 0.7, 0.01, 0.004), dark, grp, 0, 0, w * 0.56);
+      }
+      return grp;
+    };
+    for (const sx of [-1, 1]) angles.forEach((a0, k) => {
+      const front = k === 0, th = sx * a0;
+      const L1 = front ? 0.6 : 0.5, L2 = front ? 0.95 : 0.74;
+      const sock = mesh(new THREE.SphereGeometry(0.06, 10, 8), joint, sg, Math.sin(th) * 0.27, HY - 0.02, Math.cos(th) * 0.27);
+      const fem = seg(L1, front ? 0.075 : 0.065, botM), tib = seg(L2, front ? 0.07 : 0.05, front ? stdMat(0xd8e2ee, { metalness: 1, roughness: 0.15 }) : joint, true);
+      const knee = new THREE.Group(); sg.add(knee); mesh(new THREE.SphereGeometry(front ? 0.055 : 0.045, 10, 8), dark, knee);
+      rig.spiderLegs.push({ th, front, L1, L2, fem, tib, knee, hip: new V3(Math.sin(th) * 0.27, HY - 0.02, Math.cos(th) * 0.27), rf: front ? 1.0 : [0, 0.95, 0.92, 0.85][k], grp: (k + (sx > 0 ? 0 : 1)) % 2 });
+    });
+    rig.spider = { sg, yaw: 0, phase: 0, stab: 0 };
   } else if (B.type === 'snake') {
     // Middle: a chained mechanical serpent. The front rises to the hips like a cobra and the rest coils on the ground on centipede legs
     hipY = 1.04;
@@ -1190,13 +1243,14 @@ function makeFighterModel(build, accent) {
   }
   // neck + head
   // head: Light = small and sleek on a long neck, Middle = helmeted, Heavy = large and sunk into an armored gorget
-  const headScale = [0.85, 1, 1.2][tw2];
-  if (tw2 === 0) mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.2, 10), joint, body, 0, shoulderY + 0.06, 0);
-  else if (tw2 === 1) mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.14, 10), joint, body, 0, shoulderY + 0.04, 0);
+  const HD = headById(build.head) ? build.head : T.id, hw = headById(HD).size;
+  const headScale = [0.85, 1, 1.2][hw];
+  if (hw === 0) mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.2, 10), joint, body, 0, shoulderY + 0.06, 0);
+  else if (hw === 1) mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.14, 10), joint, body, 0, shoulderY + 0.04, 0);
   else { mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.1, 10), joint, body, 0, shoulderY + 0.03, 0); mesh(rbox(0.52, 0.14, 0.44, 0.05), topM, body, 0, shoulderY + 0.02, -0.02); }
-  const head = new THREE.Group(); head.position.y = shoulderY + [0.14, 0.1, 0.06][tw2]; head.scale.setScalar(headScale); body.add(head); rig.head = head;
+  const head = new THREE.Group(); head.position.y = shoulderY + [0.14, 0.1, 0.06][hw]; head.scale.setScalar(headScale); body.add(head); rig.head = head;
   let face = 0.17, hh = 0.36;
-  switch (T.id) {
+  switch (HD) {
     case 'hawk': mesh(new THREE.SphereGeometry(0.16, 20, 14), topM, head, 0, 0.17, 0); { const bk = mesh(new THREE.ConeGeometry(0.06, 0.22, 8), dark, head, 0, 0.14, 0.2); bk.rotation.x = Math.PI / 2; } mesh(rbox(0.03, 0.16, 0.28, 0.012), topM, head, 0, 0.32, -0.03); face = 0.14; break;
     case 'wisp': mesh(new THREE.SphereGeometry(0.18, 22, 16), topM, head, 0, 0.18, 0); { const h = mesh(new THREE.TorusGeometry(0.15, 0.018, 8, 28), g, head, 0, 0.42, -0.02); h.rotation.x = Math.PI / 2 - 0.3; halo(head, ac, 0, 0.42, -0.02, 0.45, 0.4); } face = 0.165; hh = 0.46; break;
     case 'viper': { const o = mesh(new THREE.OctahedronGeometry(0.2, 1), topM, head, 0, 0.18, 0.02); o.scale.set(0.75, 1, 1.3); for (const s of [-1, 1]) { const f = mesh(rbox(0.02, 0.1, 0.2, 0.008), dark, head, s * 0.13, 0.24, -0.04); f.rotation.z = -s * 0.5; } } face = 0.2; break;
@@ -1207,9 +1261,9 @@ function makeFighterModel(build, accent) {
     case 'titan': mesh(new THREE.SphereGeometry(0.26, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2), topM, head, 0, 0.12, 0); mesh(rbox(0.4, 0.15, 0.36, 0.05), dark, head, 0, 0.06, 0.02); face = 0.2; hh = 0.4; break;
     case 'golem': mesh(rbox(0.5, 0.26, 0.42, 0.08), topM, head, 0, 0.08, 0); face = 0.215; hh = 0.24; break;
   }
-  const eyeY = { hawk: 0.2, wisp: 0.19, viper: 0.19, sentinel: 0.18, ronin: 0.18, warden: 0.19, bastion: 0.18, titan: 0.13, golem: 0.1 }[T.id];
-  if (T.id === 'golem' || T.id === 'hawk') { const ex = T.id === 'golem' ? 0.12 : 0.07; for (const s of [-1, 1]) { mesh(new THREE.SphereGeometry(0.035, 10, 8), g, head, s * ex, eyeY, face); halo(head, ac, s * ex, eyeY, face + 0.03, 0.18, 0.9); } }
-  else { mesh(rbox(T.id === 'bastion' ? 0.3 : 0.2, 0.045, 0.03, 0.012), g, head, 0, eyeY, face); halo(head, ac, 0, eyeY, face + 0.03, T.id === 'bastion' ? 0.42 : 0.32, 0.8); }
+  const eyeY = { hawk: 0.2, wisp: 0.19, viper: 0.19, sentinel: 0.18, ronin: 0.18, warden: 0.19, bastion: 0.18, titan: 0.13, golem: 0.1 }[HD];
+  if (HD === 'golem' || HD === 'hawk') { const ex = HD === 'golem' ? 0.12 : 0.07; for (const s of [-1, 1]) { mesh(new THREE.SphereGeometry(0.035, 10, 8), g, head, s * ex, eyeY, face); halo(head, ac, s * ex, eyeY, face + 0.03, 0.18, 0.9); } }
+  else { mesh(rbox(HD === 'bastion' ? 0.3 : 0.2, 0.045, 0.03, 0.012), g, head, 0, eyeY, face); halo(head, ac, 0, eyeY, face + 0.03, HD === 'bastion' ? 0.42 : 0.32, 0.8); }
 
   // ---- weapons: each adds hardware to the model plus mount points the battle fires from
   const WP = cleanWeapons(build.weapons) || [], has = id => WP.includes(id);
@@ -1418,6 +1472,7 @@ function animateRig(rig, f, dt, time) {
         P.aR.x = P.aL.x = -0.5;
       } else if (rig.hover) { P.tw = wind ? -0.9 : hit ? 1.5 : 0.3; P.bz = wind ? 0.15 : -0.2; }
       else if (rig.snake) { P.bx = wind ? -0.12 : hit ? 0.14 : 0; P.tw = wind ? 0.25 : hit ? -0.3 : 0; }
+      else if (rig.spider) { P.bx = wind ? -0.06 : hit ? 0.1 : 0; }
       else { P.bx = wind ? -0.15 : hit ? 0.42 : 0.1; P.by -= wind ? 0.04 : 0; }
     } else if (st === 'block') {
       P.aR.x = P.aL.x = -1.35; P.aR.z = 0.55; P.aL.z = -0.55; P.aR.e = P.aL.e = -1.25; P.bx = 0.12; P.by -= 0.06;
@@ -1471,6 +1526,41 @@ function animateRig(rig, f, dt, time) {
     }
     const v = Math.hypot(vx, vz);
     if (v > 1e-3) rig.ball.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new V3(vz / v, 0, -vx / v), v * dt / rig.ballR));
+  }
+  if (rig.spider) {
+    // walk: legs move in two alternating sets of four, the hub swivels toward the direction of travel, and the front pair stab on a kick
+    const S = rig.spider, Y = new V3(0, 1, 0);
+    let vx = 0, vz = 0;
+    if (f) { const wx = f.moveVel.x + f.knock.x, wz = f.moveVel.z + f.knock.z, yaw = rig.root.rotation.y, c = Math.cos(yaw), sn = Math.sin(yaw); vx = wx * c - wz * sn; vz = wx * sn + wz * c; }
+    const v = Math.hypot(vx, vz), kick = st === 'kick';
+    let target = S.yaw;
+    if (kick) target = 0;
+    else if (v > 0.4) { target = Math.atan2(vx, vz); let d = Math.atan2(Math.sin(target - S.yaw), Math.cos(target - S.yaw)); if (d > Math.PI / 2) d -= Math.PI; else if (d < -Math.PI / 2) d += Math.PI; target = S.yaw + d; }
+    S.yaw += Math.atan2(Math.sin(target - S.yaw), Math.cos(target - S.yaw)) * (1 - Math.exp(-(kick ? 18 : 5) * dt));
+    S.sg.rotation.y = S.yaw;
+    const along = vx * Math.sin(S.yaw) + vz * Math.cos(S.yaw), gs = clamp(Math.abs(along) / 4, 0, 1.2) + (v > 0.4 ? 0.3 : 0);
+    S.phase += dt * (2 + gs * 9) * (along < 0 ? -1 : 1);
+    S.sg.position.y = Math.abs(Math.sin(S.phase * 2)) * 0.015 * gs;
+    let st0 = 0, st1 = 0;
+    if (kick) { const tm = f.timing('kick'), t = f.t; if (t < tm.w) st0 = t / tm.w; else if (t < tm.w + tm.a + tm.r * 0.5) st1 = 1; }
+    S.stab = lerp(S.stab, st1, 1 - Math.exp(-(st1 ? 40 : 10) * dt)); S.cock = lerp(S.cock || 0, st0, 1 - Math.exp(-20 * dt));
+    for (const L of rig.spiderLegs) {
+      const ph = S.phase + L.grp * Math.PI, lift = Math.max(0, Math.sin(ph)) * 0.14 * gs, stride = Math.cos(ph) * 0.16 * gs;
+      let rf = L.rf, fy = lift, fz = stride;
+      let foot = new V3(Math.sin(L.th) * rf, fy, Math.cos(L.th) * rf + fz);
+      if (L.front && (S.stab > 0.01 || S.cock > 0.01)) {
+        const up = new V3(Math.sin(L.th) * 0.45, 1.05, 0.55), out = new V3(Math.sin(L.th) * 0.25, 0.8, 1.55);
+        foot.lerp(up, S.cock * (1 - S.stab)).lerp(out, S.stab);
+      }
+      // two-bone IK in the vertical plane through the hip and foot, with the knee bending upward
+      const H = L.hip, d3 = foot.clone().sub(H), horiz = new V3(d3.x, 0, d3.z), hl = Math.max(1e-4, horiz.length());
+      const dist = Math.min(L.L1 + L.L2 - 0.002, Math.hypot(hl, d3.y)), ang = Math.atan2(d3.y, hl);
+      const ca = clamp((L.L1 * L.L1 + dist * dist - L.L2 * L.L2) / (2 * L.L1 * dist), -1, 1), a1 = ang + Math.acos(ca);
+      const kn = H.clone().addScaledVector(horiz.normalize(), Math.cos(a1) * L.L1); kn.y += Math.sin(a1) * L.L1;
+      const tipDir = foot.clone().sub(kn).normalize(), tip = kn.clone().addScaledVector(tipDir, L.L2);
+      for (const [m, a, b] of [[L.fem, H, kn], [L.tib, kn, tip]]) { const dir = b.clone().sub(a), len = dir.length(); m.position.copy(a).addScaledVector(dir, 0.5); m.quaternion.setFromUnitVectors(Y, dir.normalize()); m.scale.set(1, len, 1); }
+      L.knee.position.copy(kn);
+    }
   }
   if (rig.snake) {
     // slither: a sideways wave runs down the body (faster when moving), little legs paddle, and the tail lashes during a whip
@@ -1569,15 +1659,20 @@ const SFX = {
 };
 
 /* ======================= BUILDER UI ======================= */
-let build = { top: 'sentinel', middle: 'furnace', bottom: 'sprinter', weapons: ['laser', 'rockets', 'blades'] };
+let build = { head: 'sentinel', top: 'sentinel', middle: 'furnace', bottom: 'sprinter', weapons: ['laser', 'rockets', 'blades'] };
 let curSec = 'top';
 let difficulty = 'normal';
-try { const s = JSON.parse(localStorage.getItem('forge-arena-build') || 'null'); if (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) build = Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons }); } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem('forge-arena-build') || 'null'); if (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) build = Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons, head: headById(s.head) ? s.head : s.top }); } catch (e) {}
 try { const d = localStorage.getItem('forge-arena-diff'); if (['easy', 'normal', 'hard'].includes(d)) difficulty = d; } catch (e) {}
 const save = () => { try { localStorage.setItem('forge-arena-build', JSON.stringify(build)); localStorage.setItem('forge-arena-diff', difficulty); } catch (e) {} };
 
 function renderTabs() {
   $('tabs').innerHTML = '';
+  const hb = document.createElement('button');
+  hb.type = 'button'; hb.className = 'tab'; hb.id = 'tab-head'; hb.setAttribute('role', 'tab'); hb.setAttribute('aria-selected', String(curSec === 'head'));
+  hb.innerHTML = `<span class="t-sec">Head · style</span><span class="t-pick">${headById(build.head).name}</span>`;
+  hb.onclick = () => { curSec = 'head'; renderTabs(); renderParts(); };
+  $('tabs').appendChild(hb);
   for (const sec of ['top', 'middle', 'bottom']) {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'tab'; b.id = 'tab-' + sec; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(sec === curSec));
@@ -1615,8 +1710,25 @@ function renderWeapons() {
     W.appendChild(col);
   }
 }
+function renderHeads() {
+  $('secDesc').textContent = 'Heads are just for looks. Pick any style; it has no effect on stats.';
+  const W = $('weights'); W.innerHTML = '';
+  HEAD_SIZES.forEach((label, sz) => {
+    const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', '#c9d3e6');
+    col.innerHTML = `<h3>${label}</h3><div class="weffect">Style only</div>`;
+    for (const h of HEADS.filter(h => h.size === sz)) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'part'; b.id = `head-${h.id}`;
+      b.setAttribute('aria-pressed', String(build.head === h.id));
+      b.innerHTML = `<span class="pn">${h.name}</span><span class="pp">${h.desc}</span>`;
+      b.onclick = () => { build = Object.assign({}, build, { head: h.id }); save(); renderAll(); };
+      col.appendChild(b);
+    }
+    $('weights').appendChild(col);
+  });
+}
 function renderParts() {
   if (curSec === 'weapons') return renderWeapons();
+  if (curSec === 'head') return renderHeads();
   $('secDesc').textContent = SECTIONS[curSec].desc;
   const W = $('weights'); W.innerHTML = '';
   for (const w of WEIGHTS) {
@@ -1651,7 +1763,7 @@ function renderStats(hoverBuild) {
     return `<div class="stat"><span class="sl">${d.label}</span><div class="bar"><i style="width:${h && norm(h[d.k], d) < a ? norm(h[d.k], d) : a}%"></i>${extra}</div><span class="sv">${val}</span></div>`;
   }).join('');
   const sp = SPECIALS[partById('top', (hoverBuild || build).top).w];
-  $('special').innerHTML = `<div class="sk">Special move (from your Top)</div><div class="sn">${sp.name}</div><p>${sp.desc}</p>`
+  $('special').innerHTML = `<div class="sk">Special move (from your Arms)</div><div class="sn">${sp.name}</div><p>${sp.desc}</p>`
     + `<div class="sk" style="margin-top:8px">Weapons</div><div class="wlist">${build.weapons.length ? build.weapons.map((id, i) => `<span><kbd>${i + 1}</kbd>${WEAPON[id].name}</span>`).join('') : '<span>None yet. Open the Weapons tab to add some.</span>'}</div>`;
 }
 function renderAll() {
@@ -1718,9 +1830,10 @@ const KICKS = {
   light:  { w: 0.18, a: 0.08, r: 0.28, mult: 1.25, kb: 7,  stun: 0.4,  reach: 0.3,  arc: 0.42 },
   middle: { w: 0.26, a: 0.1,  r: 0.36, mult: 1.4,  kb: 9,  stun: 0.42, reach: 0.3,  arc: 0.42 },
   heavy:  { w: 0.42, a: 0.12, r: 0.5,  mult: 1.3,  kb: 9,  stun: 0.38, reach: 0.15, arc: 0.42 },
+  stab:   { w: 0.22, a: 0.1,  r: 0.34, mult: 1.5,  kb: 6,  stun: 0.42, reach: 0.75, arc: 0.5, name: 'Leg stab' },
   whip:   { w: 0.3,  a: 0.14, r: 0.4,  mult: 1.5,  kb: 10, stun: 0.42, reach: 0.9,  arc: -0.1, name: 'Tail whip' },
 };
-function kickFor(build) { const b = partById('bottom', build.bottom); return b.type === 'snake' ? KICKS.whip : KICKS[b.w]; }
+function kickFor(build) { const b = partById('bottom', build.bottom); return b.type === 'snake' ? KICKS.whip : b.type === 'spider' ? KICKS.stab : KICKS[b.w]; }
 const ARENA_R = 13;
 const ROUND_TIME = 90;
 
@@ -2491,7 +2604,7 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 function boot(data) {
-  if (data && data.build && partById('top', data.build.top)) build = Object.assign({}, data.build, { weapons: cleanWeapons(data.build.weapons) || build.weapons });
+  if (data && data.build && partById('top', data.build.top)) build = Object.assign({}, data.build, { weapons: cleanWeapons(data.build.weapons) || build.weapons, head: headById(data.build.head) ? data.build.head : data.build.top });
   renderAll(); requestAnimationFrame(loop);
 }
 window.claude?.hot?.snapshot?.(() => ({ build }));
