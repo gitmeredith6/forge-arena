@@ -93,6 +93,16 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .tab[aria-selected="true"] .t-sec { color: var(--p1); }
 .sec-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .sec-desc { margin: 0; color: var(--muted); font-size: 14px; }
+.paint { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.paint-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.paint-h b { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.paint-h span { font-size: 13px; color: var(--fg); }
+.sw { display: flex; flex-wrap: wrap; gap: 6px; }
+.sw button, .sw label { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #ffffff22; background: var(--c); padding: 0; position: relative; cursor: pointer; box-shadow: inset 0 -6px 10px #0005, inset 0 4px 8px #fff3; }
+.sw button[aria-pressed="true"], .sw label.on { border-color: #fff; box-shadow: 0 0 0 2px var(--p1), inset 0 -6px 10px #0005, inset 0 4px 8px #fff3; }
+.sw .def::after { content: ''; position: absolute; inset: 9px; border-radius: 50%; border: 2px solid #ffffffb0; }
+.sw label { background: conic-gradient(#e44, #ed4, #4d6, #4ce, #46e, #c4e, #e44); }
+.sw label input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 .weights { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .wcol { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .wcol h3 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 22px; line-height: 1; letter-spacing: 0.04em; text-transform: uppercase; color: var(--wc); }
@@ -279,6 +289,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       <div class="sec-body">
         <p class="sec-desc" id="secDesc"></p>
         <div class="weights" id="weights"></div>
+        <div class="paint" id="paint" hidden></div>
       </div>
     </div>
     <div class="card b-preview" id="previewBox">
@@ -528,6 +539,15 @@ const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
 const MAX_WEAPONS = 3;
 const cleanWeapons = ws => Array.isArray(ws) ? [...new Set(ws.filter(id => WEAPON[id]))].slice(0, MAX_WEAPONS) : null;
 const randomWeapons = () => { const pool = WEAPONS.map(w => w.id); const out = []; while (out.length < MAX_WEAPONS) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]); return out; };
+// paint: each section can be recoloured; with no choice it keeps its part's own colour (the head follows the arms)
+const PAINTS = [
+  ['Gunmetal', 0x4a5160], ['Steel', 0x8c95a3], ['White', 0xd9dde4], ['Black', 0x1e2026], ['Red', 0xb8323a], ['Orange', 0xd8742c],
+  ['Yellow', 0xd9b43a], ['Gold', 0xb8903a], ['Green', 0x4f8a3e], ['Olive', 0x6e7a45], ['Teal', 0x2f9b92], ['Blue', 0x2f62b8],
+  ['Navy', 0x23345e], ['Purple', 0x6a46b0], ['Pink', 0xc24f8e], ['Copper', 0xa0603a],
+];
+const PAINT_SECS = ['head', 'top', 'middle', 'bottom'];
+const partColor = (b, sec) => { const c = b.colors && b.colors[sec]; if (Number.isInteger(c) && c >= 0 && c <= 0xffffff) return c; return partById(sec === 'head' ? 'top' : sec, b[sec === 'head' ? 'top' : sec]).color; };
+const cleanColors = c => { const o = {}; if (c && typeof c === 'object') for (const k of PAINT_SECS) if (Number.isInteger(c[k]) && c[k] >= 0 && c[k] <= 0xffffff) o[k] = c[k]; return o; };
 const randomBuild = () => ({ head: pick(HEADS).id, top: pick(PARTS.top).id, middle: pick(PARTS.middle).id, bottom: pick(PARTS.bottom).id, weapons: randomWeapons() });
 const buildName = b => `${partById('top', b.top).name} · ${partById('middle', b.middle).name} · ${partById('bottom', b.bottom).name}`;
 
@@ -719,10 +739,11 @@ function makeFighterModel(build, accent) {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   const g = glowMat(accent);
   const ac = new THREE.Color(accent).convertSRGBToLinear();
-  const topM = armorMat(T.color, 2.4), midM = armorMat(M.color, 2.4), botM = armorMat(B.color, 2.4);
+  const col = sec => partColor(build, sec), bc = col('bottom');
+  const topM = armorMat(col('top'), 2.4), midM = armorMat(col('middle'), 2.4), botM = armorMat(bc, 2.4), headM = armorMat(col('head'), 2.4);
   const dark = armorMat(0x1c2029, 4, { metalness: 0.45, roughness: 0.55 });
   const joint = stdMat(0x3a404c, { metalness: 0.9, roughness: 0.25 });
-  const rig = { root, body, legs: [], arms: [], mats: [topM, midM, botM, dark, joint], topM, glow: g };
+  const rig = { root, body, legs: [], arms: [], mats: [topM, midM, botM, headM, dark, joint], topM, glow: g };
   const bolt = (parent, x, y, z, rad) => mesh(new THREE.SphereGeometry(Math.max(0.01, rad), 8, 6), joint, parent, x, y, z);
   const seam = (parent, w, x, y, z) => mesh(rbox(w, 0.012, 0.012, 0.004), dark, parent, x, y, z);
   const rod = (parent, rad, len, x, y, z) => mesh(new THREE.CylinderGeometry(rad, rad, len, 8), joint, parent, x, y, z);
@@ -926,7 +947,7 @@ function makeFighterModel(build, accent) {
     // actuator discs at hip, knee and ankle, exposed pistons and a smooth chunky boot
     const r = B.r, len = B.len, L = len * 0.5; hipY = len + 0.09;
     const hipW = 0.2, ground = -(L + 0.09);
-    const am = stdMat(B.color, { metalness: 0.55, roughness: 0.3, side: THREE.DoubleSide }), am2 = stdMat(new THREE.Color(B.color).lerp(new THREE.Color(0xffffff), 0.2).getHex(), { metalness: 0.55, roughness: 0.26, side: THREE.DoubleSide });
+    const am = stdMat(bc, { metalness: 0.55, roughness: 0.3, side: THREE.DoubleSide }), am2 = stdMat(new THREE.Color(bc).lerp(new THREE.Color(0xffffff), 0.2).getHex(), { metalness: 0.55, roughness: 0.26, side: THREE.DoubleSide });
     const chrome = stdMat(0xc9ced6, { metalness: 1, roughness: 0.16 }); rig.mats.push(am, am2, chrome);
     const V2 = THREE.Vector2;
     const lathe = (pts, n = 24) => new THREE.LatheGeometry(pts.map(([rr, y]) => new V2(rr, y)), n);
@@ -1004,7 +1025,7 @@ function makeFighterModel(build, accent) {
     const r = B.r || 0.075, len = B.len || 1.04, L = len * 0.5; hipY = len + 0.09;
     const hipW = 0.14 + (r - 0.075) * 2.4, ground = -(L + 0.09), k = r / 0.075;
     // smooth, sleek plating instead of the panelled texture, with a few deliberate seams
-    const sm = stdMat(B.color, { metalness: 0.6, roughness: 0.26 }); rig.mats.push(sm);
+    const sm = stdMat(bc, { metalness: 0.6, roughness: 0.26 }); rig.mats.push(sm);
     const lathe = pts => new THREE.LatheGeometry(pts.map(([rr, y]) => new THREE.Vector2(rr, y)), 22);
     mesh(rbox(hipW * 2 + 0.16, 0.17, 0.24, 0.06), dark, body, 0, hipY, 0);
     mesh(rbox(0.13, 0.12, 0.05, 0.025), sm, body, 0, hipY - 0.03, 0.13);
@@ -1391,19 +1412,19 @@ function makeFighterModel(build, accent) {
   const headScale = [0.85, 1, 1.2][hw];
   if (hw === 0) mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.2, 10), joint, body, 0, shoulderY + 0.06, 0);
   else if (hw === 1) mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.14, 10), joint, body, 0, shoulderY + 0.04, 0);
-  else { mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.1, 10), joint, body, 0, shoulderY + 0.03, 0); mesh(rbox(0.52, 0.14, 0.44, 0.05), topM, body, 0, shoulderY + 0.02, -0.02); }
+  else { mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.1, 10), joint, body, 0, shoulderY + 0.03, 0); mesh(rbox(0.52, 0.14, 0.44, 0.05), headM, body, 0, shoulderY + 0.02, -0.02); }
   const head = new THREE.Group(); head.position.y = shoulderY + [0.14, 0.1, 0.06][hw]; head.scale.setScalar(headScale); body.add(head); rig.head = head;
   let face = 0.17, hh = 0.36;
   switch (HD) {
-    case 'hawk': mesh(new THREE.SphereGeometry(0.16, 20, 14), topM, head, 0, 0.17, 0); { const bk = mesh(new THREE.ConeGeometry(0.06, 0.22, 8), dark, head, 0, 0.14, 0.2); bk.rotation.x = Math.PI / 2; } mesh(rbox(0.03, 0.16, 0.28, 0.012), topM, head, 0, 0.32, -0.03); face = 0.14; break;
-    case 'wisp': mesh(new THREE.SphereGeometry(0.18, 22, 16), topM, head, 0, 0.18, 0); { const h = mesh(new THREE.TorusGeometry(0.15, 0.018, 8, 28), g, head, 0, 0.42, -0.02); h.rotation.x = Math.PI / 2 - 0.3; halo(head, ac, 0, 0.42, -0.02, 0.45, 0.4); } face = 0.165; hh = 0.46; break;
-    case 'viper': { const o = mesh(new THREE.OctahedronGeometry(0.2, 1), topM, head, 0, 0.18, 0.02); o.scale.set(0.75, 1, 1.3); for (const s of [-1, 1]) { const f = mesh(rbox(0.02, 0.1, 0.2, 0.008), dark, head, s * 0.13, 0.24, -0.04); f.rotation.z = -s * 0.5; } } face = 0.2; break;
-    case 'sentinel': mesh(rbox(0.32, 0.3, 0.3, 0.07), topM, head, 0, 0.16, 0); for (const s of [-1, 1]) { const e = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 12), joint, head, s * 0.17, 0.17, 0); e.rotation.z = Math.PI / 2; } face = 0.155; break;
-    case 'ronin': mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.3, 8), topM, head, 0, 0.16, 0); mesh(rbox(0.03, 0.22, 0.36, 0.012), g, head, 0, 0.36, 0); mesh(rbox(0.52, 0.03, 0.14, 0.012), topM, head, 0, 0.27, 0.1); face = 0.19; hh = 0.46; break;
-    case 'warden': mesh(new THREE.DodecahedronGeometry(0.2), topM, head, 0, 0.18, 0); for (const s of [-1, 1]) { const a = mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.24, 6), joint, head, s * 0.1, 0.44, -0.04); a.rotation.z = -s * 0.25; mesh(new THREE.SphereGeometry(0.022, 8, 6), g, head, s * 0.13, 0.56, -0.04); } face = 0.17; hh = 0.5; break;
-    case 'bastion': mesh(rbox(0.42, 0.34, 0.38, 0.08), topM, head, 0, 0.16, 0); mesh(rbox(0.26, 0.08, 0.04, 0.015), dark, head, 0, 0.06, 0.19); face = 0.195; break;
-    case 'titan': mesh(new THREE.SphereGeometry(0.26, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2), topM, head, 0, 0.12, 0); mesh(rbox(0.4, 0.15, 0.36, 0.05), dark, head, 0, 0.06, 0.02); face = 0.2; hh = 0.4; break;
-    case 'golem': mesh(rbox(0.5, 0.26, 0.42, 0.08), topM, head, 0, 0.08, 0); face = 0.215; hh = 0.24; break;
+    case 'hawk': mesh(new THREE.SphereGeometry(0.16, 20, 14), headM, head, 0, 0.17, 0); { const bk = mesh(new THREE.ConeGeometry(0.06, 0.22, 8), dark, head, 0, 0.14, 0.2); bk.rotation.x = Math.PI / 2; } mesh(rbox(0.03, 0.16, 0.28, 0.012), headM, head, 0, 0.32, -0.03); face = 0.14; break;
+    case 'wisp': mesh(new THREE.SphereGeometry(0.18, 22, 16), headM, head, 0, 0.18, 0); { const h = mesh(new THREE.TorusGeometry(0.15, 0.018, 8, 28), g, head, 0, 0.42, -0.02); h.rotation.x = Math.PI / 2 - 0.3; halo(head, ac, 0, 0.42, -0.02, 0.45, 0.4); } face = 0.165; hh = 0.46; break;
+    case 'viper': { const o = mesh(new THREE.OctahedronGeometry(0.2, 1), headM, head, 0, 0.18, 0.02); o.scale.set(0.75, 1, 1.3); for (const s of [-1, 1]) { const f = mesh(rbox(0.02, 0.1, 0.2, 0.008), dark, head, s * 0.13, 0.24, -0.04); f.rotation.z = -s * 0.5; } } face = 0.2; break;
+    case 'sentinel': mesh(rbox(0.32, 0.3, 0.3, 0.07), headM, head, 0, 0.16, 0); for (const s of [-1, 1]) { const e = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 12), joint, head, s * 0.17, 0.17, 0); e.rotation.z = Math.PI / 2; } face = 0.155; break;
+    case 'ronin': mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.3, 8), headM, head, 0, 0.16, 0); mesh(rbox(0.03, 0.22, 0.36, 0.012), g, head, 0, 0.36, 0); mesh(rbox(0.52, 0.03, 0.14, 0.012), headM, head, 0, 0.27, 0.1); face = 0.19; hh = 0.46; break;
+    case 'warden': mesh(new THREE.DodecahedronGeometry(0.2), headM, head, 0, 0.18, 0); for (const s of [-1, 1]) { const a = mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.24, 6), joint, head, s * 0.1, 0.44, -0.04); a.rotation.z = -s * 0.25; mesh(new THREE.SphereGeometry(0.022, 8, 6), g, head, s * 0.13, 0.56, -0.04); } face = 0.17; hh = 0.5; break;
+    case 'bastion': mesh(rbox(0.42, 0.34, 0.38, 0.08), headM, head, 0, 0.16, 0); mesh(rbox(0.26, 0.08, 0.04, 0.015), dark, head, 0, 0.06, 0.19); face = 0.195; break;
+    case 'titan': mesh(new THREE.SphereGeometry(0.26, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2), headM, head, 0, 0.12, 0); mesh(rbox(0.4, 0.15, 0.36, 0.05), dark, head, 0, 0.06, 0.02); face = 0.2; hh = 0.4; break;
+    case 'golem': mesh(rbox(0.5, 0.26, 0.42, 0.08), headM, head, 0, 0.08, 0); face = 0.215; hh = 0.24; break;
   }
   const eyeY = { hawk: 0.2, wisp: 0.19, viper: 0.19, sentinel: 0.18, ronin: 0.18, warden: 0.19, bastion: 0.18, titan: 0.13, golem: 0.1 }[HD];
   if (HD === 'golem' || HD === 'hawk') { const ex = HD === 'golem' ? 0.12 : 0.07; for (const s of [-1, 1]) { mesh(new THREE.SphereGeometry(0.035, 10, 8), g, head, s * ex, eyeY, face); halo(head, ac, s * ex, eyeY, face + 0.03, 0.18, 0.9); } }
@@ -1808,7 +1829,7 @@ let curSec = 'top';
 let difficulty = 'normal';
 let arenaId = 'guerrilla';
 try { const a = localStorage.getItem('forge-arena-map'); if (['classic', 'guerrilla', 'citadel'].includes(a)) arenaId = a; } catch (e) {}
-try { const s = JSON.parse(localStorage.getItem('forge-arena-build') || 'null'); if (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) build = Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons, head: headById(s.head) ? s.head : s.top }); } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem('forge-arena-build') || 'null'); if (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) build = Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons, head: headById(s.head) ? s.head : s.top, colors: cleanColors(s.colors) }); } catch (e) {}
 try { const d = localStorage.getItem('forge-arena-diff'); if (['easy', 'normal', 'hard'].includes(d)) difficulty = d; } catch (e) {}
 const save = () => { try { localStorage.setItem('forge-arena-build', JSON.stringify(build)); localStorage.setItem('forge-arena-diff', difficulty); } catch (e) {} };
 
@@ -1872,7 +1893,25 @@ function renderHeads() {
     $('weights').appendChild(col);
   });
 }
+const hex = c => '#' + c.toString(16).padStart(6, '0');
+function renderPaint() {
+  const P = $('paint'), sec = curSec;
+  P.hidden = !PAINT_SECS.includes(sec); if (P.hidden) return;
+  const name = sec === 'head' ? 'Head' : SECTIONS[sec].label, part = sec === 'head' ? headById(build.head).name : partById(sec, build[sec]).name;
+  const cur = (build.colors || {})[sec], def = partColor(Object.assign({}, build, { colors: {} }), sec);
+  const named = PAINTS.find(p => p[1] === cur);
+  P.innerHTML = `<div class="paint-h"><b>${name} colour</b><span>${part} · ${cur == null ? 'original' : named ? named[0] : hex(cur)}</span></div>
+    <div class="sw" role="group" aria-label="${name} colour">
+      <button type="button" class="def" style="--c:${hex(def)}" title="Original colour" aria-label="Original colour" aria-pressed="${cur == null}" data-c=""></button>
+      ${PAINTS.map(([n, c]) => `<button type="button" style="--c:${hex(c)}" title="${n}" aria-label="${n}" aria-pressed="${cur === c}" data-c="${c}"></button>`).join('')}
+      <label title="Custom colour" class="${cur != null && !named ? 'on' : ''}"><input type="color" id="paintPick" value="${hex(cur ?? def)}" aria-label="Custom colour"></label>
+    </div>`;
+  const set = c => { const colors = Object.assign({}, build.colors); if (c == null) delete colors[sec]; else colors[sec] = c; build = Object.assign({}, build, { colors }); save(); renderAll(); };
+  P.querySelectorAll('button').forEach(b => b.onclick = () => set(b.dataset.c === '' ? null : +b.dataset.c));
+  $('paintPick').oninput = e => set(parseInt(e.target.value.slice(1), 16));
+}
 function renderParts() {
+  renderPaint();
   if (curSec === 'weapons') return renderWeapons();
   if (curSec === 'head') return renderHeads();
   $('secDesc').textContent = SECTIONS[curSec].desc;
