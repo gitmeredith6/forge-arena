@@ -319,11 +319,11 @@ const WLABEL = { light: 'Light', middle: 'Middle', heavy: 'Heavy' };
 const WCOLOR = { light: 'var(--w-light)', middle: 'var(--w-middle)', heavy: 'var(--w-heavy)' };
 const SECTIONS = {
   top:    { label: 'Top', sub: 'Head & arms', desc: 'Your Top sets health, guard strength and how fast your special charges. Its weight class also decides your special move.',
-            effect: { light: 'Faster energy, less health, weaker guard', middle: 'Balanced, with a little extra health and energy', heavy: 'More health, longer reach, stronger guard, slower energy' } },
+            effect: { light: 'Faster energy, less health, weaker guard', middle: 'Balanced, with a little extra health and energy', heavy: 'More health and a stronger guard, slower energy' } },
   middle: { label: 'Middle', sub: 'Torso', desc: 'Your Middle trades attack power for attack speed.',
             effect: { light: 'Fast attacks, less power', middle: 'Balanced', heavy: 'Big power, slower attacks' } },
   bottom: { label: 'Bottom', sub: 'Legs', desc: 'Your Bottom trades movement speed for defense and stability.',
-            effect: { light: 'Quick movement and dodges, less defense', middle: 'Balanced', heavy: 'High defense, hard to knock back, slow' } },
+            effect: { light: 'Quick movement and dodges, less defense', middle: 'Balanced', heavy: 'High defense, hard to knock back or stagger, slow' } },
 };
 const SPECIALS = {
   light:  { id: 'blink',   name: 'Blink Strike', desc: 'Dash in untouchable and land a guard-breaking hit.' },
@@ -332,42 +332,42 @@ const SPECIALS = {
 };
 const PARTS = {
   top: [
-    { id: 'hawk',     w: 'light',  name: 'Hawk',     perk: '+15% critical hit chance', mod: { crit: 0.15 }, color: 0xc7d0dc },
-    { id: 'wisp',     w: 'light',  name: 'Wisp',     perk: '+30% energy gain',         mod: { energyRegen: 0.3 }, color: 0xdbe7e3 },
-    { id: 'viper',    w: 'light',  name: 'Viper',    perk: '+10% attack speed',        mod: { atkSpdMul: 0.10 }, color: 0xb3c29e },
-    { id: 'sentinel', w: 'middle', name: 'Sentinel', perk: '+12 health',               mod: { hp: 12 }, color: 0x8e9bb2 },
-    { id: 'ronin',    w: 'middle', name: 'Ronin',    perk: '+10% power',               mod: { powerMul: 0.10 }, color: 0xa08f84 },
-    { id: 'warden',   w: 'middle', name: 'Warden',   perk: '+10% guard strength',      mod: { blockRed: 0.10 }, color: 0x7d9ca6 },
-    { id: 'bastion',  w: 'heavy',  name: 'Bastion',  perk: '+22 health',               mod: { hp: 22 }, color: 0x5f6879 },
-    { id: 'titan',    w: 'heavy',  name: 'Titan',    perk: '+0.3m reach (huge arms)',  mod: { reach: 0.3 }, color: 0x74635a },
-    { id: 'golem',    w: 'heavy',  name: 'Golem',    perk: '+5% defense',              mod: { def: 0.05 }, color: 0x5b675c },
+    { id: 'hawk',     w: 'light',  name: 'Hawk',     perk: '+20% critical hit chance', mod: { crit: 0.20 }, color: 0xe8ecf2 },
+    { id: 'wisp',     w: 'light',  name: 'Wisp',     perk: '+30% energy gain',         mod: { energyRegen: 0.3 }, color: 0xbfe3dc },
+    { id: 'viper',    w: 'light',  name: 'Viper',    perk: '+10% attack speed',        mod: { atkSpdMul: 0.10 }, color: 0x9fb86a },
+    { id: 'sentinel', w: 'middle', name: 'Sentinel', perk: '+12 health',               mod: { hp: 12 }, color: 0x5f7fb0 },
+    { id: 'ronin',    w: 'middle', name: 'Ronin',    perk: '+10% power',               mod: { powerMul: 0.10 }, color: 0xa8483e },
+    { id: 'warden',   w: 'middle', name: 'Warden',   perk: '+10% guard, +12 health', mod: { blockRed: 0.10, hp: 12 }, color: 0x3f8c8a },
+    { id: 'bastion',  w: 'heavy',  name: 'Bastion',  perk: '+22 health',               mod: { hp: 22 }, color: 0x5a6272 },
+    { id: 'titan',    w: 'heavy',  name: 'Titan',    perk: '+25% heavy attack damage (huge fists)', mod: { heavyMul: 0.25 }, color: 0xb07a3c },
+    { id: 'golem',    w: 'heavy',  name: 'Golem',    perk: '+5% defense',              mod: { def: 0.05 }, color: 0x6f7a55 },
   ],
   middle: [
-    { id: 'reed',     w: 'light',  name: 'Reed',     perk: '+10% attack speed',        mod: { atkSpdMul: 0.10 }, color: 0xd4dbe4, segs: 6, taper: 1.35 },
-    { id: 'swift',    w: 'light',  name: 'Swift',    perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0xb9d4e6, segs: 16, taper: 1.2 },
-    { id: 'lancer',   w: 'light',  name: 'Lancer',   perk: '+0.25m reach',             mod: { reach: 0.25 }, color: 0xc9c2d8, segs: 4, taper: 1.15 },
-    { id: 'core',     w: 'middle', name: 'Core',     perk: '+20% energy gain',         mod: { energyRegen: 0.2 }, color: 0x8794a8, segs: 16, taper: 1.15 },
-    { id: 'striker',  w: 'middle', name: 'Striker',  perk: '+8% power',                mod: { powerMul: 0.08 }, color: 0x9c8a7c, segs: 6, taper: 1.3 },
-    { id: 'guard',    w: 'middle', name: 'Guard',    perk: '+5% defense',              mod: { def: 0.05 }, color: 0x7a8f86, segs: 4, taper: 1.0 },
-    { id: 'furnace',  w: 'heavy',  name: 'Furnace',  perk: '+10% power',               mod: { powerMul: 0.10 }, color: 0x5d5552, segs: 8, taper: 1.1 },
-    { id: 'anvil',    w: 'heavy',  name: 'Anvil',    perk: '+20 health',               mod: { hp: 20 }, color: 0x56606e, segs: 4, taper: 1.28 },
-    { id: 'brute',    w: 'heavy',  name: 'Brute',    perk: '+40% knockback dealt',     mod: { kbDealt: 0.4 }, color: 0x6c5a4c, segs: 16, taper: 0.95 },
+    { id: 'reed',     w: 'light',  name: 'Reed',     perk: '+7% attack speed',         mod: { atkSpdMul: 0.07 }, color: 0xeae6dc, segs: 6, taper: 1.35 },
+    { id: 'swift',    w: 'light',  name: 'Swift',    perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x7fb6e0, segs: 16, taper: 1.2 },
+    { id: 'lancer',   w: 'light',  name: 'Lancer',   perk: '+6% move and attack speed', mod: { moveMul: 0.06, atkSpdMul: 0.06 }, color: 0x9a86c8, segs: 4, taper: 1.15 },
+    { id: 'core',     w: 'middle', name: 'Core',     perk: '+30% energy gain, +6 health', mod: { energyRegen: 0.3, hp: 6 }, color: 0x4f6a94, segs: 16, taper: 1.15 },
+    { id: 'striker',  w: 'middle', name: 'Striker',  perk: '+8% power',                mod: { powerMul: 0.08 }, color: 0xc2603a, segs: 6, taper: 1.3 },
+    { id: 'guard',    w: 'middle', name: 'Guard',    perk: '+5% defense',              mod: { def: 0.05 }, color: 0x4f7a64, segs: 4, taper: 1.0 },
+    { id: 'furnace',  w: 'heavy',  name: 'Furnace',  perk: '+10% power',               mod: { powerMul: 0.10 }, color: 0x3d3a3a, segs: 8, taper: 1.1 },
+    { id: 'anvil',    w: 'heavy',  name: 'Anvil',    perk: '+20 health',               mod: { hp: 20 }, color: 0x4d5868, segs: 4, taper: 1.28 },
+    { id: 'brute',    w: 'heavy',  name: 'Brute',    perk: '+40% knockback, +13% power', mod: { kbDealt: 0.4, powerMul: 0.13 }, color: 0x8a5a3a, segs: 16, taper: 0.95 },
   ],
   bottom: [
-    { id: 'strider',  w: 'light',  name: 'Strider',  perk: '+20% dodge distance',      mod: { dodgeSpeedMul: 0.2 }, color: 0xd0d8e2, type: 'legs', r: 0.085, len: 1.08 },
-    { id: 'sprinter', w: 'light',  name: 'Sprinter', perk: '+10% move speed',          mod: { moveMul: 0.10 }, color: 0xbfd6d0, type: 'legs', r: 0.095, len: 1.0, stripes: true },
-    { id: 'phantom',  w: 'light',  name: 'Phantom',  perk: 'Hovers. 25% faster dodge recharge', mod: { dodgeCdMul: -0.25 }, color: 0xc4c6dc, type: 'hover' },
-    { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 health',               mod: { hp: 10 }, color: 0x8d97a6, type: 'legs', r: 0.13, len: 0.95 },
-    { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x8a9a84, type: 'legs', r: 0.12, len: 1.0, kneeGlow: true },
-    { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+4% defense',              mod: { def: 0.04 }, color: 0x7f8796, type: 'legs', r: 0.14, len: 0.92, armor: true },
-    { id: 'treads',   w: 'heavy',  name: 'Treads',   perk: 'Tank treads. +30% knockback resistance', mod: { kbRes: 0.3 }, color: 0x4f5763, type: 'treads' },
-    { id: 'pillar',   w: 'heavy',  name: 'Pillar',   perk: '+25 health',               mod: { hp: 25 }, color: 0x5f6570, type: 'legs', r: 0.21, len: 0.85, bigFeet: true },
-    { id: 'juggernaut', w: 'heavy', name: 'Juggernaut', perk: '+10% guard strength',  mod: { blockRed: 0.10 }, color: 0x6a5f58, type: 'legs', r: 0.19, len: 0.88, armor: true },
+    { id: 'strider',  w: 'light',  name: 'Strider',  perk: '+20% dodge distance',      mod: { dodgeSpeedMul: 0.2 }, color: 0xe2e6ea, type: 'legs', r: 0.085, len: 1.08 },
+    { id: 'sprinter', w: 'light',  name: 'Sprinter', perk: '+10% move speed',          mod: { moveMul: 0.10 }, color: 0x6fc2b0, type: 'legs', r: 0.095, len: 1.0, stripes: true },
+    { id: 'phantom',  w: 'light',  name: 'Phantom',  perk: 'Hovers. 25% faster dodge recharge', mod: { dodgeCdMul: -0.25 }, color: 0xb7b4e6, type: 'hover' },
+    { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 health',               mod: { hp: 10 }, color: 0x6f7f96, type: 'legs', r: 0.13, len: 0.95 },
+    { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x6e8a4e, type: 'legs', r: 0.12, len: 1.0, kneeGlow: true },
+    { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+4% defense',              mod: { def: 0.04 }, color: 0x7a6f9a, type: 'legs', r: 0.14, len: 0.92, armor: true },
+    { id: 'treads',   w: 'heavy',  name: 'Treads',   perk: 'Tank treads. +30% knockback resistance, +8% defense, +8 health', mod: { kbRes: 0.3, def: 0.08, hp: 8 }, color: 0x4a4f44, type: 'treads' },
+    { id: 'pillar',   w: 'heavy',  name: 'Pillar',   perk: '+18 health',               mod: { hp: 18 }, color: 0x5b6170, type: 'legs', r: 0.21, len: 0.85, bigFeet: true },
+    { id: 'juggernaut', w: 'heavy', name: 'Juggernaut', perk: '+10% guard, +14 health', mod: { blockRed: 0.10, hp: 14 }, color: 0x7a4636, type: 'legs', r: 0.19, len: 0.88, armor: true },
   ],
 };
 const WEIGHT_MODS = {
-  top:    { light: { hp: -6, energyRegen: 0.45, blockRed: -0.05, crit: 0.05 }, middle: { hp: 12, energyRegen: 0.1, reach: 0.08 }, heavy: { hp: 14, energyRegen: -0.3, blockRed: 0.08, reach: 0.1 } },
-  middle: { light: { powerMul: -0.28, atkSpdMul: 0.3 }, middle: {}, heavy: { powerMul: 0.6, atkSpdMul: -0.25, hp: 10, kbDealt: 0.2 } },
+  top:    { light: { hp: -6, energyRegen: 0.35, blockRed: -0.05, crit: 0.05 }, middle: { hp: 12, energyRegen: 0.1 }, heavy: { hp: 14, energyRegen: -0.3, blockRed: 0.08 } },
+  middle: { light: { powerMul: -0.28, atkSpdMul: 0.27 }, middle: {}, heavy: { powerMul: 0.66, atkSpdMul: -0.25, hp: 12, kbDealt: 0.2 } },
   bottom: { light: { moveMul: 0.3, dodgeCdMul: -0.4, def: -0.08 }, middle: {}, heavy: { moveMul: -0.25, def: 0.15, kbRes: 0.45, dodgeCdMul: 0.5 } },
 };
 const partById = (sec, id) => PARTS[sec].find(p => p.id === id);
@@ -395,6 +395,7 @@ function computeStats(build) {
     dodgeSpeed: 15 * (1 + g('dodgeSpeedMul')),
     blockRed: clamp(0.6 + g('blockRed'), 0, 0.9),
     crit: 0.05 + g('crit'),
+    heavyMul: 1 + g('heavyMul'),
     radius: 0.46 + bulk * 0.035,
   };
 }
@@ -406,17 +407,61 @@ const STAT_VIEW = [
   { k: 'def',    label: 'Defense',      min: 0,   max: 0.36, fmt: v => Math.round(v * 100) + '%' },
   { k: 'blockRed', label: 'Guard',      min: 0.45, max: 0.85, fmt: v => Math.round(v * 100) + '%' },
   { k: 'energyRegen', label: 'Energy',  min: 0.7, max: 1.8,  fmt: v => '×' + v.toFixed(2) },
-  { k: 'reach',  label: 'Reach',        min: 1.45, max: 2.25, fmt: v => v.toFixed(2) + 'm' },
 ];
 const randomBuild = () => ({ top: pick(PARTS.top).id, middle: pick(PARTS.middle).id, bottom: pick(PARTS.bottom).id });
 const buildName = b => `${partById('top', b.top).name} · ${partById('middle', b.middle).name} · ${partById('bottom', b.bottom).name}`;
 
 /* ======================= MODELS ======================= */
 const ACCENT = { p1: 0xffb547, p2: 0xff4d6d };
-function stdMat(color, o) { const m = new THREE.MeshStandardMaterial(Object.assign({ roughness: 0.42, metalness: 0.5 }, o || {})); m.color.setHex(color).convertSRGBToLinear(); return m; }
+function stdMat(color, o) { const m = new THREE.MeshStandardMaterial(Object.assign({ roughness: 0.36, metalness: 0.55 }, o || {})); m.color.setHex(color).convertSRGBToLinear(); return m; }
 function glowMat(color) { const m = new THREE.MeshStandardMaterial({ roughness: 0.3, metalness: 0, emissiveIntensity: 2.6 }); m.color.setHex(color).convertSRGBToLinear(); m.emissive.copy(m.color); return m; }
 function mesh(geo, mat, parent, x = 0, y = 0, z = 0) {
   const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; if (parent) parent.add(m); return m;
+}
+/* rounded box: a rounded-rectangle extruded with a bevel, so every edge catches light */
+function rbox(w, h, d, r) {
+  r = Math.min(r == null ? Math.min(w, h, d) * 0.22 : r, w * 0.45, h * 0.45, d * 0.45);
+  const iw = w - 2 * r, ih = h - 2 * r, cr = Math.min(iw, ih) * 0.3, x0 = -iw / 2, y0 = -ih / 2;
+  const s = new THREE.Shape();
+  s.moveTo(x0 + cr, y0); s.lineTo(x0 + iw - cr, y0); s.quadraticCurveTo(x0 + iw, y0, x0 + iw, y0 + cr);
+  s.lineTo(x0 + iw, y0 + ih - cr); s.quadraticCurveTo(x0 + iw, y0 + ih, x0 + iw - cr, y0 + ih);
+  s.lineTo(x0 + cr, y0 + ih); s.quadraticCurveTo(x0, y0 + ih, x0, y0 + ih - cr);
+  s.lineTo(x0, y0 + cr); s.quadraticCurveTo(x0, y0, x0 + cr, y0);
+  const depth = Math.max(0.001, d - 2 * r);
+  const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: r, bevelSize: r, bevelSegments: 3, curveSegments: 3 });
+  g.translate(0, 0, -depth / 2);
+  return g;
+}
+function torsoGeo(segs, t) {
+  const prof = [[0, 0], [0.3, 0], [0.34, 0.05], [0.3, 0.18], [0.36 * Math.max(1, t * 0.9), 0.36], [0.47 * t, 0.6], [0.5 * t, 0.77], [0.46 * t, 0.91], [0.3 * t, 1], [0, 1]];
+  const g = new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y - 0.5)), segs, segs === 4 ? Math.PI / 4 : 0);
+  g.computeVertexNormals(); return g;
+}
+let HALO_TEX = null;
+function haloTex() {
+  if (HALO_TEX) return HALO_TEX;
+  const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+  const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,0.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = gr; x.fillRect(0, 0, 64, 64); HALO_TEX = new THREE.CanvasTexture(c); return HALO_TEX;
+}
+function halo(parent, color, x, y, z, size, opacity = 0.75) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex(), color, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity }));
+  sp.position.set(x, y, z); sp.scale.setScalar(size); parent.add(sp); return sp;
+}
+/* soft studio reflections for the metal, built once per renderer */
+function makeEnv(renderer, warm) {
+  const pm = new THREE.PMREMGenerator(renderer), s = new THREE.Scene();
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true }));
+  const pos = sky.geometry.attributes.position, cols = [], lo = new THREE.Color(0x07090e), mid = new THREE.Color(0x2a3550), hi = new THREE.Color(0x7d8db0), c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) { const y = pos.getY(i) / 10; if (y < 0) c.copy(lo).lerp(mid, 1 + y); else c.copy(mid).lerp(hi, y); cols.push(c.r, c.g, c.b); }
+  sky.geometry.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3)); s.add(sky);
+  const panel = (w, h, d, x, y, z, col) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial()); m.material.color.setRGB(...col); m.position.set(x, y, z); s.add(m); };
+  panel(7, 0.1, 5, 0, 8.5, 1, [4, 3.6, 3.1]);
+  panel(0.1, 3, 6, 8, 2, -2, [1.2, 1.6, 2.4]);
+  panel(0.1, 2.5, 5, -8, 1.5, 3, warm ? [2.6, 1.5, 0.5] : [2, 1.4, 0.8]);
+  panel(5, 1.5, 0.1, 0, 1, -8.5, [0.9, 0.5, 0.6]);
+  const rt = pm.fromScene(s, 0.035); pm.dispose(); s.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
+  return rt.texture;
 }
 
 function makeFighterModel(build, accent) {
@@ -424,44 +469,58 @@ function makeFighterModel(build, accent) {
   const wi = { light: 0, middle: 1, heavy: 2 };
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   const g = glowMat(accent);
+  const ac = new THREE.Color(accent).convertSRGBToLinear();
   const topM = stdMat(T.color), midM = stdMat(M.color), botM = stdMat(B.color);
-  const dark = stdMat(0x22283a, { metalness: 0.35, roughness: 0.65 });
-  const rig = { root, body, legs: [], arms: [], mats: [topM, midM, botM, dark], topM, glow: g };
+  const dark = stdMat(0x1c2029, { metalness: 0.45, roughness: 0.55 });
+  const joint = stdMat(0x3a404c, { metalness: 0.9, roughness: 0.25 });
+  const rig = { root, body, legs: [], arms: [], mats: [topM, midM, botM, dark, joint], topM, glow: g };
 
   // ---- bottom
   let hipY;
   const bw = wi[B.w];
   if (B.type === 'hover') {
     hipY = 1.05; rig.hover = true;
-    const cone = mesh(new THREE.ConeGeometry(0.34, 0.72, 10), botM, body, 0, hipY - 0.36, 0); cone.rotation.x = Math.PI;
-    const ring = mesh(new THREE.TorusGeometry(0.27, 0.045, 8, 28), g, body, 0, hipY - 0.2, 0); ring.rotation.x = Math.PI / 2;
-    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.45, 10), new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.65 }));
-    flame.rotation.x = Math.PI; flame.position.y = hipY - 0.92; body.add(flame); rig.flame = flame;
-    for (const s of [-1, 1]) { const fin = mesh(new THREE.BoxGeometry(0.04, 0.38, 0.26), dark, body, s * 0.3, hipY - 0.25, -0.05); fin.rotation.z = s * 0.35; }
+    const skirt = [[0, -0.78], [0.1, -0.74], [0.24, -0.5], [0.34, -0.22], [0.37, -0.06], [0.3, 0.06], [0, 0.06]];
+    mesh(new THREE.LatheGeometry(skirt.map(([r, y]) => new THREE.Vector2(r, y)), 14), botM, body, 0, hipY, 0);
+    const ring = mesh(new THREE.TorusGeometry(0.33, 0.035, 8, 32), g, body, 0, hipY - 0.16, 0); ring.rotation.x = Math.PI / 2;
+    const ring2 = mesh(new THREE.TorusGeometry(0.19, 0.03, 8, 24), joint, body, 0, hipY - 0.52, 0); ring2.rotation.x = Math.PI / 2;
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.5, 12), new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false }));
+    flame.rotation.x = Math.PI; flame.position.y = hipY - 1.0; body.add(flame); rig.flame = flame;
+    halo(body, ac, 0, hipY - 0.85, 0, 0.9, 0.9);
+    for (const s of [-1, 1]) { const fin = mesh(rbox(0.05, 0.42, 0.3, 0.02), dark, body, s * 0.33, hipY - 0.22, -0.06); fin.rotation.z = s * 0.38; }
+    mesh(rbox(0.5, 0.18, 0.36, 0.06), dark, body, 0, hipY + 0.02, 0);
   } else if (B.type === 'treads') {
     hipY = 0.92; rig.treads = true;
     for (const s of [-1, 1]) {
-      mesh(new THREE.BoxGeometry(0.34, 0.46, 1.08), botM, body, s * 0.42, 0.25, 0);
-      for (const z of [-0.38, 0, 0.38]) { const wh = mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.38, 14), dark, body, s * 0.42, 0.22, z); wh.rotation.z = Math.PI / 2; }
-      mesh(new THREE.BoxGeometry(0.36, 0.05, 0.9), g, body, s * 0.42, 0.5, 0);
+      mesh(rbox(0.3, 0.5, 1.2, 0.2), dark, body, s * 0.42, 0.25, 0);
+      mesh(rbox(0.07, 0.34, 0.96, 0.03), botM, body, s * 0.59, 0.27, 0);
+      for (const z of [-0.36, 0, 0.36]) { const wh = mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.05, 14), joint, body, s * 0.635, 0.25, z); wh.rotation.z = Math.PI / 2; }
+      mesh(rbox(0.04, 0.03, 0.8, 0.01), g, body, s * 0.635, 0.42, 0);
+      mesh(rbox(0.26, 0.08, 0.5, 0.03), botM, body, s * 0.42, 0.52, 0.2);
     }
-    mesh(new THREE.BoxGeometry(0.62, 0.42, 0.56), dark, body, 0, hipY - 0.25, 0);
+    mesh(rbox(0.66, 0.42, 0.6, 0.1), dark, body, 0, hipY - 0.25, 0);
+    mesh(rbox(0.52, 0.16, 0.52, 0.06), botM, body, 0, hipY - 0.02, 0);
   } else {
     const r = B.r, len = B.len;
     hipY = len + 0.09;
     const hipW = [0.16, 0.2, 0.26][bw];
-    mesh(new THREE.BoxGeometry(hipW * 2 + r * 2, 0.2, 0.3 + r), dark, body, 0, hipY, 0);
+    mesh(rbox(hipW * 2 + r * 2.4, 0.22, 0.32 + r, 0.07), dark, body, 0, hipY, 0);
+    mesh(rbox(0.16, 0.16, 0.06, 0.03), botM, body, 0, hipY - 0.02, 0.17 + r * 0.5);
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group(); pivot.position.set(side * hipW, hipY, 0); body.add(pivot);
-      mesh(new THREE.CylinderGeometry(r * 1.2, r, len * 0.5, 10), botM, pivot, 0, -len * 0.25, 0);
-      if (B.armor) mesh(new THREE.BoxGeometry(r * 2.8, len * 0.32, r * 2.5), botM, pivot, 0, -len * 0.18, 0.02);
-      if (B.stripes) mesh(new THREE.BoxGeometry(r * 0.5, len * 0.36, 0.02), g, pivot, side * r * 0.4, -len * 0.25, r * 1.05);
+      mesh(new THREE.CylinderGeometry(r * 1.2, r * 0.95, len * 0.5, 12), joint, pivot, 0, -len * 0.25, 0);
+      if (B.armor) mesh(rbox(r * 3, len * 0.36, r * 2.8, r * 0.5), botM, pivot, 0, -len * 0.18, 0.01);
+      else mesh(rbox(r * 2.5, len * 0.32, r * 1.3, r * 0.4), botM, pivot, 0, -len * 0.2, r * 0.55);
       const knee = new THREE.Group(); knee.position.y = -len * 0.5; pivot.add(knee);
-      mesh(new THREE.SphereGeometry(r * 1.15, 10, 8), dark, knee);
-      if (B.kneeGlow || B.armor) mesh(new THREE.BoxGeometry(r * 1.4, r * 1.2, 0.05), B.kneeGlow ? g : botM, knee, 0, 0, r * 1.1);
-      mesh(new THREE.CylinderGeometry(r, r * 0.8, len * 0.5, 10), botM, knee, 0, -len * 0.25, 0);
-      const fw = B.bigFeet ? r * 3 : r * 2.2;
-      mesh(new THREE.BoxGeometry(fw, 0.1, fw * 1.6), dark, knee, 0, -len * 0.5 - 0.03, r * 0.6);
+      mesh(new THREE.SphereGeometry(r * 1.1, 12, 10), joint, knee);
+      mesh(rbox(r * 1.8, r * 1.7, r * 0.9, r * 0.3), B.kneeGlow ? dark : botM, knee, 0, 0.01, r * 0.85);
+      if (B.kneeGlow) halo(knee, ac, 0, 0.01, r * 1.4, 0.22, 0.9), mesh(rbox(r * 1.2, r * 0.35, 0.03, 0.01), g, knee, 0, 0.01, r * 1.32);
+      mesh(new THREE.CylinderGeometry(r * 0.95, r * 0.75, len * 0.5, 12), joint, knee, 0, -len * 0.25, 0);
+      mesh(rbox(r * 2.2, len * 0.38, r * 1.3, r * 0.4), botM, knee, 0, -len * 0.24, r * 0.5);
+      if (B.stripes) for (const sx of [-1, 1]) mesh(rbox(0.02, len * 0.3, 0.02, 0.005), g, knee, sx * r * 1.1, -len * 0.24, r * 0.9);
+      const fw = B.bigFeet ? r * 3 : r * 2.3;
+      mesh(rbox(fw, 0.12, fw * 1.7, 0.04), dark, knee, 0, -len * 0.5 - 0.03, r * 0.6);
+      mesh(rbox(fw * 0.9, 0.08, fw * 0.55, 0.03), botM, knee, 0, -len * 0.5 + 0.02, r * 0.6 + fw * 0.55);
       rig.legs.push({ pivot, knee, side });
     }
   }
@@ -470,67 +529,98 @@ function makeFighterModel(build, accent) {
   const mw = wi[M.w];
   const tw = [0.52, 0.7, 0.92][mw], th = [0.74, 0.84, 0.92][mw], td = [0.34, 0.42, 0.54][mw];
   const tg = new THREE.Group(); tg.scale.set(tw, th, td); tg.position.y = hipY + 0.06 + th / 2; body.add(tg);
-  const tm = mesh(new THREE.CylinderGeometry(0.5 * M.taper, 0.5, 1, M.segs), midM, tg);
-  if (M.segs === 4) tm.rotation.y = Math.PI / 4;
+  mesh(torsoGeo(M.segs, M.taper), midM, tg);
   const faceScale = M.segs === 4 ? 0.71 : 1;
-  const chestZ = td * 0.5 * faceScale * (M.taper > 1 ? (1 + M.taper) / 2 : 1);
-  const chestY = hipY + 0.06 + th * 0.62;
-  if (M.id === 'core') mesh(new THREE.SphereGeometry(0.11, 14, 10), g, body, 0, chestY, chestZ - 0.03);
-  else if (M.id === 'furnace') { for (let i = 0; i < 3; i++) mesh(new THREE.BoxGeometry(tw * 0.55, 0.035, 0.04), g, body, 0, chestY - 0.08 + i * 0.09, chestZ + 0.0); }
-  else if (M.id === 'guard') { mesh(new THREE.BoxGeometry(tw * 0.62, th * 0.42, 0.06), midM, body, 0, chestY, chestZ + 0.02); mesh(new THREE.BoxGeometry(0.12, 0.04, 0.02), g, body, 0, chestY, chestZ + 0.06); }
-  else if (M.id === 'lancer') { mesh(new THREE.BoxGeometry(0.04, th * 0.9, 0.22), dark, body, 0, hipY + 0.06 + th / 2, -td * 0.42); mesh(new THREE.BoxGeometry(0.1, 0.1, 0.03), g, body, 0, chestY, chestZ); }
-  else if (M.id === 'brute') { mesh(new THREE.SphereGeometry(tw * 0.42, 14, 10), midM, body, 0, chestY + 0.04, td * 0.1); mesh(new THREE.BoxGeometry(0.16, 0.05, 0.02), g, body, 0, chestY, chestZ + tw * 0.12); }
-  else mesh(new THREE.BoxGeometry(0.14, 0.05, 0.03), g, body, 0, chestY, chestZ);
+  const chestZ = td * 0.5 * faceScale * Math.max(1, M.taper * 0.97);
+  const chestY = hipY + 0.06 + th * 0.65;
+  mesh(new THREE.CylinderGeometry(tw * 0.31, tw * 0.31, 0.09, 16), dark, body, 0, hipY + 0.14, 0);
+  if (M.id === 'core') { mesh(new THREE.SphereGeometry(0.1, 16, 12), g, body, 0, chestY, chestZ - 0.02); const rr = mesh(new THREE.TorusGeometry(0.12, 0.022, 8, 24), joint, body, 0, chestY, chestZ - 0.02); halo(body, ac, 0, chestY, chestZ + 0.05, 0.6, 0.85); }
+  else if (M.id === 'furnace') { for (let i = 0; i < 3; i++) mesh(rbox(tw * 0.5, 0.035, 0.04, 0.012), g, body, 0, chestY - 0.09 + i * 0.09, chestZ); halo(body, ac, 0, chestY, chestZ + 0.06, 0.7, 0.55); mesh(rbox(tw * 0.62, th * 0.42, 0.22, 0.06), dark, body, 0, chestY - 0.02, -chestZ + 0.02); }
+  else if (M.id === 'guard') { mesh(rbox(tw * 0.66, th * 0.44, 0.08, 0.03), midM, body, 0, chestY, chestZ + 0.01); mesh(rbox(0.14, 0.035, 0.02, 0.01), g, body, 0, chestY, chestZ + 0.06); halo(body, ac, 0, chestY, chestZ + 0.08, 0.3); }
+  else if (M.id === 'lancer') { mesh(rbox(0.05, th * 0.9, 0.24, 0.02), dark, body, 0, hipY + 0.06 + th / 2, -td * 0.44); mesh(rbox(0.09, 0.09, 0.03, 0.02), g, body, 0, chestY, chestZ); halo(body, ac, 0, chestY, chestZ + 0.04, 0.28); }
+  else if (M.id === 'brute') { mesh(new THREE.SphereGeometry(tw * 0.42, 18, 12), midM, body, 0, chestY + 0.04, td * 0.1); mesh(rbox(0.18, 0.05, 0.03, 0.015), g, body, 0, chestY, chestZ + tw * 0.13); halo(body, ac, 0, chestY, chestZ + tw * 0.16, 0.35); }
+  else if (M.id === 'anvil') { for (const s of [-1, 1]) mesh(rbox(tw * 0.34, th * 0.26, 0.08, 0.03), midM, body, s * tw * 0.19, chestY + 0.04, chestZ + 0.01); mesh(rbox(0.1, 0.05, 0.03, 0.015), g, body, 0, chestY - 0.12, chestZ); mesh(rbox(tw * 0.6, th * 0.4, 0.2, 0.06), dark, body, 0, chestY - 0.02, -chestZ + 0.02); }
+  else { mesh(rbox(0.13, 0.05, 0.03, 0.015), g, body, 0, chestY, chestZ); halo(body, ac, 0, chestY, chestZ + 0.04, 0.26); if (M.id === 'striker') mesh(rbox(0.05, th * 0.7, 0.03, 0.015), joint, body, tw * 0.12, chestY - 0.05, chestZ - 0.01).rotation.z = 0.5; }
 
   // ---- top (head + arms)
   const tw2 = wi[T.w];
   const shoulderY = hipY + 0.06 + th;
-  const halfTop = 0.5 * M.taper * tw * faceScale;
+  const halfTop = 0.5 * M.taper * tw * faceScale * 0.92;
   const armR = [0.075, 0.105, 0.15][tw2];
-  const armLen = [0.74, 0.8, 0.86][tw2] + (T.mod.reach || 0) * 0.7 + (M.mod.reach || 0) * 0.7;
+  const armLen = [0.74, 0.8, 0.86][tw2];
   const fistR = [0.1, 0.13, 0.19][tw2] * (T.id === 'titan' ? 1.35 : 1);
   const shX = halfTop + armR + 0.03;
+  const collar = mesh(new THREE.TorusGeometry(Math.max(0.1, halfTop * 0.45), 0.03, 8, 20), joint, body, 0, shoulderY - 0.01, 0); collar.rotation.x = Math.PI / 2;
   for (const side of [-1, 1]) {
-    // pauldron
-    if (tw2 === 2) mesh(new THREE.BoxGeometry(armR * 3.4, armR * 2.2, armR * 3), topM, body, side * shX, shoulderY + 0.02, 0);
-    else mesh(new THREE.SphereGeometry(armR * (tw2 ? 1.9 : 1.5), 12, 10), topM, body, side * shX, shoulderY - 0.02, 0);
+    if (tw2 === 2) { mesh(rbox(armR * 3.6, armR * 2.3, armR * 3.3, armR * 0.6), topM, body, side * shX, shoulderY + 0.03, 0); mesh(rbox(0.025, armR * 1.2, armR * 2.4, 0.01), g, body, side * (shX + armR * 1.8), shoulderY + 0.02, 0); }
+    else if (tw2 === 1) { mesh(new THREE.SphereGeometry(armR * 1.65, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), topM, body, side * shX, shoulderY - 0.04, 0); const rr = mesh(new THREE.TorusGeometry(armR * 1.65, 0.016, 6, 24), g, body, side * shX, shoulderY - 0.04, 0); rr.rotation.x = Math.PI / 2; }
+    else mesh(new THREE.SphereGeometry(armR * 1.55, 14, 10), topM, body, side * shX, shoulderY - 0.02, 0);
     const pivot = new THREE.Group(); pivot.position.set(side * shX, shoulderY - 0.06, 0); body.add(pivot);
-    mesh(new THREE.CylinderGeometry(armR, armR * 0.9, armLen * 0.5, 10), topM, pivot, 0, -armLen * 0.25, 0);
+    mesh(new THREE.CylinderGeometry(armR, armR * 0.85, armLen * 0.5, 12), joint, pivot, 0, -armLen * 0.25, 0);
+    mesh(rbox(armR * 2.1, armLen * 0.3, armR * 2.1, armR * 0.5), topM, pivot, 0, -armLen * 0.2, 0);
     const elbow = new THREE.Group(); elbow.position.y = -armLen * 0.5; pivot.add(elbow);
-    mesh(new THREE.SphereGeometry(armR * 1.05, 10, 8), dark, elbow);
-    mesh(new THREE.CylinderGeometry(armR * 0.95, armR * 0.85, armLen * 0.5, 10), topM, elbow, 0, -armLen * 0.25, 0);
-    if (tw2 === 2) mesh(new THREE.BoxGeometry(fistR * 1.8, fistR * 1.8, fistR * 1.8), dark, elbow, 0, -armLen * 0.5 - fistR * 0.6, 0);
-    else mesh(new THREE.SphereGeometry(fistR, 12, 10), dark, elbow, 0, -armLen * 0.5 - fistR * 0.5, 0);
-    rig.arms.push({ pivot, elbow, side });
+    mesh(new THREE.SphereGeometry(armR * 1.05, 12, 10), joint, elbow);
+    mesh(new THREE.CylinderGeometry(armR * 0.85, armR * 0.75, armLen * 0.5, 12), joint, elbow, 0, -armLen * 0.25, 0);
+    mesh(rbox(armR * 2.4, armLen * 0.36, armR * 2.4, armR * 0.6), topM, elbow, 0, -armLen * 0.3, 0);
+    const fist = new THREE.Group(); fist.position.y = -armLen * 0.5 - fistR * 0.7; elbow.add(fist);
+    mesh(rbox(fistR * 1.9, fistR * 1.9, fistR * 1.9, fistR * 0.45), dark, fist);
+    mesh(rbox(fistR * 1.5, 0.03, fistR * 1.2, 0.01), g, fist, 0, -fistR * 0.96, 0);
+    rig.arms.push({ pivot, elbow, side, fist });
   }
   // neck + head
-  mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.14, 8), dark, body, 0, shoulderY + 0.04, 0);
+  mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.14, 10), joint, body, 0, shoulderY + 0.04, 0);
   const head = new THREE.Group(); head.position.y = shoulderY + 0.1; body.add(head); rig.head = head;
   let face = 0.17, hh = 0.36;
   switch (T.id) {
-    case 'hawk': mesh(new THREE.SphereGeometry(0.16, 16, 12), topM, head, 0, 0.17, 0); { const bk = mesh(new THREE.ConeGeometry(0.06, 0.22, 6), dark, head, 0, 0.15, 0.2); bk.rotation.x = Math.PI / 2; } mesh(new THREE.BoxGeometry(0.03, 0.14, 0.24), topM, head, 0, 0.32, -0.02); face = 0.14; break;
-    case 'wisp': mesh(new THREE.SphereGeometry(0.18, 18, 14), topM, head, 0, 0.18, 0); { const h = mesh(new THREE.TorusGeometry(0.15, 0.018, 6, 24), g, head, 0, 0.42, -0.02); h.rotation.x = Math.PI / 2 - 0.3; } face = 0.16; hh = 0.46; break;
-    case 'viper': { const o = mesh(new THREE.OctahedronGeometry(0.2), topM, head, 0, 0.18, 0.02); o.scale.set(0.75, 1, 1.3); } face = 0.2; break;
-    case 'sentinel': mesh(new THREE.BoxGeometry(0.32, 0.3, 0.3), topM, head, 0, 0.16, 0); face = 0.155; break;
-    case 'ronin': mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.3, 8), topM, head, 0, 0.16, 0); mesh(new THREE.BoxGeometry(0.03, 0.2, 0.34), g, head, 0, 0.36, 0); mesh(new THREE.BoxGeometry(0.5, 0.03, 0.06), topM, head, 0, 0.26, 0.12); face = 0.19; hh = 0.46; break;
-    case 'warden': mesh(new THREE.DodecahedronGeometry(0.2), topM, head, 0, 0.18, 0); for (const s of [-1, 1]) { const a = mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.24, 5), dark, head, s * 0.1, 0.44, -0.04); a.rotation.z = -s * 0.25; } face = 0.17; hh = 0.5; break;
-    case 'bastion': mesh(new THREE.BoxGeometry(0.42, 0.34, 0.38), topM, head, 0, 0.16, 0); face = 0.195; break;
-    case 'titan': mesh(new THREE.SphereGeometry(0.26, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), topM, head, 0, 0.12, 0); mesh(new THREE.BoxGeometry(0.4, 0.14, 0.36), dark, head, 0, 0.06, 0.02); face = 0.2; hh = 0.4; break;
-    case 'golem': mesh(new THREE.BoxGeometry(0.5, 0.26, 0.42), topM, head, 0, 0.08, 0); face = 0.215; hh = 0.24; break;
+    case 'hawk': mesh(new THREE.SphereGeometry(0.16, 20, 14), topM, head, 0, 0.17, 0); { const bk = mesh(new THREE.ConeGeometry(0.06, 0.22, 8), dark, head, 0, 0.14, 0.2); bk.rotation.x = Math.PI / 2; } mesh(rbox(0.03, 0.16, 0.28, 0.012), topM, head, 0, 0.32, -0.03); face = 0.14; break;
+    case 'wisp': mesh(new THREE.SphereGeometry(0.18, 22, 16), topM, head, 0, 0.18, 0); { const h = mesh(new THREE.TorusGeometry(0.15, 0.018, 8, 28), g, head, 0, 0.42, -0.02); h.rotation.x = Math.PI / 2 - 0.3; halo(head, ac, 0, 0.42, -0.02, 0.45, 0.4); } face = 0.165; hh = 0.46; break;
+    case 'viper': { const o = mesh(new THREE.OctahedronGeometry(0.2, 1), topM, head, 0, 0.18, 0.02); o.scale.set(0.75, 1, 1.3); for (const s of [-1, 1]) { const f = mesh(rbox(0.02, 0.1, 0.2, 0.008), dark, head, s * 0.13, 0.24, -0.04); f.rotation.z = -s * 0.5; } } face = 0.2; break;
+    case 'sentinel': mesh(rbox(0.32, 0.3, 0.3, 0.07), topM, head, 0, 0.16, 0); for (const s of [-1, 1]) { const e = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 12), joint, head, s * 0.17, 0.17, 0); e.rotation.z = Math.PI / 2; } face = 0.155; break;
+    case 'ronin': mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.3, 8), topM, head, 0, 0.16, 0); mesh(rbox(0.03, 0.22, 0.36, 0.012), g, head, 0, 0.36, 0); mesh(rbox(0.52, 0.03, 0.14, 0.012), topM, head, 0, 0.27, 0.1); face = 0.19; hh = 0.46; break;
+    case 'warden': mesh(new THREE.DodecahedronGeometry(0.2), topM, head, 0, 0.18, 0); for (const s of [-1, 1]) { const a = mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.24, 6), joint, head, s * 0.1, 0.44, -0.04); a.rotation.z = -s * 0.25; mesh(new THREE.SphereGeometry(0.022, 8, 6), g, head, s * 0.13, 0.56, -0.04); } face = 0.17; hh = 0.5; break;
+    case 'bastion': mesh(rbox(0.42, 0.34, 0.38, 0.08), topM, head, 0, 0.16, 0); mesh(rbox(0.26, 0.08, 0.04, 0.015), dark, head, 0, 0.06, 0.19); face = 0.195; break;
+    case 'titan': mesh(new THREE.SphereGeometry(0.26, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2), topM, head, 0, 0.12, 0); mesh(rbox(0.4, 0.15, 0.36, 0.05), dark, head, 0, 0.06, 0.02); face = 0.2; hh = 0.4; break;
+    case 'golem': mesh(rbox(0.5, 0.26, 0.42, 0.08), topM, head, 0, 0.08, 0); face = 0.215; hh = 0.24; break;
   }
   const eyeY = { hawk: 0.2, wisp: 0.19, viper: 0.19, sentinel: 0.18, ronin: 0.18, warden: 0.19, bastion: 0.18, titan: 0.13, golem: 0.1 }[T.id];
-  if (T.id === 'golem' || T.id === 'hawk') { for (const s of [-1, 1]) mesh(new THREE.SphereGeometry(0.035, 8, 6), g, head, s * (T.id === 'golem' ? 0.12 : 0.07), eyeY, face); }
-  else mesh(new THREE.BoxGeometry(T.id === 'bastion' ? 0.3 : 0.2, 0.045, 0.03), g, head, 0, eyeY, face);
+  if (T.id === 'golem' || T.id === 'hawk') { const ex = T.id === 'golem' ? 0.12 : 0.07; for (const s of [-1, 1]) { mesh(new THREE.SphereGeometry(0.035, 10, 8), g, head, s * ex, eyeY, face); halo(head, ac, s * ex, eyeY, face + 0.03, 0.18, 0.9); } }
+  else { mesh(rbox(T.id === 'bastion' ? 0.3 : 0.2, 0.045, 0.03, 0.012), g, head, 0, eyeY, face); halo(head, ac, 0, eyeY, face + 0.03, T.id === 'bastion' ? 0.42 : 0.32, 0.8); }
 
   rig.height = shoulderY + 0.1 + hh;
   rig.chestY = chestY;
   rig.hipY = hipY;
-  // shield bubble for Fortify
-  const shield = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.18, depthWrite: false }));
+  const shield = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending }));
   shield.scale.set(0.9 + bw * 0.1, rig.height * 0.6, 0.9 + bw * 0.1); shield.position.y = rig.height * 0.5; shield.visible = false; root.add(shield); rig.shield = shield;
-  // resting pose
+  root.traverse(o => { if (o.isSprite) o.castShadow = false; });
   rig.pose = newPose();
   return rig;
+}
+/* swing trail: a ribbon that follows a fist and fades out */
+function makeTrail(scene, color) {
+  const N = 14, geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(N * 6), col = new Float32Array(N * 6);
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const idx = []; for (let i = 0; i < N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } geo.setIndex(idx);
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+  m.frustumCulled = false; scene.add(m);
+  const c = new THREE.Color(color).convertSRGBToLinear(), LIFE = 0.2;
+  const pts = [];
+  return {
+    m,
+    push(a, b) { pts.unshift({ a: a.clone(), b: b.clone(), age: 0 }); if (pts.length > N) pts.pop(); },
+    update(dt) {
+      for (const p of pts) p.age += dt;
+      while (pts.length && pts[pts.length - 1].age > LIFE) pts.pop();
+      for (let i = 0; i < N; i++) {
+        const p = pts[Math.min(i, pts.length - 1)], k = i < pts.length ? Math.max(0, 1 - p.age / LIFE) * (1 - i / N) : 0;
+        if (p) { pos.set([p.a.x, p.a.y, p.a.z, p.b.x, p.b.y, p.b.z], i * 6); }
+        col.set([c.r * k * 1.4, c.g * k * 1.4, c.b * k * 1.4, c.r * k * 0.3, c.g * k * 0.3, c.b * k * 0.3], i * 6);
+      }
+      m.visible = pts.length > 1;
+      geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true;
+    },
+    dispose() { scene.remove(m); geo.dispose(); m.material.dispose(); },
+  };
 }
 function newPose() { return { aR: { x: 0, z: 0, e: 0 }, aL: { x: 0, z: 0, e: 0 }, lR: { x: 0, k: 0 }, lL: { x: 0, k: 0 }, bx: 0, bz: 0, by: 0, tw: 0 }; }
 function disposeObj(o) { o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); }); }
@@ -707,7 +797,8 @@ const Preview = (() => {
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
-  scene.add(new THREE.HemisphereLight(0xb8c8ff, 0x20160e, 0.75));
+  scene.environment = makeEnv(renderer, true);
+  scene.add(new THREE.HemisphereLight(0xb8c8ff, 0x20160e, 0.4));
   const key = new THREE.DirectionalLight(0xfff0dc, 1.5); key.position.set(3, 6, 4); key.castShadow = true; key.shadow.mapSize.set(1024, 1024); scene.add(key);
   const rim = new THREE.PointLight(0xffb547, 2.2, 10); rim.position.set(-2.5, 2.4, -2.5); scene.add(rim);
   const rim2 = new THREE.PointLight(0x6fa8ff, 1.4, 10); rim2.position.set(2.8, 1.2, -2); scene.add(rim2);
@@ -752,6 +843,7 @@ class Fighter {
   constructor(build, accent, scene) {
     this.build = build; this.stats = computeStats(build); this.accent = accent;
     this.rig = makeFighterModel(build, accent); scene.add(this.rig.root);
+    this.trails = [makeTrail(scene, accent), makeTrail(scene, accent)];
     this.special = SPECIALS[partById('top', build.top).w];
     this.radius = this.stats.radius;
     this.pos = this.rig.root.position;
@@ -863,6 +955,16 @@ class Fighter {
   visuals(dt, time) {
     animateRig(this.rig, this, dt, time);
     const r = this.rig;
+    r.root.updateMatrixWorld();
+    const emit = [false, false], t = this.t;
+    if (this.state === 'light' || this.state === 'heavy') {
+      const tm = this.timing(this.state);
+      if (t >= tm.w * (this.state === 'light' ? 0.5 : 0.85) && t < tm.w + tm.a + tm.r * 0.3) { if (this.state === 'heavy') emit[0] = emit[1] = true; else emit[this.punchSide ? 1 : 0] = true; }
+    } else if (this.state === 'special' && this.special.id === 'blink' && t >= 0.28 && t < 0.45) emit[0] = true;
+    for (let i = 0; i < 2; i++) {
+      if (emit[i]) { const a = r.arms[i]; const fp = a.fist.getWorldPosition(new V3()), ep = a.elbow.getWorldPosition(new V3()); this.trails[i].push(fp, fp.clone().lerp(ep, 0.5)); }
+      this.trails[i].update(dt);
+    }
     const tele = (this.state === 'heavy' && this.inWindup()) ? this.t / this.timing('heavy').w : 0;
     for (const m of r.mats) { m.emissive.setRGB(this.flash * 6, this.flash * 6, this.flash * 6); }
     if (tele > 0) { r.topM.emissive.setHex(this.accent).convertSRGBToLinear(); r.topM.emissiveIntensity = tele * 1.2; } else r.topM.emissiveIntensity = 1;
@@ -1005,18 +1107,19 @@ const Battle = {
     const S = this.scene = new THREE.Scene();
     S.background = new THREE.Color(0x070a12); S.fog = new THREE.Fog(0x070a12, 22, 60);
     this.cam = new THREE.PerspectiveCamera(55, 1, 0.1, 200);
-    S.add(new THREE.HemisphereLight(0x9fb4ff, 0x1a1410, 0.55));
+    S.environment = makeEnv(r, false);
+    S.add(new THREE.HemisphereLight(0x9fb4ff, 0x1a1410, 0.35));
     const sun = new THREE.DirectionalLight(0xffe7c8, 1.35); sun.position.set(8, 18, 6); sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -16, right: 16, top: 16, bottom: -16, near: 1, far: 50 }); sun.shadow.bias = -0.0005;
     S.add(sun);
     const p1 = new THREE.PointLight(0xffb547, 0.9, 24); p1.position.set(-12, 5, -6); S.add(p1);
     const p2 = new THREE.PointLight(0xff4d6d, 0.8, 24); p2.position.set(12, 5, 6); S.add(p2);
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(ARENA_R + 0.6, 96), new THREE.MeshStandardMaterial({ map: makeFloorTexture(), roughness: 0.55, metalness: 0.35 }));
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(ARENA_R + 0.6, 96), new THREE.MeshStandardMaterial({ map: makeFloorTexture(), roughness: 0.6, metalness: 0.2, envMapIntensity: 0.35 }));
     floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; S.add(floor);
-    const wallM = stdMat(0x1a2130, { metalness: 0.6, roughness: 0.4 });
+    const wallM = stdMat(0x1a2130, { metalness: 0.6, roughness: 0.4, envMapIntensity: 0.4 });
     const wall = new THREE.Mesh(new THREE.CylinderGeometry(ARENA_R + 0.9, ARENA_R + 0.9, 0.7, 96, 1, true), wallM); wall.position.y = 0.35; wallM.side = THREE.DoubleSide; wall.receiveShadow = true; S.add(wall);
     const lip = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R + 0.9, 0.06, 8, 128), glowMat(0xffb547)); lip.rotation.x = Math.PI / 2; lip.position.y = 0.72; S.add(lip);
-    const outer = new THREE.Mesh(new THREE.CylinderGeometry(34, 30, 9, 64, 1, true), stdMat(0x0b0f1a, { side: THREE.BackSide, roughness: 1, metalness: 0 })); outer.position.y = 2; S.add(outer);
+    const outer = new THREE.Mesh(new THREE.CylinderGeometry(34, 30, 9, 64, 1, true), stdMat(0x0b0f1a, { side: THREE.BackSide, roughness: 1, metalness: 0, envMapIntensity: 0.1 })); outer.position.y = 2; S.add(outer);
     const ground = new THREE.Mesh(new THREE.CircleGeometry(40, 64), stdMat(0x0b0f18, { roughness: 0.9, metalness: 0.1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; S.add(ground);
     for (let i = 0; i < 10; i++) {
       const a = i / 10 * Math.PI * 2, R = ARENA_R + 4.5;
@@ -1033,6 +1136,8 @@ const Battle = {
     const pgeo = new THREE.BoxGeometry(0.08, 0.08, 0.08);
     for (let i = 0; i < 120; i++) { const m = new THREE.Mesh(pgeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })); m.visible = false; S.add(m); this.parts.push({ m, v: new V3(), life: 0, max: 1 }); }
     this.rings = [];
+    this.flashes = [];
+    for (let i = 0; i < 6; i++) { const sp = halo(S, new THREE.Color(1, 1, 1), 0, -10, 0, 1, 0); sp.userData.t = 1; this.flashes.push(sp); }
     this.camLook = new V3(); this.shake = 0;
     const onResize = () => { const w = innerWidth, h = innerHeight; r.setSize(w, h, false); this.cam.aspect = w / h; this.cam.fov = w / h < 0.8 ? 68 : 55; this.cam.updateProjectionMatrix(); };
     addEventListener('resize', onResize); onResize(); this.onResize = onResize;
@@ -1042,8 +1147,7 @@ const Battle = {
     this.init();
     $('builder').hidden = true; $('battle').hidden = false; this.onResize();
     this.active = true; this.paused = false; $('overlay').hidden = true;
-    if (this.p1) { this.scene.remove(this.p1.rig.root); disposeObj(this.p1.rig.root); }
-    if (this.p2) { this.scene.remove(this.p2.rig.root); disposeObj(this.p2.rig.root); }
+    for (const f of [this.p1, this.p2]) if (f) { this.scene.remove(f.rig.root); disposeObj(f.rig.root); f.trails.forEach(t => t.dispose()); }
     this.enemyBuild = randomBuild();
     this.p1 = new Fighter(build, ACCENT.p1, this.scene);
     this.p2 = new Fighter(this.enemyBuild, ACCENT.p2, this.scene);
@@ -1092,7 +1196,7 @@ const Battle = {
   melee(att, def, kind) {
     const d = Math.hypot(def.pos.x - att.pos.x, def.pos.z - att.pos.z);
     if (d > att.stats.reach + def.radius || this.facing(att, def) < 0.42) { if (kind === 'heavy') this.sfx('whoosh'); return; }
-    this.applyHit(att, def, kind === 'light' ? { mult: 1, kb: 4.5, stun: 0.3, stop: 0.05 } : { mult: 2.3, kb: 11, stun: 0.55, guardBreak: true, stop: 0.1, heavy: true });
+    this.applyHit(att, def, kind === 'light' ? { mult: 1, kb: 4.5, stun: 0.3, stop: 0.05 } : { mult: 2.3 * att.stats.heavyMul, kb: 11, stun: 0.55, guardBreak: true, stop: 0.1, heavy: true });
   },
   specialHit(att, def) {
     const d = Math.hypot(def.pos.x - att.pos.x, def.pos.z - att.pos.z);
@@ -1120,6 +1224,7 @@ const Battle = {
     }
     if (def.fortifyT > 0) { dmg *= 0.6; kb *= 0.25; stun = 0; }
     kb *= 1 - def.stats.kbRes;
+    stun *= 1 - def.stats.kbRes * 0.5;
     def.hp = Math.max(0, def.hp - dmg);
     const n = new V3(def.pos.x - att.pos.x, 0, def.pos.z - att.pos.z).normalize();
     def.knock.addScaledVector(n, kb);
@@ -1129,6 +1234,7 @@ const Battle = {
     def.flash = blocked ? 0.04 : 0.1;
     const hp = def.pos.clone(); hp.y = def.rig.chestY; hp.addScaledVector(n, -def.radius * 0.6);
     this.burst(hp, blocked ? 0x9fd3ff : att.accent, o.heavy ? 22 : 12, o.heavy ? 7 : 5);
+    this.flash(hp, blocked ? 0x9fd3ff : att.accent, o.heavy ? 2.6 : 1.6);
     this.hitstop = (o.stop || 0.05) * (blocked ? 0.5 : 1);
     this.shake = Math.max(this.shake, o.heavy ? 0.35 : 0.14) * (def === this.p1 ? 1.3 : 1);
     if (blocked) { this.sfx('block'); this.popAt(def, Math.round(dmg) + ' BLOCKED', 'blk'); }
@@ -1157,6 +1263,10 @@ const Battle = {
       q.v.set(rand(-1, 1), rand(-0.2, 1.2), rand(-1, 1)).normalize().multiplyScalar(speed * rand(0.4, 1));
       q.life = q.max = rand(0.25, 0.5);
     }
+  },
+  flash(p, color, size) {
+    const sp = this.flashes.find(s => s.userData.t >= 1) || this.flashes[0];
+    sp.position.copy(p); sp.material.color.setHex(color).convertSRGBToLinear(); sp.userData.t = 0; sp.userData.size = size;
   },
   ring(p, color) {
     const m = new THREE.Mesh(new THREE.TorusGeometry(1, 0.08, 8, 48), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 }));
@@ -1234,6 +1344,7 @@ const Battle = {
       if (q.life <= 0) q.m.visible = false;
     }
     for (let i = this.rings.length - 1; i >= 0; i--) { const r = this.rings[i]; r.t += rawDt; const s = 1 + r.t * 14; r.m.scale.set(s, s, 1); r.m.material.opacity = Math.max(0, 0.9 - r.t * 2.2); if (r.t > 0.45) { this.scene.remove(r.m); r.m.geometry.dispose(); r.m.material.dispose(); this.rings.splice(i, 1); } }
+    for (const sp of this.flashes) { const u = sp.userData; if (u.t < 1) { u.t = Math.min(1, u.t + rawDt / 0.18); sp.scale.setScalar(u.size * (0.4 + u.t * 0.8)); sp.material.opacity = (1 - u.t) * 1.2; } else sp.material.opacity = 0; }
     this.shake = Math.max(0, this.shake - rawDt * 1.6);
     this.crowd.material.opacity = 0.55 + Math.sin(time * 1.3) * 0.15;
     this.p1.visuals(simDt || rawDt * 0.05, time); this.p2.visuals(simDt || rawDt * 0.05, time);
