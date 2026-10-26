@@ -995,6 +995,7 @@ function makeFighterModel(build, accent) {
   const fistR = [0.08, 0.13, 0.21][tw2] * (T.id === 'titan' ? 1.3 : 1);
   const shX = halfTop + armR + 0.03;
   const collar = mesh(new THREE.TorusGeometry(Math.max(0.1, halfTop * 0.45), 0.03, 8, 20), joint, body, 0, shoulderY - 0.01, 0); collar.rotation.x = Math.PI / 2;
+  rig.armSplay = [0.1, 0.14, 0.2][tw2];
   for (const side of [-1, 1]) {
     if (tw2 === 0) { const pd = mesh(rbox(armR * 3.2, armR * 1.3, armR * 3.4, armR * 0.4), topM, body, side * (shX + armR * 0.3), shoulderY + 0.01, 0); pd.rotation.z = -side * 0.4; }
     else if (tw2 === 1) { mesh(new THREE.SphereGeometry(armR * 1.65, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), topM, body, side * shX, shoulderY - 0.04, 0); const rr = mesh(new THREE.TorusGeometry(armR * 1.65, 0.016, 6, 24), g, body, side * shX, shoulderY - 0.04, 0); rr.rotation.x = Math.PI / 2; }
@@ -1096,13 +1097,12 @@ function animateRig(rig, f, dt, time) {
     P.lR.x = Math.sin(w) * 0.65 * sp; P.lL.x = -Math.sin(w) * 0.65 * sp;
     P.lR.k = Math.max(0, Math.sin(w + 1.6)) * 0.9 * sp; P.lL.k = Math.max(0, -Math.sin(w + 1.6)) * 0.9 * sp;
   }
-  P.aR.x = -Math.sin(w) * 0.45 * sp; P.aL.x = Math.sin(w) * 0.45 * sp;
-  P.aR.e = -0.35 - 0.3 * sp; P.aL.e = -0.35 - 0.3 * sp;
-  P.aR.z = -0.12; P.aL.z = 0.12;
+  // resting guard: upper arms down and slightly out, elbows at 90 degrees, fists held forward clear of the body
+  P.aR.x = -0.1 - Math.sin(w) * 0.25 * sp; P.aL.x = -0.1 + Math.sin(w) * 0.25 * sp;
+  P.aR.e = P.aL.e = -Math.PI / 2;
+  P.aR.z = -rig.armSplay; P.aL.z = rig.armSplay;
   P.by = Math.sin(time * 2.2) * 0.012 + (rig.hover ? Math.sin(time * 3) * 0.06 + 0.08 : 0);
   P.bx = sp * 0.12;
-  // guard stance when idle in a fight
-  if (f && st !== 'ko') { P.aR.x += -0.5; P.aL.x += -0.5; P.aR.e = -1.5; P.aL.e = -1.5; }
   let rate = 16;
   if (f) {
     const t = f.t;
