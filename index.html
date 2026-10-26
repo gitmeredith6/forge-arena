@@ -469,6 +469,33 @@ function makeEnv(renderer, warm) {
   return rt.texture;
 }
 
+/* Each fighter is built from ~90 small meshes. Merge the static ones inside each
+   moving group, per material, so a fighter costs a handful of draw calls. */
+function mergeGroup(group) {
+  const byMat = new Map();
+  for (const c of group.children.slice()) {
+    if (!c.isMesh || c.children.length) continue;
+    const list = byMat.get(c.material) || []; list.push(c); byMat.set(c.material, list);
+  }
+  for (const [mat, list] of byMat) {
+    if (list.length < 2) continue;
+    let total = 0;
+    const parts = list.map(m => {
+      let g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+      m.updateMatrix(); g.applyMatrix4(m.matrix);
+      if (!g.attributes.normal) g.computeVertexNormals();
+      total += g.attributes.position.count; return g;
+    });
+    const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3);
+    let o = 0;
+    for (const g of parts) { pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3); o += g.attributes.position.count; g.dispose(); }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    for (const m of list) { group.remove(m); m.geometry.dispose(); }
+    const merged = new THREE.Mesh(geo, mat); merged.castShadow = true; merged.receiveShadow = true; group.add(merged);
+  }
+}
 function makeFighterModel(build, accent) {
   const T = partById('top', build.top), M = partById('middle', build.middle), B = partById('bottom', build.bottom);
   const wi = { light: 0, middle: 1, heavy: 2 };
@@ -479,6 +506,72 @@ function makeFighterModel(build, accent) {
   const dark = stdMat(0x1c2029, { metalness: 0.45, roughness: 0.55 });
   const joint = stdMat(0x3a404c, { metalness: 0.9, roughness: 0.25 });
   const rig = { root, body, legs: [], arms: [], mats: [topM, midM, botM, dark, joint], topM, glow: g };
+  const bolt = (parent, x, y, z, rad) => mesh(new THREE.SphereGeometry(Math.max(0.01, rad), 8, 6), joint, parent, x, y, z);
+  const seam = (parent, w, x, y, z) => mesh(rbox(w, 0.012, 0.012, 0.004), dark, parent, x, y, z);
+  const rod = (parent, rad, len, x, y, z) => mesh(new THREE.CylinderGeometry(rad, rad, len, 8), joint, parent, x, y, z);
+  function legDetail(pivot, knee, r, len, side, w, front) {
+    const pw = [1.7, 2.5, 2.6][w] * r;
+    // bolts and a seam across the thigh plate
+    for (const sx of [-1, 1]) for (const y of [-0.1, -0.34]) bolt(pivot, sx * pw * 0.36, len * y, front + 0.004, r * (w === 0 ? 0.16 : 0.13));
+    seam(pivot, pw * 0.8, 0, -len * 0.22, front + 0.002);
+    // hydraulic piston behind the thigh, and one down the shin for middle and heavy legs
+    const back = -[1.2, 1.15, 1.35][w] * r;
+    rod(pivot, Math.max(0.012, r * 0.22), len * 0.36, 0, -len * 0.3, back);
+    rod(pivot, Math.max(0.018, r * 0.34), len * 0.16, 0, -len * 0.16, back);
+    if (w > 0) {
+      rod(knee, Math.max(0.012, r * 0.2), len * 0.34, 0, -len * 0.24, back * 0.95);
+      // calf vent with glowing slits
+      mesh(rbox(r * 1.2, len * 0.16, 0.04, 0.012), dark, knee, 0, -len * 0.2, back - 0.01);
+      for (const y of [-0.17, -0.23]) mesh(rbox(r * 0.9, 0.012, 0.012, 0.004), g, knee, 0, len * y, back - 0.035);
+      // seam and bolts on the shin guard
+      seam(knee, r * ([0, 2.0, 2.2][w]), 0, -len * 0.36, ([0, 1.16, 1.22][w]) * r + 0.004);
+      for (const sx of [-1, 1]) bolt(knee, sx * r * 0.75, -len * 0.1, ([0, 1.16, 1.22][w]) * r + 0.004, r * 0.12);
+      // toes
+      const tz = w === 2 ? r * 2.25 : r * 1.9, tw = w === 2 ? r * 3 : r * 2.1;
+      for (let i = 1; i < 3; i++) mesh(rbox(0.012, 0.05, r * (w === 2 ? 1.0 : 0.6), 0.004), dark, knee, -tw / 2 + (tw / 3) * i, -len * 0.5 + (w === 2 ? 0.08 : 0.02), tz);
+    } else {
+      // light: spring coil behind the blade and a glowing ankle
+      for (let i = 0; i < 4; i++) { const c = mesh(new THREE.TorusGeometry(r * 0.55, r * 0.12, 6, 12), joint, knee, 0, -len * (0.1 + i * 0.06), -r * 2.1); c.rotation.x = Math.PI / 2; }
+    }
+    // ankle joint
+    const ank = mesh(new THREE.CylinderGeometry(r * (w === 2 ? 0.7 : 0.6), r * (w === 2 ? 0.7 : 0.6), r * (w === 2 ? 2.6 : 1.9), 10), joint, knee, 0, -len * 0.5 + (w === 2 ? 0.1 : 0.04), 0); ank.rotation.z = Math.PI / 2;
+  }
+  function armDetail(pivot, elbow, fist, armR, armLen, fistR, side, w) {
+    // elbow piston on the outside of the arm
+    rod(pivot, Math.max(0.01, armR * 0.2), armLen * 0.32, side * armR * [1.05, 1.2, 1.35][w], -armLen * 0.32, -armR * 0.4);
+    rod(elbow, Math.max(0.01, armR * 0.2), armLen * 0.18, side * armR * [1.05, 1.3, 1.6][w], -armLen * 0.12, -armR * 0.4);
+    // wrist cuff
+    const cuff = mesh(new THREE.TorusGeometry(armR * [1.0, 1.25, 1.55][w], armR * 0.22, 6, 16), joint, elbow, 0, -armLen * 0.48, 0); cuff.rotation.x = Math.PI / 2;
+    // gauntlet seams and bolts
+    const gz = armR * [1.4, 1.2, 1.45][w], gw = armR * [1.4, 2.2, 2.8][w];
+    seam(elbow, gw, 0, -armLen * 0.16, gz + 0.004);
+    for (const sx of [-1, 1]) bolt(elbow, sx * gw * 0.38, -armLen * 0.42, gz + 0.004, armR * 0.16);
+    bolt(pivot, side * armR * 1.05, -armLen * 0.08, armR * 0.6, armR * 0.18);
+    // fingers: four knuckles curled toward the front, plus a thumb
+    for (let i = 0; i < 4; i++) mesh(rbox(fistR * 0.42, fistR * 0.55, fistR * 0.5, fistR * 0.12), joint, fist, -fistR * 0.66 + i * fistR * 0.44, -fistR * 0.62, fistR * 0.72);
+    mesh(rbox(fistR * 0.4, fistR * 0.8, fistR * 0.42, fistR * 0.12), joint, fist, -side * fistR * 0.98, -fistR * 0.2, fistR * 0.4);
+  }
+  function chestDetail(w, tw, th, td, base, faceScale, prof) {
+    const rAt = y => { for (let i = 1; i < prof.length; i++) { const [r0, y0] = prof[i - 1], [r1, y1] = prof[i]; if (y <= y1 && y >= y0 && y1 > y0) return r0 + (r1 - r0) * (y - y0) / (y1 - y0); } return prof[prof.length - 2][0]; };
+    const front = y => rAt(y) * td * faceScale;
+    const sideX = y => rAt(y) * tw * faceScale;
+    const plain = !['brute', 'guard', 'anvil'].includes(M.id);
+    // segmented ab plates
+    const abW = tw * [0.26, 0.36, 0.46][w];
+    for (let i = 0; i < 3; i++) { const yf = 0.16 + i * 0.1; mesh(rbox(abW * (1 - i * 0.08), th * 0.075, 0.05, 0.015), i % 2 ? joint : midM, body, 0, base + th * yf, front(yf) - 0.005); }
+    // chest plates with bolts
+    if (plain) for (const sx of [-1, 1]) {
+      const yf = 0.76, pz = front(yf);
+      const pl = mesh(rbox(tw * 0.3, th * 0.15, 0.05, 0.02), midM, body, sx * tw * 0.18, base + th * yf, pz - 0.006); pl.rotation.y = sx * 0.18;
+      bolt(body, sx * tw * 0.29, base + th * (yf + 0.05), pz + 0.012, 0.014);
+    }
+    // side vents
+    for (const sx of [-1, 1]) for (let i = 0; i < 3; i++) { const yf = 0.5 + i * 0.07; mesh(rbox(0.03, 0.016, td * 0.42, 0.006), i === 1 ? g : dark, body, sx * (sideX(yf) - 0.005), base + th * yf, 0); }
+    // spine segments down the back
+    for (let i = 0; i < 4; i++) { const yf = 0.3 + i * 0.16; mesh(rbox(0.07, th * 0.1, 0.05, 0.015), joint, body, 0, base + th * yf, -front(yf) + 0.005); }
+    // collar plates
+    for (const sx of [-1, 1]) { const c = mesh(rbox(tw * 0.22, 0.05, td * 0.5, 0.015), midM, body, sx * tw * 0.16, base + th * 0.985, 0); c.rotation.z = -sx * 0.25; }
+  }
 
   // ---- bottom
   let hipY;
@@ -524,6 +617,7 @@ function makeFighterModel(build, accent) {
         if (B.stripes) for (const sx of [-1, 1]) mesh(rbox(0.012, len * 0.3, 0.012, 0.004), g, knee, sx * r * 0.7, -len * 0.26, r * 0.6);
         mesh(rbox(r * 2, 0.07, r * 5, 0.03), dark, knee, 0, -len * 0.5 - 0.055, r * 1.3);
         const toe = mesh(new THREE.ConeGeometry(r * 0.9, r * 2.2, 4), botM, knee, 0, -len * 0.5 - 0.05, r * 4.2); toe.rotation.x = Math.PI / 2; toe.scale.set(1, 1, 0.35);
+        legDetail(pivot, knee, r, len, side, 0, r * 1.36);
         rig.legs.push({ pivot, knee, side });
       }
     } else if (bw === 1) {
@@ -544,6 +638,7 @@ function makeFighterModel(build, accent) {
         const fw = r * 2.3;
         mesh(rbox(fw, 0.12, fw * 1.7, 0.04), dark, knee, 0, -len * 0.5 - 0.03, r * 0.6);
         mesh(rbox(fw * 0.9, 0.08, fw * 0.55, 0.03), botM, knee, 0, -len * 0.5 + 0.02, r * 0.6 + fw * 0.55);
+        legDetail(pivot, knee, r, len, side, 1, (B.armor ? r * 1.41 : r * 1.2));
         rig.legs.push({ pivot, knee, side });
       }
     } else {
@@ -563,6 +658,7 @@ function makeFighterModel(build, accent) {
         mesh(rbox(r * 1.3, 0.03, 0.03, 0.01), g, knee, 0, -len * 0.3, r * 1.22);
         mesh(rbox(r * 3.2, 0.16, r * 3.8, 0.05), dark, knee, 0, -len * 0.5 - 0.01, r * 0.4);
         mesh(rbox(r * 3, 0.08, r * 1.1, 0.03), botM, knee, 0, -len * 0.5 + 0.08, r * 1.7);
+        legDetail(pivot, knee, r, len, side, 2, r * 1.25);
         rig.legs.push({ pivot, knee, side });
       }
     }
@@ -596,6 +692,8 @@ function makeFighterModel(build, accent) {
   else if (M.id === 'brute') { mesh(new THREE.SphereGeometry(tw * 0.42, 18, 12), midM, body, 0, chestY + 0.04, td * 0.1); mesh(rbox(0.18, 0.05, 0.03, 0.015), g, body, 0, chestY, chestZ + tw * 0.13); halo(body, ac, 0, chestY, chestZ + tw * 0.16, 0.35); }
   else if (M.id === 'anvil') { for (const s of [-1, 1]) mesh(rbox(tw * 0.34, th * 0.26, 0.08, 0.03), midM, body, s * tw * 0.19, chestY + 0.04, chestZ + 0.01); mesh(rbox(0.1, 0.05, 0.03, 0.015), g, body, 0, chestY - 0.12, chestZ); }
   else { mesh(rbox(0.13, 0.05, 0.03, 0.015), g, body, 0, chestY, chestZ); halo(body, ac, 0, chestY, chestZ + 0.04, 0.26); if (M.id === 'striker') mesh(rbox(0.05, th * 0.7, 0.03, 0.015), joint, body, tw * 0.12, chestY - 0.05, chestZ - 0.01).rotation.z = 0.5; }
+  chestDetail(mw, tw, th, td, torsoBase, faceScale, TORSO_PROFILES[mw](M.taper));
+
   // ---- top (head + arms): Light = slender blades, Middle = gauntlets, Heavy = power fists
   const tw2 = wi[T.w];
   const shoulderY = torsoBase + th;
@@ -608,7 +706,7 @@ function makeFighterModel(build, accent) {
   for (const side of [-1, 1]) {
     if (tw2 === 0) { const pd = mesh(rbox(armR * 3.2, armR * 1.3, armR * 3.4, armR * 0.4), topM, body, side * (shX + armR * 0.3), shoulderY + 0.01, 0); pd.rotation.z = -side * 0.4; }
     else if (tw2 === 1) { mesh(new THREE.SphereGeometry(armR * 1.65, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), topM, body, side * shX, shoulderY - 0.04, 0); const rr = mesh(new THREE.TorusGeometry(armR * 1.65, 0.016, 6, 24), g, body, side * shX, shoulderY - 0.04, 0); rr.rotation.x = Math.PI / 2; }
-    else { mesh(rbox(armR * 3.4, armR * 2.1, armR * 3.2, armR * 0.6), topM, body, side * shX, shoulderY + 0.04, 0); mesh(rbox(armR * 3.0, armR * 0.9, armR * 2.9, armR * 0.35), topM, body, side * (shX + armR * 0.2), shoulderY - armR * 1.2, 0); mesh(rbox(0.025, armR * 1.1, armR * 2.4, 0.01), g, body, side * (shX + armR * 1.72), shoulderY + 0.04, 0); }
+    else { mesh(rbox(armR * 3.4, armR * 2.1, armR * 3.2, armR * 0.6), topM, body, side * shX, shoulderY + 0.04, 0); mesh(rbox(armR * 3.0, armR * 0.9, armR * 2.9, armR * 0.35), topM, body, side * (shX + armR * 0.2), shoulderY - armR * 1.2, 0); mesh(rbox(0.025, armR * 0.5, armR * 1.5, 0.01), g, body, side * (shX + armR * 1.72), shoulderY + 0.04, 0); }
     const pivot = new THREE.Group(); pivot.position.set(side * shX, shoulderY - 0.06, 0); body.add(pivot);
     mesh(new THREE.CylinderGeometry(armR, armR * 0.85, armLen * 0.5, 12), joint, pivot, 0, -armLen * 0.25, 0);
     const elbow = new THREE.Group(); elbow.position.y = -armLen * 0.5; pivot.add(elbow);
@@ -624,11 +722,12 @@ function makeFighterModel(build, accent) {
     } else {
       mesh(rbox(armR * 2.4, armLen * 0.34, armR * 2.4, armR * 0.6), topM, pivot, 0, -armLen * 0.22, 0);
       mesh(rbox(armR * 3.0, armLen * 0.46, armR * 2.9, armR * 0.6), topM, elbow, 0, -armLen * 0.28, 0);
-      for (const y of [-0.2, -0.34]) mesh(rbox(armR * 1.9, 0.025, 0.03, 0.008), g, elbow, 0, armLen * y, armR * 1.46);
+      for (const y of [-0.2, -0.34]) mesh(rbox(armR * 1.3, 0.022, 0.03, 0.008), g, elbow, 0, armLen * y, armR * 1.46);
     }
     const fist = new THREE.Group(); fist.position.y = -armLen * 0.5 - fistR * 0.7; elbow.add(fist);
     mesh(rbox(fistR * 1.9, fistR * 1.9, fistR * 1.9, fistR * 0.45), dark, fist);
     mesh(rbox(fistR * 1.5, 0.03, fistR * 1.2, 0.01), g, fist, 0, -fistR * 0.96, 0);
+    armDetail(pivot, elbow, fist, armR, armLen, fistR, side, tw2);
     rig.arms.push({ pivot, elbow, side, fist });
   }
   // neck + head
@@ -659,7 +758,7 @@ function makeFighterModel(build, accent) {
   rig.hipY = hipY;
   const shield = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending }));
   shield.scale.set(0.9 + bw * 0.1, rig.height * 0.6, 0.9 + bw * 0.1); shield.position.y = rig.height * 0.5; shield.visible = false; root.add(shield); rig.shield = shield;
-  root.traverse(o => { if (o.isSprite) o.castShadow = false; });
+  root.traverse(o => { if (o.isSprite) o.castShadow = false; else if (o.isGroup) mergeGroup(o); });
   rig.pose = newPose();
   return rig;
 }
