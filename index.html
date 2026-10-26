@@ -1049,7 +1049,7 @@ function makeFighterModel(build, accent) {
     rig.snake = { segs, base, n, sp: curve.getLength() / (n - 1), phase: 0, len: curve.getLength(), lift: 0, fwd: 0, sweep: 0 };
   } else if (B.type === 'roller') {
     // Heavy: a spiked roller drum held in side brackets on a turntable, so it spins to roll and swivels to steer
-    const R = 0.22, SL = 0.12, HL = 0.5, cy = R + SL * 0.55; hipY = 0.9;
+    const R = 0.22, SL = 0.12, HL = 0.6, cy = R + SL * 0.55; hipY = 0.9;
     const brass = stdMat(0xd4d8de, { metalness: 1.0, roughness: 0.18 }); rig.mats.push(brass);
     // hip mount and turntable under the midsection
     mesh(rbox(0.5, 0.14, 0.4, 0.05), dark, body, 0, hipY - 0.02, 0);
@@ -1078,7 +1078,7 @@ function makeFighterModel(build, accent) {
       const rim = mesh(new THREE.TorusGeometry(R * 1.12, 0.012, 6, 28), dark, roller, sx * (HL - 0.1), 0, 0); rim.rotation.y = Math.PI / 2;
       for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; const sp = mesh(new THREE.ConeGeometry(0.035, 0.07, 8), brass, roller, sx * (HL - 0.05), Math.cos(a) * R * 1.12, Math.sin(a) * R * 1.12); sp.rotation.x = a; sp.position.y += Math.cos(a) * 0.03; sp.position.z += Math.sin(a) * 0.03; }
     }
-    const cols = 5, ring = 7;
+    const cols = 6, ring = 7;
     for (let c = 0; c < cols; c++) {
       const x = -HL + 0.18 + c * (HL * 2 - 0.36) / (cols - 1);
       for (let i = 0; i < ring; i++) {
