@@ -453,7 +453,7 @@ const PARTS = {
     { id: 'sprinter', w: 'light',  name: 'Sprinter', perk: '+10% move speed',          mod: { moveMul: 0.10 }, color: 0x6fc2b0, type: 'sculpt' },
     { id: 'phantom',  w: 'light',  name: 'Phantom',  perk: 'Hovers. 25% faster dodge recharge', mod: { dodgeCdMul: -0.25 }, color: 0xb7b4e6, type: 'hover' },
     { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 health. Kicks with a long, sweeping tail whip',               mod: { hp: 10 }, color: 0x6f7f96, type: 'snake' },
-    { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x6e8a4e, type: 'sculpt', r: 0.1, len: 1.0, kneeGlow: true },
+    { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x6e8a4e, type: 'mech', r: 0.115, len: 1.0, kneeGlow: true },
     { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+4% defense. Kicks with a stab from its two front legs', mod: { def: 0.04 }, color: 0x7a6f9a, type: 'spider' },
     { id: 'treads',   w: 'heavy',  name: 'Treads',   perk: 'Tank treads. +30% knockback resistance, +8% defense, +8 health', mod: { kbRes: 0.3, def: 0.08, hp: 8 }, color: 0x4a4f44, type: 'treads' },
     { id: 'pillar',   w: 'heavy',  name: 'Pillar',   perk: '+18 health',               mod: { hp: 18 }, color: 0x1f2124, type: 'roller' },
@@ -920,6 +920,68 @@ function makeFighterModel(build, accent) {
       mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.06, 10), joint, body, sx * R * 0.86, cy0 + 0.12, -0.11).rotation.x = Math.PI / 2;
     }
     mesh(rbox(waist * 2.1, 0.1, waist * 1.6, 0.03), dark, body, 0, hipY, 0);
+  } else if (B.type === 'mech') {
+    // Middle: layered mech armour, with rotary actuator discs at hip, knee and ankle, exposed pistons, a bulging calf and a chunky boot
+    const r = B.r, len = B.len, L = len * 0.5; hipY = len + 0.09;
+    const hipW = 0.2, ground = -(L + 0.09);
+    const am = stdMat(B.color, { metalness: 0.55, roughness: 0.3 }), am2 = stdMat(new THREE.Color(B.color).lerp(new THREE.Color(0xffffff), 0.2).getHex(), { metalness: 0.55, roughness: 0.28 });
+    const chrome = stdMat(0xc9ced6, { metalness: 1, roughness: 0.16 }); rig.mats.push(am, am2, chrome);
+    const lathe = pts => new THREE.LatheGeometry(pts.map(([rr, y]) => new THREE.Vector2(rr, y)), 22);
+    const disc = (grp, x, y, z, R, side) => {
+      const d = mesh(new THREE.CylinderGeometry(R, R, 0.045, 22), dark, grp, x, y, z); d.rotation.z = Math.PI / 2;
+      const rim = mesh(new THREE.TorusGeometry(R * 0.82, R * 0.1, 6, 22), joint, grp, x + side * 0.024, y, z); rim.rotation.y = Math.PI / 2;
+      const hub = mesh(new THREE.CylinderGeometry(R * 0.38, R * 0.38, 0.03, 14), joint, grp, x + side * 0.035, y, z); hub.rotation.z = Math.PI / 2;
+      mesh(rbox(0.012, R * 0.6, R * 0.14, 0.004), dark, grp, x + side * 0.05, y, z);
+    };
+    mesh(rbox(hipW * 2 + r * 2, 0.2, 0.3 + r, 0.07), dark, body, 0, hipY, 0);
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group(); pivot.position.set(side * hipW, hipY, 0); body.add(pivot);
+      // thigh: dark core inside a deep armour shell, a front plate, a hooked hip cap and a rear plate
+      mesh(new THREE.CylinderGeometry(r * 0.5, r * 0.5, L, 12), dark, pivot, 0, -L / 2, 0);
+      mesh(lathe([[0, -L * 0.86], [r * 0.9, -L * 0.84], [r * 1.16, -L * 0.62], [r * 1.28, -L * 0.32], [r * 1.24, -L * 0.08], [r * 1.02, 0.02], [0, 0.06]]), am, pivot).scale.set(0.92, 1, 1.22);
+      mesh(rbox(r * 1.45, L * 0.62, 0.05, 0.02), am2, pivot, 0, -L * 0.44, r * 1.36).rotation.x = -0.08;
+      mesh(rbox(r * 2.3, 0.08, r * 2.8, 0.03), am, pivot, 0, 0.05, 0.01);
+      mesh(rbox(r * 1.7, 0.16, 0.06, 0.025), am2, pivot, 0, 0.0, r * 1.45).rotation.x = 0.45;
+      mesh(rbox(r * 1.35, L * 0.5, 0.05, 0.02), am, pivot, 0, -L * 0.4, -r * 1.36).rotation.x = 0.1;
+      mesh(rbox(0.04, L * 0.46, r * 1.7, 0.015), am2, pivot, side * r * 1.15, -L * 0.42, 0.01);
+      disc(pivot, side * r * 1.2, -L * 0.14, 0, r * 0.42, side);
+      disc(pivot, side * r * 1.2, -L * 0.62, -r * 0.2, r * 0.32, side);
+      for (const y of [-L * 0.3, -L * 0.52]) mesh(new THREE.SphereGeometry(0.014, 6, 5), joint, pivot, -side * r * 0.5, y, r * 1.4);
+      // piston sleeve behind the lower thigh; its rod rides on the shin
+      mesh(new THREE.CylinderGeometry(r * 0.24, r * 0.24, L * 0.42, 12), dark, pivot, 0, -L * 0.7, -r * 0.95);
+      mesh(new THREE.CylinderGeometry(r * 0.27, r * 0.27, 0.025, 12), joint, pivot, 0, -L * 0.9, -r * 0.95);
+      const knee = new THREE.Group(); knee.position.y = -L; pivot.add(knee);
+      // knee: big actuator discs on both sides, an axle and a rounded cap
+      mesh(new THREE.CylinderGeometry(r * 0.45, r * 0.45, r * 2.1, 14), joint, knee).rotation.z = Math.PI / 2;
+      for (const sx of [-1, 1]) disc(knee, sx * r * 1.05, 0, 0, r * 0.68, sx);
+      mesh(new THREE.SphereGeometry(r * 0.8, 18, 12), am2, knee, 0, 0.02, r * 0.8).scale.set(1.05, 1.15, 0.7);
+      if (B.kneeGlow) { mesh(rbox(r * 1.0, r * 0.25, 0.02, 0.008), g, knee, 0, 0.02, r * 1.36); halo(knee, ac, 0, 0.02, r * 1.4, 0.22, 0.9); }
+      mesh(new THREE.CylinderGeometry(r * 0.11, r * 0.11, L * 0.5, 10), chrome, knee, 0, -L * 0.02, -r * 0.95);
+      mesh(new THREE.CylinderGeometry(r * 0.2, r * 0.2, L * 0.12, 10), dark, knee, 0, -L * 0.3, -r * 0.95);
+      // shin: dark core, a big shin guard that bulges forward, a vented front plate, side struts and an exposed piston behind
+      mesh(new THREE.CylinderGeometry(r * 0.45, r * 0.4, L, 12), dark, knee, 0, -L / 2, 0);
+      mesh(lathe([[0, -L * 0.84], [r * 0.72, -L * 0.82], [r * 0.8, -L * 0.68], [r * 1.18, -L * 0.42], [r * 1.26, -L * 0.22], [r * 1.04, -0.03], [0, 0.02]]), am, knee, 0, 0, r * 0.18).scale.set(0.95, 1, 1.12);
+      const shin = mesh(rbox(r * 1.3, L * 0.5, 0.05, 0.02), am2, knee, 0, -L * 0.36, r * 1.5); shin.rotation.x = 0.14;
+      for (let i = 0; i < 3; i++) mesh(rbox(0.012, 0.055, 0.012, 0.004), dark, knee, (i - 1) * 0.022, -L * 0.36, r * 1.5 + 0.03);
+      mesh(new THREE.CylinderGeometry(r * 0.2, r * 0.2, L * 0.3, 10), dark, knee, 0, -L * 0.5, -r * 0.95);
+      mesh(new THREE.CylinderGeometry(r * 0.1, r * 0.1, L * 0.3, 10), chrome, knee, 0, -L * 0.78, -r * 0.95);
+      mesh(new THREE.SphereGeometry(r * 0.2, 10, 8), joint, knee, 0, -L * 0.93, -r * 0.95);
+      for (const sx of [-1, 1]) mesh(rbox(0.03, L * 0.55, 0.04, 0.01), dark, knee, sx * r * 1.18, -L * 0.5, -r * 0.35);
+      mesh(new THREE.SphereGeometry(0.016, 6, 5), joint, knee, side * r * 1.2, -L * 0.2, -r * 0.35);
+      // ankle actuators
+      mesh(new THREE.CylinderGeometry(r * 0.3, r * 0.3, r * 1.9, 12), joint, knee, 0, -L - 0.01, 0).rotation.z = Math.PI / 2;
+      for (const sx of [-1, 1]) disc(knee, sx * r * 0.9, -L - 0.01, 0, r * 0.42, sx);
+      // boot: dark sole, armoured upper, angled toe cap, sloped instep plate and a heel block
+      const foot = new THREE.Group(); foot.position.y = ground; knee.add(foot);
+      mesh(rbox(r * 1.75, 0.05, 0.34, 0.02), dark, foot, 0, 0.025, 0.05);
+      mesh(rbox(r * 1.6, 0.1, 0.24, 0.035), am, foot, 0, 0.09, 0.05);
+      mesh(rbox(r * 1.66, 0.085, 0.11, 0.035), am2, foot, 0, 0.065, 0.19).rotation.x = 0.28;
+      mesh(rbox(r * 1.0, 0.02, 0.012, 0.004), dark, foot, 0, 0.085, 0.152);
+      mesh(rbox(r * 1.5, 0.11, 0.15, 0.03), am2, foot, 0, 0.16, 0.06).rotation.x = -0.55;
+      mesh(rbox(r * 1.45, 0.11, 0.1, 0.03), am, foot, 0, 0.075, -0.1);
+      mesh(new THREE.CylinderGeometry(0.022, 0.022, r * 1.5, 10), joint, foot, 0, 0.06, -0.075).rotation.z = Math.PI / 2;
+      rig.legs.push({ pivot, knee, side });
+    }
   } else if (B.type === 'sculpt') {
     // sculpted armored legs shaped like an athlete's, with quads, kneecaps, calves and tapered ankles (Sprinter, and Ranger built thicker)
     const r = B.r || 0.075, len = B.len || 1.04, L = len * 0.5; hipY = len + 0.09;
