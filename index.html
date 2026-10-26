@@ -546,15 +546,12 @@ const cleanWeapons = ws => Array.isArray(ws) ? [...new Set(ws.filter(id => WEAPO
 const randomWeapons = () => { const pool = WEAPONS.map(w => w.id); const out = []; while (out.length < MAX_WEAPONS) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]); return out; };
 // paint: each section can be recoloured; with no choice it keeps its part's own colour (the head follows the arms)
 const PAINTS = [
-  ['Gunmetal', 0x4a5160], ['Steel', 0x8c95a3], ['White', 0xd9dde4], ['Black', 0x1e2026], ['Red', 0xb8323a], ['Orange', 0xd8742c],
-  ['Yellow', 0xd9b43a], ['Gold', 0xb8903a], ['Green', 0x4f8a3e], ['Olive', 0x6e7a45], ['Teal', 0x2f9b92], ['Blue', 0x2f62b8],
-  ['Navy', 0x23345e], ['Purple', 0x6a46b0], ['Pink', 0xc24f8e], ['Copper', 0xa0603a],
+  ['Red', 0xd41616], ['Blue', 0x1448e6], ['Green', 0x18a832], ['Orange', 0xf06408], ['Purple', 0x7418d8], ['White', 0xf2f4f7], ['Yellow', 0xf5c800],
 ];
 const PAINT_SECS = ['head', 'top', 'middle', 'bottom'];
 const partColor = (b, sec) => { const c = b.colors && b.colors[sec]; if (Number.isInteger(c) && c >= 0 && c <= 0xffffff) return c; return partById(sec === 'head' ? 'top' : sec, b[sec === 'head' ? 'top' : sec]).color; };
 const LIGHTS = [
-  ['White', 0xf2f6ff], ['Red', 0xff3b3b], ['Orange', 0xff8a2a], ['Amber', 0xffc247], ['Yellow', 0xfff04a], ['Lime', 0xa6ff3a],
-  ['Green', 0x2bff7a], ['Cyan', 0x3ef0ff], ['Ice', 0x9fd8ff], ['Blue', 0x3a7bff], ['Violet', 0x8f5bff], ['Magenta', 0xff3be0], ['Pink', 0xff7ab8],
+  ['Red', 0xff1010], ['Blue', 0x1050ff], ['Green', 0x10ff40], ['Orange', 0xff6000], ['Purple', 0x9420ff], ['White', 0xffffff], ['Yellow', 0xffdc00],
 ];
 const cleanColors = c => { const o = {}; if (c && typeof c === 'object') for (const k of PAINT_SECS) if (Number.isInteger(c[k]) && c[k] >= 0 && c[k] <= 0xffffff) o[k] = c[k]; return o; };
 const randomBuild = () => ({ head: pick(HEADS).id, top: pick(PARTS.top).id, middle: pick(PARTS.middle).id, bottom: pick(PARTS.bottom).id, weapons: randomWeapons() });
@@ -750,7 +747,7 @@ function makeFighterModel(build, accent) {
   const ac = new THREE.Color(accent).convertSRGBToLinear();
   // each section's lights can be recoloured; otherwise they glow in the fighter's team colour
   const lit = sec => { const c = (build.lights || {})[sec]; return Number.isInteger(c) && c >= 0 && c <= 0xffffff ? c : accent; };
-  const [gH, gT, gM, gB] = ['head', 'top', 'middle', 'bottom'].map(s => lit(s) === accent ? g : glowMat(lit(s)));
+  const [gH, gT, gM, gB] = ['head', 'top', 'middle', 'bottom'].map(s => { if (lit(s) === accent) return g; const m = glowMat(lit(s)); m.emissiveIntensity = lit(s) === 0xffffff ? 2.6 : 1.15; return m; });
   const [acH, acT, acM, acB] = ['head', 'top', 'middle', 'bottom'].map(s => new THREE.Color(lit(s)).convertSRGBToLinear());
   const col = sec => partColor(build, sec), bc = col('bottom');
   const topM = armorMat(col('top'), 2.4), midM = armorMat(col('middle'), 2.4), botM = armorMat(bc, 2.4), headM = armorMat(col('head'), 2.4);
@@ -1923,13 +1920,11 @@ function renderPaint() {
     <div class="sw${lights ? ' lit' : ''}" role="group" aria-label="${name} ${lights ? 'lights' : 'colour'}">
       <button type="button" class="def" style="--c:${hex(def)}" title="${lights ? 'Team colour' : 'Original colour'}" aria-label="${lights ? 'Team colour' : 'Original colour'}" aria-pressed="${cur == null}" data-c=""></button>
       ${list.map(([n, c]) => `<button type="button" style="--c:${hex(c)}" title="${n}" aria-label="${n}" aria-pressed="${cur === c}" data-c="${c}"></button>`).join('')}
-      <label title="Custom colour" class="${cur != null && !named ? 'on' : ''}"><input type="color" id="paintPick" value="${hex(cur ?? def)}" aria-label="Custom colour"></label>
     </div>`;
   $('paint-primary').onclick = () => { paintMode = 'primary'; renderPaint(); };
   $('paint-lights').onclick = () => { paintMode = 'lights'; renderPaint(); };
   const set = c => { const o = Object.assign({}, build[key]); if (c == null) delete o[sec]; else o[sec] = c; build = Object.assign({}, build, { [key]: o }); save(); renderAll(); };
   P.querySelectorAll('.sw button').forEach(b => b.onclick = () => set(b.dataset.c === '' ? null : +b.dataset.c));
-  $('paintPick').oninput = e => set(parseInt(e.target.value.slice(1), 16));
 }
 function renderParts() {
   renderPaint();
