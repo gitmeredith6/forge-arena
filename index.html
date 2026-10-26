@@ -247,6 +247,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <span><kbd>J</kbd> or left click: light attack</span>
     <span><kbd>K</kbd> or right click: heavy attack</span>
     <span><kbd>L</kbd> or <kbd>Shift</kbd> hold: block</span>
+    <span><kbd>Q</kbd> kick (its style comes from your bottom)</span>
     <span><kbd>Space</kbd> dodge</span>
     <span><kbd>E</kbd> special (when energy is full)</span>
     <span><kbd>Esc</kbd> pause</span>
@@ -282,11 +283,11 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       <button type="button" data-a="block">BLOCK</button>
       <button type="button" data-a="heavy" class="big">HEAVY</button>
       <button type="button" data-a="dodge">DODGE</button>
-      <span></span>
+      <button type="button" data-a="kick">KICK</button>
       <button type="button" data-a="light" class="big">LIGHT</button>
     </div>
   </div>
-  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click light</span><span><kbd>K</kbd>/right-click heavy</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>E</kbd> special</span></div>
+  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click light</span><span><kbd>K</kbd>/right-click heavy</span><span><kbd>Q</kbd> kick</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>E</kbd> special</span></div>
   <div class="vs" id="vs" hidden>
     <div class="side"><div class="who" style="color: var(--p1)">You</div><div class="nm" id="vsP1"></div><div class="ws" id="vsP1w"></div></div>
     <div class="mid">VS</div>
@@ -357,7 +358,7 @@ const PARTS = {
     { id: 'strider',  w: 'light',  name: 'Strider',  perk: 'Rolls on a ball. +20% dodge distance', mod: { dodgeSpeedMul: 0.2 }, color: 0xe2e6ea, type: 'ball' },
     { id: 'sprinter', w: 'light',  name: 'Sprinter', perk: '+10% move speed',          mod: { moveMul: 0.10 }, color: 0x6fc2b0, type: 'sculpt' },
     { id: 'phantom',  w: 'light',  name: 'Phantom',  perk: 'Hovers. 25% faster dodge recharge', mod: { dodgeCdMul: -0.25 }, color: 0xb7b4e6, type: 'hover' },
-    { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 health',               mod: { hp: 10 }, color: 0x6f7f96, type: 'snake' },
+    { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 health. Kicks with a long, sweeping tail whip',               mod: { hp: 10 }, color: 0x6f7f96, type: 'snake' },
     { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x6e8a4e, type: 'legs', r: 0.115, len: 1.0, kneeGlow: true },
     { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+4% defense',              mod: { def: 0.04 }, color: 0x7a6f9a, type: 'legs', r: 0.13, len: 0.92, armor: true },
     { id: 'treads',   w: 'heavy',  name: 'Treads',   perk: 'Tank treads. +30% knockback resistance, +8% defense, +8 health', mod: { kbRes: 0.3, def: 0.08, hp: 8 }, color: 0x4a4f44, type: 'treads' },
@@ -888,7 +889,7 @@ function makeFighterModel(build, accent) {
       }
       base.push({ u, p: curve.getPointAt(u), legs, ground });
     }
-    rig.snake = { segs, base, n, len: curve.getLength(), phase: 0, whip: 0 };
+    rig.snake = { segs, base, n, sp: curve.getLength() / (n - 1), phase: 0, len: curve.getLength(), lift: 0, fwd: 0, sweep: 0 };
   } else if (B.type === 'roller') {
     // Heavy: a spiked roller drum held in side brackets on a turntable, so it spins to roll and swivels to steer
     const R = 0.22, SL = 0.12, HL = 0.5, cy = R + SL * 0.55; hipY = 0.9;
@@ -1243,6 +1244,18 @@ function animateRig(rig, f, dt, time) {
         else if (t < tm.w + tm.a + tm.r * 0.45) { P.aR.x = P.aL.x = -1.05; P.aR.e = P.aL.e = 0; P.aR.r = P.aL.r = 0; P.aR.z = 0.25; P.aL.z = -0.25; P.bx = 0.32; rate = 40; }
         else { P.aR.x = P.aL.x = -0.6; P.aR.e = P.aL.e = -1.2; P.bx = 0.1; }
       }
+    } else if (st === 'kick') {
+      // each bottom kicks its own way: legs snap a front kick, hover spins, rollers and treads ram, the serpent whips its tail
+      const tm = f.timing('kick'), wind = t < tm.w, hit = !wind && t < tm.w + tm.a + tm.r * 0.4;
+      rate = wind ? 18 : 34;
+      if (rig.legs.length === 2) {
+        if (wind) { P.lR.x = 0.45; P.lR.k = 1.4; P.lL.k = 0.25; P.bx = -0.08; }
+        else if (hit) { P.lR.x = -1.45; P.lR.k = 0.05; P.lL.k = 0.15; P.bx = -0.24; }
+        else { P.lR.x = -0.4; P.lR.k = 0.6; }
+        P.aR.x = P.aL.x = -0.5;
+      } else if (rig.hover) { P.tw = wind ? -0.9 : hit ? 1.5 : 0.3; P.bz = wind ? 0.15 : -0.2; }
+      else if (rig.snake) { P.bx = wind ? -0.12 : hit ? 0.14 : 0; P.tw = wind ? 0.25 : hit ? -0.3 : 0; }
+      else { P.bx = wind ? -0.15 : hit ? 0.42 : 0.1; P.by -= wind ? 0.04 : 0; }
     } else if (st === 'block') {
       P.aR.x = P.aL.x = -1.35; P.aR.z = 0.55; P.aL.z = -0.55; P.aR.e = P.aL.e = -1.25; P.bx = 0.12; P.by -= 0.06;
       if (!rig.treads && !rig.hover) { P.lR.k = P.lL.k = 0.35; P.lR.x = P.lL.x = -0.18; }
@@ -1298,6 +1311,15 @@ function animateRig(rig, f, dt, time) {
     // slither: a sideways wave runs down the body (faster when moving), little legs paddle, and the tail lashes during a whip
     const S = rig.snake, nS = S.n, up = new V3(0, 1, 0), back = new V3(0, 0, -1);
     S.phase += dt * (2.2 + sp * 9);
+    // tail whip: rear back and up during the wind-up, then lash forward and sweep across the front
+    let tl = 0, tf = 0, tsw = 0;
+    if (st === 'kick') {
+      const tm = f.timing('kick'), t = f.t;
+      if (t < tm.w) { const k = t / tm.w; tl = 0.75 * k; tf = -0.2 * k; tsw = 0.6 * k; }
+      else if (t < tm.w + tm.a + tm.r * 0.5) { const k = Math.min(1, (t - tm.w) / (tm.a + tm.r * 0.5)); tl = 0.5 - 0.15 * k; tf = 1.1; tsw = 0.6 - 1.4 * k; }
+    }
+    const ek = 1 - Math.exp(-(st === 'kick' ? 22 : 8) * dt);
+    S.lift = lerp(S.lift || 0, tl, ek); S.fwd = lerp(S.fwd || 0, tf, ek); S.sweep = lerp(S.sweep || 0, tsw, ek);
     const pos = [];
     for (let i = 0; i < nS; i++) {
       const b = S.base[i], s0 = b.u * S.len, amp = smooth01((b.u - 0.12) / 0.2) * (0.035 + 0.05 * sp);
@@ -1305,7 +1327,7 @@ function animateRig(rig, f, dt, time) {
       const i2 = Math.min(nS - 1, i + 1), i1 = Math.max(0, i - 1), t = S.base[i2].p.clone().sub(S.base[i1].p).normalize();
       const side = new V3().crossVectors(up, t); if (side.lengthSq() < 1e-4) side.set(1, 0, 0); side.normalize();
       p.addScaledVector(side, Math.sin(s0 * 6 - S.phase) * amp);
-      if (S.whip > 0) { const k = smooth01((b.u - 0.6) / 0.4) * S.whip; p.y += k * 0.45 * Math.sin(S.whipT * 9); p.addScaledVector(side, k * 0.6 * Math.sin(S.whipT * 12)); }
+      const wk = smooth01((b.u - 0.3) / 0.7); p.y += wk * S.lift; p.z += wk * S.fwd; p.x += wk * S.sweep;
       pos.push(p);
     }
     const m = new THREE.Matrix4();
@@ -1314,6 +1336,8 @@ function animateRig(rig, f, dt, time) {
       const hint = up.clone().addScaledVector(back, 1.5 * Math.abs(t.y)).normalize();
       const right = new V3().crossVectors(hint, t).normalize(), u2 = new V3().crossVectors(t, right);
       m.makeBasis(right, u2, t); const sg = S.segs[i]; sg.position.copy(pos[i]); sg.quaternion.setFromRotationMatrix(m);
+      // when the whip stretches the chain, lengthen each link so it stays joined
+      if (i > 0) sg.scale.z = clamp(pos[i].distanceTo(pos[i - 1]) / S.sp, 1, 2.4);
       for (const L of S.base[i].legs) L.lp.rotation.x = Math.sin(S.phase * 1.6 + i * 1.1 + (L.sx > 0 ? Math.PI : 0)) * (0.35 + sp * 0.4);
     }
   }
@@ -1494,6 +1518,14 @@ const Preview = (() => {
 })();
 
 /* ======================= BATTLE ======================= */
+// kicks come from the bottom section: lighter bottoms kick faster, heavier ones harder. Trekker lashes with its tail instead
+const KICKS = {
+  light:  { w: 0.18, a: 0.08, r: 0.28, mult: 1.25, kb: 7,  stun: 0.4,  reach: 0.3,  arc: 0.42 },
+  middle: { w: 0.26, a: 0.1,  r: 0.36, mult: 1.4,  kb: 9,  stun: 0.42, reach: 0.3,  arc: 0.42 },
+  heavy:  { w: 0.42, a: 0.12, r: 0.5,  mult: 1.3,  kb: 9,  stun: 0.38, reach: 0.15, arc: 0.42 },
+  whip:   { w: 0.3,  a: 0.14, r: 0.4,  mult: 1.5,  kb: 10, stun: 0.42, reach: 0.9,  arc: -0.1, name: 'Tail whip' },
+};
+function kickFor(build) { const b = partById('bottom', build.bottom); return b.type === 'snake' ? KICKS.whip : KICKS[b.w]; }
 const ARENA_R = 13;
 const ROUND_TIME = 90;
 
@@ -1503,6 +1535,7 @@ class Fighter {
     this.rig = makeFighterModel(build, accent); scene.add(this.rig.root);
     this.trails = [makeTrail(scene, accent), makeTrail(scene, accent)];
     this.special = SPECIALS[partById('top', build.top).w];
+    this.kick = kickFor(build);
     this.radius = this.stats.radius;
     this.pos = this.rig.root.position;
     this.knock = new V3(); this.moveVel = new V3();
@@ -1515,8 +1548,8 @@ class Fighter {
     this.hitDone = false; this.blockHeld = false; this.flash = 0; this.speedNow = 0; this.stunDur = 0;
     this.rig.root.rotation.y = yaw; this.rig.shield.visible = false;
   }
-  timing(kind) { const s = 1 / this.stats.atkSpd; return kind === 'light' ? { w: 0.15 * s, a: 0.08 * s, r: 0.22 * s } : { w: 0.48 * s, a: 0.1 * s, r: 0.42 * s }; }
-  inWindup() { return (this.state === 'light' || this.state === 'heavy') && this.t < this.timing(this.state).w; }
+  timing(kind) { if (kind === 'kick') return this.kick; const s = 1 / this.stats.atkSpd; return kind === 'light' ? { w: 0.15 * s, a: 0.08 * s, r: 0.22 * s } : { w: 0.48 * s, a: 0.1 * s, r: 0.42 * s }; }
+  inWindup() { return (this.state === 'light' || this.state === 'heavy' || this.state === 'kick') && this.t < this.timing(this.state).w; }
   startAttack(kind) { this.state = kind; this.t = 0; this.hitDone = false; this.attackId++; if (kind === 'light') this.punchSide ^= 1; }
   tryAction(a, wish, fwd, right, game) {
     if (a === 'dodge') {
@@ -1526,7 +1559,7 @@ class Fighter {
       this.dodgeLocal = { x: this.dodgeDir.dot(right), z: this.dodgeDir.dot(fwd) };
       game.sfx('whoosh'); return true;
     }
-    if (a === 'light' || a === 'heavy') { this.startAttack(a); return true; }
+    if (a === 'light' || a === 'heavy' || a === 'kick') { this.startAttack(a); return true; }
     if (a === 'special') {
       if (this.energy < 100) return false;
       this.energy = 0; this.state = 'special'; this.t = 0; this.hitDone = false; this.attackId++; game.onSpecialStart(this); return true;
@@ -1540,7 +1573,7 @@ class Fighter {
     this.flash = Math.max(0, this.flash - dt);
     if (this.state !== 'ko' && this.state !== 'victory') this.energy = Math.min(100, this.energy + 5.5 * s.energyRegen * dt);
     if (inp) {
-      for (const a of ['dodge', 'special', 'heavy', 'light']) if (inp[a]) { this.buffer = { a, t: 0.25 }; break; }
+      for (const a of ['dodge', 'special', 'heavy', 'kick', 'light']) if (inp[a]) { this.buffer = { a, t: 0.25 }; break; }
       this.blockHeld = !!inp.block;
     }
     if (this.buffer) { this.buffer.t -= dt; if (this.buffer.t <= 0) this.buffer = null; }
@@ -1560,9 +1593,9 @@ class Fighter {
         this.state = this.blockHeld ? 'block' : 'idle';
         speedMul = this.state === 'block' ? 0.35 : 1;
         break;
-      case 'light': case 'heavy': {
+      case 'light': case 'heavy': case 'kick': {
         const tm = this.timing(this.state);
-        speedMul = this.state === 'light' ? 0.3 : (this.t < tm.w ? 0.12 : 0);
+        speedMul = this.state === 'light' ? 0.3 : this.state === 'kick' ? (this.t < tm.w ? 0.2 : 0.05) : (this.t < tm.w ? 0.12 : 0);
         turnRate = this.t < tm.w ? 9 : 2;
         if (!this.hitDone && this.t >= tm.w) { this.hitDone = true; game.melee(this, opp, this.state); }
         if (this.state === 'light' && this.hitDone && this.t >= tm.w + tm.a + tm.r * 0.35 && this.buffer && this.buffer.a === 'light') { this.buffer = null; this.startAttack('light'); }
@@ -1633,23 +1666,23 @@ class Fighter {
 
 /* ---------- AI ---------- */
 const AI_LEVELS = {
-  easy:   { think: 0.6,  react: 0.4,  guard: 0.15, aggro: 0.35, heavy: 0.2, combo: 0.1 },
-  normal: { think: 0.38, react: 0.24, guard: 0.42, aggro: 0.55, heavy: 0.3, combo: 0.35 },
-  hard:   { think: 0.22, react: 0.13, guard: 0.7,  aggro: 0.72, heavy: 0.35, combo: 0.6 },
+  easy:   { think: 0.6,  react: 0.4,  guard: 0.15, aggro: 0.35, heavy: 0.2, kick: 0.15, combo: 0.1 },
+  normal: { think: 0.38, react: 0.24, guard: 0.42, aggro: 0.55, heavy: 0.3, kick: 0.2, combo: 0.35 },
+  hard:   { think: 0.22, react: 0.13, guard: 0.7,  aggro: 0.72, heavy: 0.35, kick: 0.2, combo: 0.6 },
 };
 class AIController {
   constructor(level) { this.L = AI_LEVELS[level]; this.clock = 0; this.next = 0.8; this.mx = 0; this.mz = 0; this.strafe = Math.random() < 0.5 ? -1 : 1; this.blockUntil = 0; this.pending = null; this.seenAttack = -1; this.queue = []; }
   input(dt, me, opp) {
     this.clock += dt;
-    const inp = { mx: this.mx, mz: this.mz, light: false, heavy: false, block: this.clock < this.blockUntil, dodge: false, special: false };
+    const inp = { mx: this.mx, mz: this.mz, light: false, heavy: false, kick: false, block: this.clock < this.blockUntil, dodge: false, special: false };
     const dist = Math.hypot(opp.pos.x - me.pos.x, opp.pos.z - me.pos.z);
     const L = this.L;
     // react to the opponent's attacks (once per attack)
-    const threat = (opp.inWindup() || (opp.state === 'special' && opp.t < 0.25)) && dist < opp.stats.reach + me.radius + (opp.state === 'special' ? 6 : 0.9);
+    const threat = (opp.inWindup() || (opp.state === 'special' && opp.t < 0.25)) && dist < opp.stats.reach + me.radius + (opp.state === 'special' ? 6 : 0.9) + (opp.state === 'kick' ? opp.kick.reach : 0);
     if (threat && opp.attackId !== this.seenAttack) {
       this.seenAttack = opp.attackId;
       if (Math.random() < L.guard) {
-        const heavyish = opp.state === 'heavy' || (opp.state === 'special' && opp.special.id === 'pulse');
+        const heavyish = opp.state === 'heavy' || opp.state === 'kick' || (opp.state === 'special' && opp.special.id === 'pulse');
         this.pending = { at: this.clock + L.react * rand(0.7, 1.3), act: (heavyish && Math.random() < 0.6) || Math.random() < 0.25 ? 'dodge' : 'block' };
       }
     }
@@ -1674,7 +1707,9 @@ class AIController {
       else {
         this.mz = rand(-0.2, 0.3); this.mx = this.strafe * rand(0.4, 1);
         if (!inp.special && Math.random() < L.aggro && opp.state !== 'ko') {
-          if (Math.random() < L.heavy) inp.heavy = true;
+          const roll = Math.random();
+          if (roll < L.heavy) inp.heavy = true;
+          else if (roll < L.heavy + L.kick) inp.kick = true;
           else { inp.light = true; if (Math.random() < L.combo) { this.queue.push({ at: this.clock + 0.22, a: 'light' }); if (Math.random() < 0.5) this.queue.push({ at: this.clock + 0.48, a: Math.random() < 0.4 ? 'heavy' : 'light' }); } }
           this.blockUntil = 0;
         }
@@ -1700,6 +1735,7 @@ const Input = {
       mx, mz,
       light: p.has('KeyJ') || p.has('mouse0') || p.has('t-light'),
       heavy: p.has('KeyK') || p.has('mouse2') || p.has('t-heavy'),
+      kick: p.has('KeyQ') || p.has('t-kick'),
       dodge: p.has('Space') || p.has('t-dodge'),
       special: p.has('KeyE') || p.has('KeyI') || p.has('t-special'),
       block: h.has('KeyL') || h.has('ShiftLeft') || h.has('ShiftRight') || h.has('mouse1') || this.touchHeld.has('block'),
@@ -1853,6 +1889,11 @@ const Battle = {
   facing(a, b) { const fx = Math.sin(a.yaw), fz = Math.cos(a.yaw); const dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z; const l = Math.hypot(dx, dz) || 1; return (fx * dx + fz * dz) / l; },
   melee(att, def, kind) {
     const d = Math.hypot(def.pos.x - att.pos.x, def.pos.z - att.pos.z);
+    if (kind === 'kick') {
+      const K = att.kick;
+      if (d > att.stats.reach + K.reach + def.radius || this.facing(att, def) < K.arc) { this.sfx('whoosh'); return; }
+      this.applyHit(att, def, { mult: K.mult, kb: K.kb, stun: K.stun, stop: 0.08 }); return;
+    }
     if (d > att.stats.reach + def.radius || this.facing(att, def) < 0.42) { if (kind === 'heavy') this.sfx('whoosh'); return; }
     this.applyHit(att, def, kind === 'light' ? { mult: 1, kb: 4.5, stun: 0.3, stop: 0.05 } : { mult: 2.3 * att.stats.heavyMul, kb: 11, stun: 0.55, guardBreak: true, stop: 0.1, heavy: true });
   },
