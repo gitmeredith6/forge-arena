@@ -1086,10 +1086,9 @@ function makeFighterModel(build, accent) {
     mesh(new THREE.LatheGeometry(skirt.map(([r, y]) => new THREE.Vector2(r, y)), 14), botM, body, 0, hipY, 0);
     const ring = mesh(new THREE.TorusGeometry(0.33, 0.035, 8, 32), gB, body, 0, hipY - 0.16, 0); ring.rotation.x = Math.PI / 2;
     const ring2 = mesh(new THREE.TorusGeometry(0.19, 0.03, 8, 24), joint, body, 0, hipY - 0.52, 0); ring2.rotation.x = Math.PI / 2;
-    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.5, 12), new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false }));
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.5, 12), new THREE.MeshBasicMaterial({ color: lit('bottom'), transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false }));
     flame.rotation.x = Math.PI; flame.position.y = hipY - 1.0; body.add(flame); rig.flame = flame;
     halo(body, acB, 0, hipY - 0.85, 0, 0.9, 0.9);
-    for (const s of [-1, 1]) { const fin = mesh(rbox(0.05, 0.42, 0.3, 0.02), dark, body, s * 0.33, hipY - 0.22, -0.06); fin.rotation.z = s * 0.38; }
     mesh(rbox(0.5, 0.18, 0.36, 0.06), dark, body, 0, hipY + 0.02, 0);
   } else if (B.type === 'spider') {
     // Middle: eight mechanical legs on a hub that swivels under the midsection, so the body keeps facing the fight while the legs walk any way
