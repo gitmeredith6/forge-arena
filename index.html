@@ -361,7 +361,7 @@ const PARTS = {
     { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x6e8a4e, type: 'legs', r: 0.115, len: 1.0, kneeGlow: true },
     { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+4% defense',              mod: { def: 0.04 }, color: 0x7a6f9a, type: 'legs', r: 0.13, len: 0.92, armor: true },
     { id: 'treads',   w: 'heavy',  name: 'Treads',   perk: 'Tank treads. +30% knockback resistance, +8% defense, +8 health', mod: { kbRes: 0.3, def: 0.08, hp: 8 }, color: 0x4a4f44, type: 'treads' },
-    { id: 'pillar',   w: 'heavy',  name: 'Pillar',   perk: '+18 health',               mod: { hp: 18 }, color: 0x5b6170, type: 'legs', r: 0.24, len: 0.85, bigFeet: true },
+    { id: 'pillar',   w: 'heavy',  name: 'Pillar',   perk: '+18 health',               mod: { hp: 18 }, color: 0x2f4f9a, type: 'roller' },
     { id: 'juggernaut', w: 'heavy', name: 'Juggernaut', perk: '+10% guard, +14 health', mod: { blockRed: 0.10, hp: 14 }, color: 0x7a4636, type: 'legs', r: 0.22, len: 0.88, armor: true },
   ],
 };
@@ -841,6 +841,47 @@ function makeFighterModel(build, accent) {
     halo(body, ac, 0, hipY - 0.85, 0, 0.9, 0.9);
     for (const s of [-1, 1]) { const fin = mesh(rbox(0.05, 0.42, 0.3, 0.02), dark, body, s * 0.33, hipY - 0.22, -0.06); fin.rotation.z = s * 0.38; }
     mesh(rbox(0.5, 0.18, 0.36, 0.06), dark, body, 0, hipY + 0.02, 0);
+  } else if (B.type === 'roller') {
+    // Heavy: a spiked roller drum held in side brackets on a turntable, so it spins to roll and swivels to steer
+    const R = 0.22, SL = 0.12, HL = 0.5, cy = R + SL * 0.55; hipY = 0.9;
+    const brass = stdMat(0xd8a640, { metalness: 0.85, roughness: 0.3 }); rig.mats.push(brass);
+    // hip mount and turntable under the midsection
+    mesh(rbox(0.5, 0.14, 0.4, 0.05), dark, body, 0, hipY - 0.02, 0);
+    const tt = mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.06, 24), joint, body, 0, hipY - 0.12, 0);
+    const tg = mesh(new THREE.TorusGeometry(0.21, 0.008, 6, 32), g, body, 0, hipY - 0.12, 0); tg.rotation.x = Math.PI / 2;
+    const yoke = new THREE.Group(); yoke.position.y = 0; body.add(yoke);
+    // crossbar and side brackets that run down to the drum axle, swivelling with the turntable
+    const bx = HL + 0.1, barY = hipY - 0.2;
+    mesh(rbox(0.26, 0.08, 0.26, 0.03), dark, yoke, 0, barY + 0.02, 0);
+    mesh(rbox(bx * 2 + 0.08, 0.1, 0.16, 0.04), botM, yoke, 0, barY, 0);
+    for (const sx of [-1, 1]) {
+      const x = sx * bx, h = barY - cy;
+      mesh(rbox(0.07, h + 0.06, 0.18, 0.03), botM, yoke, x, cy + h / 2, 0);
+      mesh(rbox(0.012, h * 0.7, 0.012, 0.004), g, yoke, x + sx * 0.037, cy + h * 0.5, 0);
+      for (const y of [cy + h * 0.25, cy + h * 0.75]) mesh(new THREE.SphereGeometry(0.016, 6, 5), joint, yoke, x + sx * 0.037, y, 0.06);
+      const piston = mesh(new THREE.CylinderGeometry(0.022, 0.022, h * 0.7, 8), joint, yoke, x - sx * 0.02, cy + h * 0.5, -0.11); piston.rotation.x = -0.12;
+      // axle hub with a slotted screw head, like a bolt through the drum
+      const hub = mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.05, 18), joint, yoke, x + sx * 0.04, cy, 0); hub.rotation.z = Math.PI / 2;
+      const slot = mesh(rbox(0.012, 0.11, 0.012, 0.004), dark, yoke, x + sx * 0.067, cy, 0); slot.rotation.x = 0.6;
+    }
+    // the drum: armoured barrel, brass end caps and rows of brass spikes
+    const roller = new THREE.Group(); roller.position.y = cy; yoke.add(roller);
+    const drum = mesh(new THREE.CylinderGeometry(R, R, HL * 2 - 0.1, 24), botM, roller); drum.rotation.z = Math.PI / 2;
+    for (const sx of [-1, 1]) {
+      const cap = mesh(new THREE.CylinderGeometry(R * 1.12, R * 1.12, 0.1, 24), brass, roller, sx * (HL - 0.05), 0, 0); cap.rotation.z = Math.PI / 2;
+      const rim = mesh(new THREE.TorusGeometry(R * 1.12, 0.012, 6, 28), dark, roller, sx * (HL - 0.1), 0, 0); rim.rotation.y = Math.PI / 2;
+      for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; const sp = mesh(new THREE.ConeGeometry(0.035, 0.07, 8), brass, roller, sx * (HL - 0.05), Math.cos(a) * R * 1.12, Math.sin(a) * R * 1.12); sp.rotation.x = a; sp.position.y += Math.cos(a) * 0.03; sp.position.z += Math.sin(a) * 0.03; }
+    }
+    const cols = 5, ring = 7;
+    for (let c = 0; c < cols; c++) {
+      const x = -HL + 0.18 + c * (HL * 2 - 0.36) / (cols - 1);
+      for (let i = 0; i < ring; i++) {
+        const a = (i + (c % 2) * 0.5) / ring * Math.PI * 2;
+        mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.02, 12), brass, roller, x, Math.cos(a) * R, Math.sin(a) * R).rotation.x = a;
+        const sp = mesh(new THREE.ConeGeometry(0.045, SL, 10), brass, roller, x, Math.cos(a) * (R + SL / 2), Math.sin(a) * (R + SL / 2)); sp.rotation.x = a;
+      }
+    }
+    rig.roller = { yoke, roller, R: R + SL * 0.55, yaw: 0 };
   } else if (B.type === 'treads') {
     // Heavy: twin sloped track units with moving cleated pads, a centre chassis and one hydraulic strut up to the hips
     hipY = 0.76; rig.treads = true;
@@ -1200,6 +1241,25 @@ function animateRig(rig, f, dt, time) {
     }
     const v = Math.hypot(vx, vz);
     if (v > 1e-3) rig.ball.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new V3(vz / v, 0, -vx / v), v * dt / rig.ballR));
+  }
+  if (rig.roller) {
+    // swivel the drum to face the direction of travel (either way round), then roll it by the distance moved
+    const Rr = rig.roller;
+    let vx = 0, vz = 0.15;
+    if (f) {
+      const wx = f.moveVel.x + f.knock.x, wz = f.moveVel.z + f.knock.z, yaw = rig.root.rotation.y, c = Math.cos(yaw), sn = Math.sin(yaw);
+      vx = wx * c - wz * sn; vz = wx * sn + wz * c;
+    }
+    const v = Math.hypot(vx, vz);
+    if (v > 0.3) {
+      let target = Math.atan2(vx, vz), d = target - Rr.yaw;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      if (d > Math.PI / 2) d -= Math.PI; else if (d < -Math.PI / 2) d += Math.PI;
+      Rr.yaw += d * (1 - Math.exp(-8 * dt));
+    }
+    Rr.yoke.rotation.y = Rr.yaw;
+    const along = vx * Math.sin(Rr.yaw) + vz * Math.cos(Rr.yaw);
+    Rr.roller.rotation.x += along * dt / Rr.R;
   }
   if (rig.belts) {
     // run each track by the ground speed under it: forward speed plus the turn rate across the track's width
