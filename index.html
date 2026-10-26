@@ -946,7 +946,8 @@ function makeFighterModel(build, accent) {
     };
     mesh(rbox(hipW * 2 + r * 2, 0.2, 0.3 + r, 0.08), dark, body, 0, hipY, 0);
     const TP = [[r * 0.9, -L * 0.84], [r * 1.12, -L * 0.66], [r * 1.24, -L * 0.42], [r * 1.26, -L * 0.2], [r * 1.12, -L * 0.02], [r * 0.96, 0.04]];
-    const SP = [[r * 0.6, -L * 0.9], [r * 0.66, -L * 0.74], [r * 1.1, -L * 0.46], [r * 1.22, -L * 0.24], [r * 1.02, -0.03]];
+    const rs = r * 0.62; // the lower leg is much slimmer than the thigh
+    const SP = [[rs * 0.62, -L * 0.9], [rs * 0.7, -L * 0.74], [rs * 1.1, -L * 0.46], [rs * 1.22, -L * 0.24], [rs * 1.15, -L * 0.08], [r * 0.7, -0.03]];
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group(); pivot.position.set(side * hipW, hipY, 0); body.add(pivot);
       const tsc = [0.92, 1, 1.18];
@@ -976,19 +977,19 @@ function makeFighterModel(build, accent) {
       for (const sx of [-1, 1]) disc(knee, sx * r * 1.02, 0, 0, r * 0.66, sx);
       bulge(knee, 0, 0.02, r * 0.8, 0.82, 0.95, 0.6, 0, am2);
       if (B.kneeGlow) { mesh(new THREE.TorusGeometry(r * 0.32, 0.008, 6, 20), g, knee, 0, 0.02, r * 1.38); halo(knee, ac, 0, 0.02, r * 1.45, 0.22, 0.9); }
-      mesh(new THREE.CylinderGeometry(r * 0.11, r * 0.11, L * 0.5, 12), chrome, knee, 0, -L * 0.02, -r * 1.0);
+      mesh(new THREE.CylinderGeometry(r * 0.11, r * 0.11, L * 0.5, 12), chrome, knee, 0, -L * 0.02, -r * 0.95);
       // shin: dark core, a calf that swells out behind, a curved shin guard bulging forward, side struts and a rear piston
-      mesh(new THREE.CylinderGeometry(r * 0.42, r * 0.36, L, 12), dark, knee, 0, -L / 2, 0);
-      mesh(lathe([[0, -L * 0.9]].concat(SP, [[0, 0.02]])), am, knee, 0, 0, r * 0.12).scale.set(0.92, 1, 1.05);
-      bulge(knee, 0, -L * 0.36, -r * 0.42, 0.95, 2.1, 0.95, 0.08, am);
-      bulge(knee, side * r * 0.08, -L * 0.3, -r * 0.62, 0.62, 1.5, 0.62, 0.1, am2);
-      const guard = mesh(plate(SP.slice(0, 5), 0.014, -0.72, 1.44, 0.02), am2, knee, 0, 0, r * 0.12); guard.scale.set(0.92, 1, 1.05);
-      for (let i = 0; i < 3; i++) { const v = mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.05, 6), dark, knee, (i - 1) * 0.02, -L * 0.3, r * 0.12 + r * 1.24 * 1.05 + 0.02); v.rotation.x = 0.15; }
-      for (const sx of [-1, 1]) mesh(new THREE.CylinderGeometry(0.014, 0.014, L * 0.5, 8), dark, knee, sx * r * 1.1, -L * 0.48, -r * 0.4);
-      mesh(new THREE.CylinderGeometry(r * 0.2, r * 0.2, L * 0.3, 12), dark, knee, 0, -L * 0.5, -r * 1.05);
-      mesh(new THREE.CylinderGeometry(r * 0.1, r * 0.1, L * 0.3, 10), chrome, knee, 0, -L * 0.76, -r * 1.05);
+      mesh(new THREE.CylinderGeometry(rs * 0.42, rs * 0.36, L, 12), dark, knee, 0, -L / 2, 0);
+      mesh(lathe([[0, -L * 0.9]].concat(SP, [[0, 0.02]])), am, knee, 0, 0, rs * 0.12).scale.set(0.92, 1, 1.05);
+      bulge(knee, 0, -L * 0.36, -rs * 0.42, 0.59, 2.1, 0.59, 0.08, am);
+      bulge(knee, side * rs * 0.08, -L * 0.3, -rs * 0.62, 0.38, 1.5, 0.38, 0.1, am2);
+      const guard = mesh(plate(SP.slice(0, 5), 0.014, -0.72, 1.44, 0.02), am2, knee, 0, 0, rs * 0.12); guard.scale.set(0.92, 1, 1.05);
+      for (let i = 0; i < 3; i++) { const v = mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.05, 6), dark, knee, (i - 1) * 0.02, -L * 0.3, rs * 0.12 + rs * 1.24 * 1.05 + 0.02); v.rotation.x = 0.15; }
+      for (const sx of [-1, 1]) mesh(new THREE.CylinderGeometry(0.014, 0.014, L * 0.5, 8), dark, knee, sx * rs * 1.1, -L * 0.48, -rs * 0.4);
+      mesh(new THREE.CylinderGeometry(r * 0.17, r * 0.17, L * 0.3, 12), dark, knee, 0, -L * 0.5, -r * 0.9);
+      mesh(new THREE.CylinderGeometry(r * 0.08, r * 0.08, L * 0.3, 10), chrome, knee, 0, -L * 0.76, -r * 0.9);
       // ankle: small actuators on the sides only, so the calf stays visible
-      for (const sx of [-1, 1]) disc(knee, sx * r * 0.62, -L - 0.01, 0, r * 0.36, sx);
+      for (const sx of [-1, 1]) disc(knee, sx * rs * 0.8, -L - 0.01, 0, r * 0.28, sx);
       // boot: a smooth lofted boot on a dark sole, with a domed toe cap and a rounded ankle cover
       const foot = new THREE.Group(); foot.position.y = ground; knee.add(foot);
       mesh(bootGeo(), am, foot, 0, 0.01, 0.02);
