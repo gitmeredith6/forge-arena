@@ -524,6 +524,28 @@ function makeEnv(renderer, warm) {
 
 /* Each fighter is built from ~90 small meshes. Merge the static ones inside each
    moving group, per material, so a fighter costs a handful of draw calls. */
+// Sprinter foot: lofted from heel to toe, with a raised arch, a sloped instep and a pointed tip
+function sprintFootGeo() {
+  const rows = 28, ring = 20, z0 = -0.08, z1 = 0.255;
+  const lerpPts = (pts, t) => { for (let i = 1; i < pts.length; i++) if (t <= pts[i][0]) { const [ta, va] = pts[i - 1], [tb, vb] = pts[i]; const k = (t - ta) / (tb - ta); return va + (vb - va) * (k * k * (3 - 2 * k)); } return pts[pts.length - 1][1]; };
+  const H = [[0, 0.075], [0.2, 0.112], [0.38, 0.1], [0.62, 0.072], [0.82, 0.05], [1, 0.022]];
+  const W = [[0, 0.036], [0.2, 0.042], [0.45, 0.047], [0.7, 0.055], [0.88, 0.04], [1, 0.012]];
+  const pos = [], uv = [], idx = [];
+  for (let i = 0; i <= rows; i++) {
+    const t = i / rows, heel = Math.sqrt(Math.min(1, t / 0.09) * (2 - Math.min(1, t / 0.09)));
+    const w = lerpPts(W, t) * heel, h = lerpPts(H, t) * (0.55 + 0.45 * heel), z = z0 + (z1 - z0) * t;
+    for (let j = 0; j <= ring; j++) {
+      const a = (j / ring) * Math.PI * 2, sa = Math.sin(a);
+      pos.push(w * Math.cos(a), sa > 0 ? h * Math.pow(sa, 0.75) : 0.006 * sa, z); uv.push(j / ring, t);
+    }
+  }
+  for (let i = 0; i < rows; i++) for (let j = 0; j < ring; j++) { const a = i * (ring + 1) + j, b = a + ring + 1; idx.push(a, a + 1, b, b, a + 1, b + 1); }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx); geo.computeVertexNormals();
+  return geo;
+}
 function mergeGroup(group) {
   const byMat = new Map();
   for (const c of group.children.slice()) {
@@ -777,12 +799,15 @@ function makeFighterModel(build, accent) {
       for (const sx of [-1, 1]) mesh(rbox(0.01, L * 0.46, 0.01, 0.003), g, knee, sx * r * 0.98, -L * 0.42, r * 0.15);
       // armor seams where the plates meet
       for (const [grp, y, rr] of [[pivot, -L * 0.7, r * 1.16], [knee, -L * 0.7, r * 0.7]]) { const sr = mesh(new THREE.TorusGeometry(rr, 0.006, 6, 24), dark, grp, 0, y, 0); sr.rotation.x = Math.PI / 2; sr.scale.set(1, 1.1, 1); }
-      // ankle and a sleek boot
-      mesh(new THREE.CylinderGeometry(r * 0.52, r * 0.52, r * 1.7, 10), joint, knee, 0, -L - 0.02, 0).rotation.z = Math.PI / 2;
-      mesh(rbox(r * 2.0, 0.05, r * 4.3, 0.02), dark, knee, 0, ground + 0.025, r * 0.95);
-      mesh(new THREE.SphereGeometry(r, 20, 14), sm, knee, 0, ground + 0.08, r * 1.05).scale.set(1.0, 0.72, 2.05);
-      mesh(new THREE.SphereGeometry(r * 0.72, 14, 10), sm, knee, 0, ground + 0.08, -r * 0.55).scale.set(1, 0.9, 1.1);
-      mesh(rbox(r * 1.4, 0.012, 0.012, 0.004), g, knee, 0, ground + 0.06, r * 3.0);
+      // ankle and a sculpted, pointed foot: arched instep sloping down to a narrow toe
+      mesh(new THREE.CylinderGeometry(r * 0.38, r * 0.38, r * 1.45, 10), joint, knee, 0, -L - 0.02, 0).rotation.z = Math.PI / 2;
+      mesh(sprintFootGeo(), sm, knee, 0, ground + 0.008, 0);
+      mesh(sprintFootGeo(), dark, knee, 0, ground + 0.002, 0).scale.set(1.08, 0.3, 1.03);
+      // toe cap seam, glowing instep line and a small heel thruster
+      const ts = mesh(new THREE.TorusGeometry(0.046, 0.005, 6, 20, Math.PI), dark, knee, 0, ground + 0.01, 0.16); ts.scale.set(1, 1.1, 1);
+      const il = mesh(rbox(0.008, 0.008, 0.15, 0.003), g, knee, 0, ground + 0.088, 0.07); il.rotation.x = 0.3;
+      const ht = mesh(new THREE.CylinderGeometry(0.018, 0.024, 0.04, 10), joint, knee, 0, ground + 0.05, -0.085); ht.rotation.x = Math.PI / 2;
+      mesh(new THREE.CircleGeometry(0.015, 10), g, knee, 0, ground + 0.05, -0.106).rotation.y = Math.PI;
       rig.legs.push({ pivot, knee, side });
     }
   } else if (B.type === 'hover') {
