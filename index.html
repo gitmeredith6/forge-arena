@@ -546,7 +546,7 @@ const cleanWeapons = ws => Array.isArray(ws) ? [...new Set(ws.filter(id => WEAPO
 const randomWeapons = () => { const pool = WEAPONS.map(w => w.id); const out = []; while (out.length < MAX_WEAPONS) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]); return out; };
 // paint: each section can be recoloured; with no choice it keeps its part's own colour (the head follows the arms)
 const PAINTS = [
-  ['Red', 0xd41616], ['Blue', 0x1448e6], ['Green', 0x18a832], ['Orange', 0xf06408], ['Purple', 0x7418d8], ['White', 0xf2f4f7], ['Yellow', 0xf5c800],
+  ['Red', 0xd41616], ['Blue', 0x1448e6], ['Green', 0x18a832], ['Orange', 0xf06408], ['Purple', 0x7418d8], ['White', 0xf2f4f7], ['Yellow', 0xf5c800], ['Black', 0x16171b],
 ];
 const PAINT_SECS = ['head', 'top', 'middle', 'bottom'];
 const partColor = (b, sec) => { const c = b.colors && b.colors[sec]; if (Number.isInteger(c) && c >= 0 && c <= 0xffffff) return c; return partById(sec === 'head' ? 'top' : sec, b[sec === 'head' ? 'top' : sec]).color; };
