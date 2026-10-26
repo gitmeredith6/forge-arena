@@ -974,8 +974,10 @@ function makeFighterModel(build, accent) {
   } else {
     mesh(rbox(tw * 0.7, 0.16, td * 0.8, 0.05), dark, body, 0, hipY + 0.12, 0);
     for (const s of [-1, 1]) mesh(rbox(0.06, th * 0.36, td * 0.6, 0.02), dark, body, s * tw * 0.47, torsoBase + th * 0.36, 0);
-    mesh(rbox(tw * 0.62, th * 0.5, 0.24, 0.07), dark, body, 0, chestY - 0.04, -td * 0.5 - 0.06);
-    for (const s of [-1, 1]) { mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.2, 10), joint, body, s * tw * 0.18, chestY + th * 0.22, -td * 0.5 - 0.1); halo(body, ac, s * tw * 0.18, chestY + th * 0.34, -td * 0.5 - 0.1, 0.22, 0.6); }
+    if (M.id !== 'furnace') {
+      mesh(rbox(tw * 0.62, th * 0.5, 0.24, 0.07), dark, body, 0, chestY - 0.04, -td * 0.5 - 0.06);
+      for (const s of [-1, 1]) { mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.2, 10), joint, body, s * tw * 0.18, chestY + th * 0.22, -td * 0.5 - 0.1); halo(body, ac, s * tw * 0.18, chestY + th * 0.34, -td * 0.5 - 0.1, 0.22, 0.6); }
+    }
   }
   if (M.id === 'core') { mesh(new THREE.SphereGeometry(0.1, 16, 12), g, body, 0, chestY, chestZ - 0.02); mesh(new THREE.TorusGeometry(0.12, 0.022, 8, 24), joint, body, 0, chestY, chestZ - 0.02); halo(body, ac, 0, chestY, chestZ + 0.05, 0.6, 0.85); }
   else if (M.id === 'furnace') { for (let i = 0; i < 3; i++) mesh(rbox(tw * 0.5, 0.035, 0.04, 0.012), g, body, 0, chestY - 0.09 + i * 0.09, chestZ); halo(body, ac, 0, chestY, chestZ + 0.06, 0.7, 0.55); }
@@ -985,6 +987,36 @@ function makeFighterModel(build, accent) {
   else if (M.id === 'anvil') { for (const s of [-1, 1]) mesh(rbox(tw * 0.34, th * 0.26, 0.08, 0.03), midM, body, s * tw * 0.19, chestY + 0.04, chestZ + 0.01); mesh(rbox(0.1, 0.05, 0.03, 0.015), g, body, 0, chestY - 0.12, chestZ); }
   else { mesh(rbox(0.13, 0.05, 0.03, 0.015), g, body, 0, chestY, chestZ); halo(body, ac, 0, chestY, chestZ + 0.04, 0.26); if (M.id === 'striker') mesh(rbox(0.05, th * 0.7, 0.03, 0.015), joint, body, tw * 0.12, chestY - 0.05, chestZ - 0.01).rotation.z = 0.5; }
   chestDetail(mw, tw, th, td, torsoBase, faceScale, TORSO_PROFILES[mw](M.taper));
+  if (M.id === 'furnace') {
+    // jet pack: twin fuel tanks on a back plate, a central turbine housing and flared nozzles with live flames
+    const bz = -td * 0.5 * Math.max(1, M.taper * 0.97), tz = bz - 0.16, tr = 0.12, tl = th * 0.56, ty = chestY - 0.05;
+    mesh(rbox(tw * 0.56, th * 0.62, 0.08, 0.03), dark, body, 0, ty, bz - 0.01);
+    for (const sx of [-1, 1]) for (const y of [ty + th * 0.2, ty - th * 0.2]) { const st = mesh(rbox(0.05, 0.05, 0.14, 0.015), joint, body, sx * 0.17, y, bz - 0.07); }
+    rig.jets = [];
+    for (const sx of [-1, 1]) {
+      const x = sx * 0.17;
+      mesh(new THREE.CylinderGeometry(tr, tr, tl, 18), midM, body, x, ty, tz);
+      mesh(new THREE.SphereGeometry(tr, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), midM, body, x, ty + tl / 2, tz);
+      for (const y of [ty + tl * 0.3, ty - tl * 0.3]) { const band = mesh(new THREE.TorusGeometry(tr + 0.006, 0.012, 6, 24), dark, body, x, y, tz); band.rotation.x = Math.PI / 2; }
+      mesh(rbox(0.014, tl * 0.4, 0.014, 0.005), g, body, x + sx * tr * 0.72, ty, tz - tr * 0.72);
+      mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.05, 8), joint, body, x, ty + tl / 2 + tr * 0.95, tz);
+      // stabiliser fin on the outside of each tank
+      const fin = mesh(rbox(0.03, tl * 0.55, 0.16, 0.012), dark, body, x + sx * (tr + 0.03), ty - tl * 0.12, tz - 0.02); fin.rotation.z = sx * 0.12;
+      // flared nozzle with a glowing throat and a flame that the animation drives
+      const ny = ty - tl / 2;
+      mesh(new THREE.CylinderGeometry(tr * 0.8, tr * 0.6, 0.05, 16), joint, body, x, ny - 0.02, tz);
+      mesh(new THREE.CylinderGeometry(tr * 0.55, tr * 0.82, 0.11, 16, 1, true), dark, body, x, ny - 0.1, tz);
+      const th2 = mesh(new THREE.CircleGeometry(tr * 0.5, 16), g, body, x, ny - 0.07, tz); th2.rotation.x = Math.PI / 2;
+      const flame = new THREE.Mesh(new THREE.ConeGeometry(tr * 0.62, 0.36, 12, 1, true), new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      flame.geometry.translate(0, -0.18, 0); flame.position.set(x, ny - 0.15, tz); body.add(flame); rig.jets.push(flame);
+      halo(body, ac, x, ny - 0.2, tz, 0.4, 0.7);
+    }
+    // turbine housing between the tanks, with a gear and feed pipes into each tank
+    mesh(rbox(0.13, tl * 0.75, 0.15, 0.04), joint, body, 0, ty, tz + 0.01);
+    gear(body, 0.075, 10, 0.03, 0, ty + tl * 0.08, tz - 0.08);
+    mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.02, 10), g, body, 0, ty + tl * 0.08, tz - 0.1).rotation.x = Math.PI / 2;
+    for (const sx of [-1, 1]) pipe(body, [[0, ty + tl * 0.32, tz - 0.05], [sx * 0.07, ty + tl * 0.42, tz - 0.1], [sx * 0.17, ty + tl * 0.36, tz - tr - 0.005]], 0.014);
+  }
 
   // ---- top (head + arms): Light = slender blades, Middle = gauntlets, Heavy = power fists
   const tw2 = wi[T.w];
@@ -1158,6 +1190,7 @@ function animateRig(rig, f, dt, time) {
   rig.body.rotation.set(cur.bx, cur.tw, cur.bz);
   rig.body.position.y = cur.by;
   if (rig.flame) { rig.flame.scale.y = 0.8 + Math.random() * 0.4 + sp * 0.5; }
+  if (rig.jets) { const boost = st === 'dodge' ? 1.4 : st === 'special' ? 0.8 : 0; for (const j of rig.jets) { const k = 0.55 + Math.random() * 0.3 + sp * 0.6 + boost; j.scale.set(0.85 + boost * 0.15, k, 0.85 + boost * 0.15); } }
   if (rig.ball) {
     // roll the ball by the distance travelled: axis = up x velocity, in the fighter's local frame
     let vx = 0, vz = Math.sin(time * 0.8) * 0.25;
