@@ -1169,7 +1169,7 @@ function makeTrail(scene, color) {
     dispose() { scene.remove(m); geo.dispose(); m.material.dispose(); },
   };
 }
-function newPose() { return { aR: { x: 0, z: 0, e: 0 }, aL: { x: 0, z: 0, e: 0 }, lR: { x: 0, k: 0 }, lL: { x: 0, k: 0 }, bx: 0, bz: 0, by: 0, tw: 0 }; }
+function newPose() { return { aR: { x: 0, z: 0, e: 0, r: 1 }, aL: { x: 0, z: 0, e: 0, r: 1 }, lR: { x: 0, k: 0 }, lL: { x: 0, k: 0 }, bx: 0, bz: 0, by: 0, tw: 0 }; }
 function disposeObj(o) { o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) { for (const k of ['map', 'bumpMap']) { const t = c.material[k]; if (t && t !== HALO_TEX && (!DETAIL || (t !== DETAIL.map && t !== DETAIL.bump))) t.dispose(); } c.material.dispose(); } }); }
 
 /* procedural animation — computes a target pose from fighter state, eases toward it */
@@ -1199,12 +1199,12 @@ function animateRig(rig, f, dt, time) {
       rate = 34;
       if (st === 'light') {
         if (t < tm.w) { P[R].x = 0.35; P[R].e = -1.9; P.tw = -0.25 * zs; }
-        else if (t < tm.w + tm.a + tm.r * 0.5) { P[R].x = -1.6; P[R].e = 0; P[R].z = zs * 0.12 * -1; P.tw = 0.35 * zs; P.bx = 0.12; }
+        else if (t < tm.w + tm.a + tm.r * 0.5) { P[R].x = -1.6; P[R].e = 0; P[R].r = 0; P[R].z = zs * 0.12 * -1; P.tw = 0.35 * zs; P.bx = 0.12; }
         else { P[R].x = -0.6; P[R].e = -1.2; }
         P[O].x = -0.8; P[O].e = -1.7;
       } else {
         if (t < tm.w) { const k = t / tm.w; P.aR.x = P.aL.x = -2.9 * k; P.aR.e = P.aL.e = -0.9; P.bx = -0.18 * k; rate = 12; }
-        else if (t < tm.w + tm.a + tm.r * 0.45) { P.aR.x = P.aL.x = -1.05; P.aR.e = P.aL.e = 0; P.aR.z = 0.25; P.aL.z = -0.25; P.bx = 0.32; rate = 40; }
+        else if (t < tm.w + tm.a + tm.r * 0.45) { P.aR.x = P.aL.x = -1.05; P.aR.e = P.aL.e = 0; P.aR.r = P.aL.r = 0; P.aR.z = 0.25; P.aL.z = -0.25; P.bx = 0.32; rate = 40; }
         else { P.aR.x = P.aL.x = -0.6; P.aR.e = P.aL.e = -1.2; P.bx = 0.1; }
       }
     } else if (st === 'block') {
@@ -1230,13 +1230,15 @@ function animateRig(rig, f, dt, time) {
   }
   // ease toward target
   const k = 1 - Math.exp(-rate * dt), cur = rig.pose;
-  for (const a of ['aR', 'aL']) for (const j of ['x', 'z', 'e']) cur[a][j] = lerp(cur[a][j], P[a][j], k);
+  for (const a of ['aR', 'aL']) for (const j of ['x', 'z', 'e', 'r']) cur[a][j] = lerp(cur[a][j], P[a][j], k);
   for (const l of ['lR', 'lL']) for (const j of ['x', 'k']) cur[l][j] = lerp(cur[l][j], P[l][j], k);
   for (const j of ['bx', 'bz', 'by', 'tw']) cur[j] = lerp(cur[j], P[j], k);
   // apply. arms[0] is at -x = the fighter's right
   const [ar, al] = rig.arms;
   ar.pivot.rotation.set(cur.aR.x, 0, cur.aR.z); ar.elbow.rotation.x = cur.aR.e;
   al.pivot.rotation.set(cur.aL.x, 0, cur.aL.z); al.elbow.rotation.x = cur.aL.e;
+  // roll the fists: sideways at rest (palms facing in, thumbs up), knuckles-forward when striking
+  ar.fist.rotation.y = cur.aR.r * ar.side * Math.PI / 2; al.fist.rotation.y = cur.aL.r * al.side * Math.PI / 2;
   if (rig.legs.length) {
     const [lr, ll] = rig.legs;
     lr.pivot.rotation.x = cur.lR.x; lr.knee.rotation.x = cur.lR.k;
