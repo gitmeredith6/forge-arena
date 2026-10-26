@@ -131,6 +131,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .pv-name small { display: block; font-family: var(--f-body); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .wchips { display: flex; gap: 4px; }
 .wchip { font-family: var(--f-display); font-size: 18px; line-height: 1; padding: 4px 6px 1px; border-radius: 4px; color: #0a0e16; background: var(--wc); font-weight: 600; }
+.pv-spin { position: absolute; top: 8px; left: 10px; z-index: 2; background: #0b0f18cc; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: var(--fg); display: inline-flex; gap: 6px; align-items: center; }
+.pv-spin:hover { border-color: #ffffff40; }
+.pv-spin span { font-size: 10px; color: var(--p1); }
 .pv-hint { position: absolute; top: 10px; right: 12px; font-size: 12px; color: var(--muted); pointer-events: none; }
 
 .b-stats { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
@@ -300,6 +303,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <div class="card b-preview" id="previewBox">
       <canvas id="previewCanvas" aria-label="3D preview of your fighter"></canvas>
       <div class="pv-hint">Drag to turn</div>
+      <button type="button" class="pv-spin" id="spinBtn" aria-pressed="false"></button>
       <div class="pv-label">
         <div class="pv-name" id="pvName"></div>
         <div class="wchips" id="pvChips"></div>
@@ -2008,14 +2012,20 @@ const Preview = (() => {
   const ped = mesh(new THREE.CylinderGeometry(1.05, 1.15, 0.14, 48), stdMat(0x1d2638, { metalness: 0.7, roughness: 0.35 }), scene, 0, -0.07, 0);
   ped.castShadow = false;
   const ring = new THREE.Mesh(new THREE.TorusGeometry(1.08, 0.015, 6, 64), glowMat(0xffb547)); ring.rotation.x = Math.PI / 2; ring.position.y = 0.0; scene.add(ring);
-  let rig = null, yaw = 0.5, spin = 0.35, dragging = false, lastX = 0, pop = 0;
+  let rig = null, yaw = 0.5, dragging = false, lastX = 0, pop = 0, still = false;
+  try { still = localStorage.getItem('forge-arena-still') === '1'; } catch (e) {}
+  let spin = still ? 0 : 0.35;
+  const spinBtn = $('spinBtn');
+  const showSpin = () => { spinBtn.setAttribute('aria-pressed', String(still)); spinBtn.innerHTML = still ? '<span aria-hidden="true">▶</span> Rotate' : '<span aria-hidden="true">❚❚</span> Stop rotation'; };
+  spinBtn.onclick = () => { still = !still; spin = still ? 0 : 0.35; showSpin(); try { localStorage.setItem('forge-arena-still', still ? '1' : '0'); } catch (e) {} };
+  showSpin();
   function setBuild(b) {
     if (rig) { scene.remove(rig.root); disposeObj(rig.root); }
     rig = makeFighterModel(b, ACCENT.p1); scene.add(rig.root); pop = 1;
   }
   canvas.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; canvas.setPointerCapture(e.pointerId); });
   canvas.addEventListener('pointermove', e => { if (!dragging) return; yaw += (e.clientX - lastX) * 0.012; lastX = e.clientX; spin = 0; });
-  canvas.addEventListener('pointerup', () => { dragging = false; spin = 0.35; });
+  canvas.addEventListener('pointerup', () => { dragging = false; spin = still ? 0 : 0.35; });
   function resize() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     renderer.setSize(Math.max(1, w), Math.max(1, h), false);
