@@ -546,10 +546,30 @@ function sprintFootGeo() {
   geo.setIndex(idx); geo.computeVertexNormals();
   return geo;
 }
+// closed track path around equal-radius wheels (convex, counter-clockwise in z/y), sampled for the tread pads
+function treadPath(centers, R) {
+  const pts = [], k = centers.length;
+  for (let i = 0; i < k; i++) {
+    const [pz, py] = centers[(i + k - 1) % k], [cz, cy] = centers[i], [nz, ny] = centers[(i + 1) % k];
+    const a0 = Math.atan2(-(cz - pz), cy - py), a1 = Math.atan2(-(nz - cz), ny - cy);
+    let da = a1 - a0; while (da < 0) da += Math.PI * 2;
+    for (let j = 0; j <= 8; j++) { const a = a0 + da * j / 8; pts.push([cz + R * Math.cos(a), cy + R * Math.sin(a)]); }
+  }
+  const cum = [0];
+  for (let i = 1; i <= pts.length; i++) { const [az, ay] = pts[i - 1], [bz, by] = pts[i % pts.length]; cum.push(cum[i - 1] + Math.hypot(bz - az, by - ay)); }
+  const len = cum[cum.length - 1], n = Math.floor(len / 0.074);
+  return { pts, cum, len, n };
+}
+function treadAt(P, s) {
+  s = ((s % P.len) + P.len) % P.len;
+  let lo = 0, hi = P.cum.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (P.cum[m] <= s) lo = m; else hi = m; }
+  const [az, ay] = P.pts[lo], [bz, by] = P.pts[(lo + 1) % P.pts.length], seg = P.cum[lo + 1] - P.cum[lo] || 1, t = (s - P.cum[lo]) / seg;
+  return [az + (bz - az) * t, ay + (by - ay) * t, (bz - az) / seg, (by - ay) / seg];
+}
 function mergeGroup(group) {
   const byMat = new Map();
   for (const c of group.children.slice()) {
-    if (!c.isMesh || c.children.length) continue;
+    if (!c.isMesh || c.isInstancedMesh || c.children.length) continue;
     const list = byMat.get(c.material) || []; list.push(c); byMat.set(c.material, list);
   }
   for (const [mat, list] of byMat) {
@@ -822,16 +842,54 @@ function makeFighterModel(build, accent) {
     for (const s of [-1, 1]) { const fin = mesh(rbox(0.05, 0.42, 0.3, 0.02), dark, body, s * 0.33, hipY - 0.22, -0.06); fin.rotation.z = s * 0.38; }
     mesh(rbox(0.5, 0.18, 0.36, 0.06), dark, body, 0, hipY + 0.02, 0);
   } else if (B.type === 'treads') {
+    // Heavy: twin sloped track units with moving cleated pads, a centre chassis and one hydraulic strut up to the hips
     hipY = 0.92; rig.treads = true;
+    const WR = 0.1, TX = 0.41, TW = 0.25;
+    const centers = [[-0.46, 0.15], [0.46, 0.15], [0.1, 0.5], [-0.22, 0.5]];
+    rig.treadPath = treadPath(centers, WR + 0.02);
+    const padGeo = new THREE.BoxGeometry(TW, 0.04, 0.066), cleatGeo = new THREE.BoxGeometry(TW * 0.86, 0.018, 0.02);
+    const plate = new THREE.Shape(); centers.forEach(([z, y], i) => { const cz = z * 1.02, cy = y + (y > 0.3 ? 0.03 : -0.04); i ? plate.lineTo(cz, cy) : plate.moveTo(cz, cy); }); plate.closePath();
+    const plateGeo = new THREE.ExtrudeGeometry(plate, { depth: 0.03, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.03, bevelSegments: 2 });
+    rig.belts = [];
     for (const s of [-1, 1]) {
-      mesh(rbox(0.3, 0.5, 1.2, 0.2), dark, body, s * 0.42, 0.25, 0);
-      mesh(rbox(0.07, 0.34, 0.96, 0.03), botM, body, s * 0.59, 0.27, 0);
-      for (const z of [-0.36, 0, 0.36]) { const wh = mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.05, 14), joint, body, s * 0.635, 0.25, z); wh.rotation.z = Math.PI / 2; }
-      mesh(rbox(0.04, 0.03, 0.8, 0.01), g, body, s * 0.635, 0.42, 0);
-      mesh(rbox(0.26, 0.08, 0.5, 0.03), botM, body, s * 0.42, 0.52, 0.2);
+      const n = rig.treadPath.n;
+      const pads = new THREE.InstancedMesh(padGeo, dark, n), cleats = new THREE.InstancedMesh(cleatGeo, joint, n);
+      for (const im of [pads, cleats]) { im.castShadow = true; im.receiveShadow = true; im.position.x = s * TX; body.add(im); }
+      rig.belts.push({ s, pads, cleats, off: 0 });
+      // corner sprockets and bogie wheels inside the track
+      for (const [z, y] of centers) { const wh = mesh(new THREE.CylinderGeometry(WR, WR, TW * 0.9, 16), joint, body, s * TX, y, z); wh.rotation.z = Math.PI / 2; }
+      for (const z of [-0.22, 0, 0.22]) { const wh = mesh(new THREE.CylinderGeometry(0.075, 0.075, TW * 0.8, 14), joint, body, s * TX, 0.115, z); wh.rotation.z = Math.PI / 2; }
+      // outer armoured side plate with hub caps, bolts and a glowing trim line
+      const op = mesh(plateGeo, botM, body, s * (TX + TW / 2 + 0.005) + (s > 0 ? 0.03 : 0), 0, 0); op.rotation.y = -Math.PI / 2;
+      for (const [z, y] of centers) {
+        const hub = mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.04, 14), joint, body, s * (TX + TW / 2 + 0.05), y, z); hub.rotation.z = Math.PI / 2;
+        const cap = mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.02, 8), dark, body, s * (TX + TW / 2 + 0.075), y, z); cap.rotation.z = Math.PI / 2;
+      }
+      for (const z of [-0.22, 0, 0.22]) { const hb = mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.03, 10), joint, body, s * (TX + TW / 2 + 0.045), 0.13, z); hb.rotation.z = Math.PI / 2; }
+      for (const [z, y] of [[-0.3, 0.32], [0.26, 0.3], [-0.04, 0.42], [-0.04, 0.22]]) mesh(new THREE.SphereGeometry(0.014, 6, 5), joint, body, s * (TX + TW / 2 + 0.045), y, z);
+      mesh(rbox(0.012, 0.012, 0.5, 0.004), g, body, s * (TX + TW / 2 + 0.05), 0.34, -0.04);
+      // inner frame rail
+      mesh(rbox(0.03, 0.08, 0.86, 0.012), dark, body, s * (TX - TW / 2 - 0.02), 0.2, 0);
     }
-    mesh(rbox(0.66, 0.42, 0.6, 0.1), dark, body, 0, hipY - 0.25, 0);
-    mesh(rbox(0.52, 0.16, 0.52, 0.06), botM, body, 0, hipY - 0.02, 0);
+    // centre chassis between the tracks: axle, gearbox and a pointed front wedge
+    mesh(rbox(0.5, 0.2, 0.52, 0.05), dark, body, 0, 0.3, -0.02);
+    const ax = mesh(new THREE.CylinderGeometry(0.055, 0.055, TX * 2, 12), joint, body, 0, 0.3, -0.02); ax.rotation.z = Math.PI / 2;
+    const wedge = mesh(rbox(0.34, 0.05, 0.3, 0.02), botM, body, 0, 0.33, 0.3); wedge.rotation.x = 0.45;
+    mesh(rbox(0.2, 0.014, 0.014, 0.005), g, body, 0, 0.37, 0.4);
+    gear(body, 0.1, 12, 0.03, 0, 0.36, -0.29);
+    // hydraulic strut column up to the waist, with a pair of pistons
+    mesh(rbox(0.3, 0.16, 0.32, 0.05), botM, body, 0, 0.47, -0.02);
+    mesh(new THREE.CylinderGeometry(0.085, 0.095, 0.4, 14), joint, body, 0, 0.66, -0.04);
+    mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.2, 14), botM, body, 0, 0.66, -0.04);
+    for (const y of [0.56, 0.76]) { const sr = mesh(new THREE.TorusGeometry(0.12, 0.01, 6, 24), dark, body, 0, y, -0.04); sr.rotation.x = Math.PI / 2; }
+    const gr = mesh(new THREE.TorusGeometry(0.123, 0.007, 6, 24), g, body, 0, 0.66, -0.04); gr.rotation.x = Math.PI / 2;
+    for (const sx of [-1, 1]) {
+      mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 8), botM, body, sx * 0.16, 0.56, 0.04);
+      mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.26, 8), joint, body, sx * 0.16, 0.74, 0.04);
+      mesh(new THREE.SphereGeometry(0.03, 8, 6), joint, body, sx * 0.16, 0.46, 0.04);
+    }
+    mesh(rbox(0.42, 0.14, 0.38, 0.05), botM, body, 0, hipY - 0.03, 0);
+    mesh(rbox(0.3, 0.05, 0.3, 0.02), dark, body, 0, hipY - 0.12, 0);
   } else {
     const r = B.r, len = B.len;
     hipY = len + 0.09;
@@ -1109,6 +1167,27 @@ function animateRig(rig, f, dt, time) {
     }
     const v = Math.hypot(vx, vz);
     if (v > 1e-3) rig.ball.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new V3(vz / v, 0, -vx / v), v * dt / rig.ballR));
+  }
+  if (rig.belts) {
+    // run each track by the ground speed under it: forward speed plus the turn rate across the track's width
+    let vz = 0.12, w = 0;
+    if (f) {
+      const wx = f.moveVel.x + f.knock.x, wz = f.moveVel.z + f.knock.z, yaw = rig.root.rotation.y;
+      vz = wx * Math.sin(yaw) + wz * Math.cos(yaw);
+      if (rig.lastYaw !== undefined && dt > 0) { let dy = yaw - rig.lastYaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); w = dy / dt; }
+      rig.lastYaw = yaw;
+    }
+    const P = rig.treadPath, step = P.len / P.n, M4 = new THREE.Matrix4(), q = new THREE.Quaternion(), ax = new V3(1, 0, 0), one = new V3(1, 1, 1), p = new V3();
+    for (const b of rig.belts) {
+      b.off -= (vz - w * b.s * 0.41) * dt;
+      for (let i = 0; i < P.n; i++) {
+        const [z, y, tz, ty] = treadAt(P, b.off + i * step);
+        q.setFromAxisAngle(ax, Math.atan2(-ty, tz));
+        p.set(0, y, z); M4.compose(p, q, one); b.pads.setMatrixAt(i, M4);
+        p.set(0, y - tz * 0.024, z + ty * 0.024); M4.compose(p, q, one); b.cleats.setMatrixAt(i, M4);
+      }
+      b.pads.instanceMatrix.needsUpdate = true; b.cleats.instanceMatrix.needsUpdate = true;
+    }
   }
 }
 
