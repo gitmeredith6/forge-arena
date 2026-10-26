@@ -665,9 +665,22 @@ function makeFighterModel(build, accent) {
     seam(elbow, gw, 0, -armLen * 0.16, gz + 0.004);
     for (const sx of [-1, 1]) bolt(elbow, sx * gw * 0.38, -armLen * 0.42, gz + 0.004, armR * 0.16);
     bolt(pivot, side * armR * 1.05, -armLen * 0.08, armR * 0.6, armR * 0.18);
-    // fingers: four knuckles curled toward the front, plus a thumb
-    for (let i = 0; i < 4; i++) mesh(rbox(fistR * 0.42, fistR * 0.55, fistR * 0.5, fistR * 0.12), joint, fist, -fistR * 0.66 + i * fistR * 0.44, -fistR * 0.62, fistR * 0.72);
-    mesh(rbox(fistR * 0.4, fistR * 0.8, fistR * 0.42, fistR * 0.12), joint, fist, -side * fistR * 0.98, -fistR * 0.2, fistR * 0.4);
+    // clenched fingers: each has three jointed segments that run forward over the knuckles, down the front and curl back under the palm
+    const F = fistR, fw = F * 0.36, fr = F * 0.1;
+    for (let i = 0; i < 4; i++) {
+      const x = -F * 0.63 + i * F * 0.42, ln = i === 0 || i === 3 ? 0.9 : 1;
+      mesh(rbox(fw, F * 0.5 * ln, F * 0.42, fr), topM, fist, x, -F * 0.98, F * 0.42);
+      mesh(rbox(fw * 0.96, F * 0.4, F * 0.46 * ln, fr), joint, fist, x, -F * 1.2, -F * 0.02);
+      mesh(rbox(fw * 0.92, F * 0.42 * ln, F * 0.34, fr), joint, fist, x, -F * 0.98, -F * 0.5);
+      const k1 = mesh(new THREE.CylinderGeometry(F * 0.13, F * 0.13, fw * 0.9, 8), joint, fist, x, -F * 1.2, F * 0.36); k1.rotation.z = Math.PI / 2;
+      const k2 = mesh(new THREE.CylinderGeometry(F * 0.12, F * 0.12, fw * 0.86, 8), joint, fist, x, -F * 1.2, -F * 0.36); k2.rotation.z = Math.PI / 2;
+      mesh(new THREE.SphereGeometry(F * 0.07, 6, 5), joint, fist, x, -F * 0.78, F * 0.66);
+    }
+    // thumb on the inner side, folded down and across the front of the fingers
+    const tx = -side;
+    const tb = mesh(rbox(F * 0.4, F * 0.62, F * 0.42, fr), topM, fist, tx * F * 0.98, -F * 0.55, -F * 0.25); tb.rotation.z = tx * 0.25;
+    mesh(new THREE.SphereGeometry(F * 0.17, 8, 6), dark, fist, tx * F * 0.92, -F * 0.9, -F * 0.42);
+    mesh(rbox(F * 0.62, F * 0.32, F * 0.34, fr), joint, fist, tx * F * 0.55, -F * 1.12, -F * 0.48);
     // armor bands on the upper arm
     for (const y of [-0.1, -0.34]) mesh(rbox(armR * [1.95, 2.25, 2.55][w], armLen * 0.035, armR * [2.35, 2.25, 2.55][w], armLen * 0.01), dark, pivot, 0, armLen * y, 0);
     // elbow hinge with end caps
@@ -1091,8 +1104,9 @@ function makeFighterModel(build, accent) {
       for (const y of [-0.2, -0.34]) mesh(rbox(armR * 1.3, 0.022, 0.03, 0.008), g, elbow, 0, armLen * y, armR * 1.46);
     }
     const fist = new THREE.Group(); fist.position.y = -armLen * 0.5 - fistR * 0.7; elbow.add(fist);
-    mesh(rbox(fistR * 1.9, fistR * 1.9, fistR * 1.9, fistR * 0.45), dark, fist);
-    mesh(rbox(fistR * 1.5, 0.03, fistR * 1.2, 0.01), g, fist, 0, -fistR * 0.96, 0);
+    // palm block; the clenched fingers and thumb are added in armDetail. The punching face is -y, the back of the hand +z
+    mesh(rbox(fistR * 1.8, fistR * 1.55, fistR * 1.6, fistR * 0.4), dark, fist, 0, -fistR * 0.05, -fistR * 0.05);
+    mesh(rbox(fistR * 1.1, fistR * 0.8, 0.02, 0.008), g, fist, 0, fistR * 0.1, fistR * 0.78);
     armDetail(pivot, elbow, fist, armR, armLen, fistR, side, tw2);
     rig.arms.push({ pivot, elbow, side, fist });
   }
