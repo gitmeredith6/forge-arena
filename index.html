@@ -413,6 +413,59 @@ const buildName = b => `${partById('top', b.top).name} · ${partById('middle', b
 
 /* ======================= MODELS ======================= */
 const ACCENT = { p1: 0xffb547, p2: 0xff4d6d };
+/* Armor surface detail, painted once onto canvases: panel seams with a bevel, rivet rows,
+   cut lines, vent slots and wear. The same drawing feeds the color map and the bump map. */
+let DETAIL = null;
+function detailTextures() {
+  if (DETAIL) return DETAIL;
+  const N = 512, mk = () => { const c = document.createElement('canvas'); c.width = c.height = N; return c; };
+  const cm = mk(), cb = mk(), m = cm.getContext('2d'), b = cb.getContext('2d');
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  m.fillStyle = '#e4e4e4'; m.fillRect(0, 0, N, N); b.fillStyle = '#808080'; b.fillRect(0, 0, N, N);
+  // wear speckle and scratches
+  for (let i = 0; i < 2600; i++) { const x = rnd() * N, y = rnd() * N, s = 1 + rnd() * 2.5; m.fillStyle = rnd() < 0.5 ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.08)'; m.fillRect(x, y, s, s); }
+  m.lineWidth = 1; for (let i = 0; i < 60; i++) { const x = rnd() * N, y = rnd() * N, a = rnd() * Math.PI, l = 8 + rnd() * 30; m.strokeStyle = 'rgba(255,255,255,0.45)'; m.beginPath(); m.moveTo(x, y); m.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); m.stroke(); }
+  const groove = (x1, y1, x2, y2, w) => {
+    for (const [ctx, dark, lite] of [[m, 'rgba(25,28,34,0.85)', 'rgba(255,255,255,0.5)'], [b, '#000', '#d8d8d8']]) {
+      ctx.lineCap = 'butt';
+      ctx.strokeStyle = lite; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x1 + 1.5, y1 + 1.5); ctx.lineTo(x2 + 1.5, y2 + 1.5); ctx.stroke();
+      ctx.strokeStyle = dark; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    }
+  };
+  const rivet = (x, y, r) => {
+    for (const [ctx, ring, top] of [[m, 'rgba(20,22,28,0.8)', 'rgba(255,255,255,0.75)'], [b, '#202020', '#ffffff']]) {
+      ctx.fillStyle = ring; ctx.beginPath(); ctx.arc(x, y, r + 1, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = top; ctx.beginPath(); ctx.arc(x - 0.5, y - 0.5, r * 0.7, 0, Math.PI * 2); ctx.fill();
+    }
+  };
+  // panels: recursive splits, so seams line up into plate shapes
+  const panels = [];
+  const split = (x, y, w, h, d) => {
+    if (d > 3 || (d > 1 && rnd() < 0.25) || w < 70 || h < 70) { panels.push([x, y, w, h]); return; }
+    if (w > h ? rnd() < 0.8 : rnd() < 0.2) { const k = Math.round(w * (0.3 + rnd() * 0.4)); split(x, y, k, h, d + 1); split(x + k, y, w - k, h, d + 1); }
+    else { const k = Math.round(h * (0.3 + rnd() * 0.4)); split(x, y, w, k, d + 1); split(x, y + k, w, h - k, d + 1); }
+  };
+  split(0, 0, N, N, 0);
+  for (const [x, y, w, h] of panels) {
+    groove(x, y, x + w, y, 4); groove(x, y, x, y + h, 4);
+    const kind = rnd();
+    if (kind < 0.35) { for (let i = 12; i < w - 8; i += 16) { rivet(x + i, y + 9, 2.2); rivet(x + i, y + h - 9, 2.2); } }
+    else if (kind < 0.55) { const n = 3 + Math.floor(rnd() * 4), vw = w * 0.5, vx = x + w * 0.25, vy = y + h * 0.3; for (let i = 0; i < n; i++) groove(vx, vy + i * 9, vx + vw, vy + i * 9, 4); }
+    else if (kind < 0.7) { const cx = x + w * 0.5, cy = y + h * 0.5, l = Math.min(w, h) * 0.25; groove(cx - l, cy + l * 0.5, cx, cy - l * 0.5, 3); groove(cx, cy - l * 0.5, cx + l, cy + l * 0.5, 3); }
+    else if (kind < 0.85) { const ix = x + 12, iy = y + 12, iw = w - 24, ih = h - 24; if (iw > 20 && ih > 20) { groove(ix, iy, ix + iw, iy, 2); groove(ix, iy + ih, ix + iw, iy + ih, 2); groove(ix, iy, ix, iy + ih, 2); groove(ix + iw, iy, ix + iw, iy + ih, 2); for (const [rx, ry] of [[ix + 6, iy + 6], [ix + iw - 6, iy + 6], [ix + 6, iy + ih - 6], [ix + iw - 6, iy + ih - 6]]) rivet(rx, ry, 2); } }
+    else { groove(x + w * 0.15, y + h * 0.85, x + w * 0.6, y + h * 0.4, 2); }
+  }
+  const mkTex = (c, srgb) => { const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; if (srgb) t.encoding = THREE.sRGBEncoding; return t; };
+  DETAIL = { map: mkTex(cm, true), bump: mkTex(cb, false) };
+  return DETAIL;
+}
+/* armor paint with etched detail; `rep` sets how many texture tiles span one metre of plate */
+function armorMat(color, rep, o) {
+  const d = detailTextures(), m = stdMat(color, o);
+  m.map = d.map.clone(); m.map.needsUpdate = true; m.map.repeat.set(rep, rep);
+  m.bumpMap = d.bump.clone(); m.bumpMap.needsUpdate = true; m.bumpMap.repeat.set(rep, rep); m.bumpScale = 0.012;
+  return m;
+}
 function stdMat(color, o) { const m = new THREE.MeshStandardMaterial(Object.assign({ roughness: 0.36, metalness: 0.55 }, o || {})); m.color.setHex(color).convertSRGBToLinear(); return m; }
 function glowMat(color) { const m = new THREE.MeshStandardMaterial({ roughness: 0.3, metalness: 0, emissiveIntensity: 2.6 }); m.color.setHex(color).convertSRGBToLinear(); m.emissive.copy(m.color); return m; }
 function mesh(geo, mat, parent, x = 0, y = 0, z = 0) {
@@ -486,12 +539,13 @@ function mergeGroup(group) {
       if (!g.attributes.normal) g.computeVertexNormals();
       total += g.attributes.position.count; return g;
     });
-    const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3);
+    const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), uv = new Float32Array(total * 2);
     let o = 0;
-    for (const g of parts) { pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3); o += g.attributes.position.count; g.dispose(); }
+    for (const g of parts) { pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3); if (g.attributes.uv) uv.set(g.attributes.uv.array, o * 2); o += g.attributes.position.count; g.dispose(); }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     for (const m of list) { group.remove(m); m.geometry.dispose(); }
     const merged = new THREE.Mesh(geo, mat); merged.castShadow = true; merged.receiveShadow = true; group.add(merged);
   }
@@ -502,13 +556,25 @@ function makeFighterModel(build, accent) {
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
   const g = glowMat(accent);
   const ac = new THREE.Color(accent).convertSRGBToLinear();
-  const topM = stdMat(T.color), midM = stdMat(M.color), botM = stdMat(B.color);
-  const dark = stdMat(0x1c2029, { metalness: 0.45, roughness: 0.55 });
+  const topM = armorMat(T.color, 2.4), midM = armorMat(M.color, 2.4), botM = armorMat(B.color, 2.4);
+  const dark = armorMat(0x1c2029, 4, { metalness: 0.45, roughness: 0.55 });
   const joint = stdMat(0x3a404c, { metalness: 0.9, roughness: 0.25 });
   const rig = { root, body, legs: [], arms: [], mats: [topM, midM, botM, dark, joint], topM, glow: g };
   const bolt = (parent, x, y, z, rad) => mesh(new THREE.SphereGeometry(Math.max(0.01, rad), 8, 6), joint, parent, x, y, z);
   const seam = (parent, w, x, y, z) => mesh(rbox(w, 0.012, 0.012, 0.004), dark, parent, x, y, z);
   const rod = (parent, rad, len, x, y, z) => mesh(new THREE.CylinderGeometry(rad, rad, len, 8), joint, parent, x, y, z);
+  const gear = (parent, R, teeth, depth, x, y, z, mat = joint) => {
+    const sh = new THREE.Shape(), ri = R * 0.78, n = teeth * 2;
+    for (let i = 0; i < n; i++) {
+      const a0 = i / n * Math.PI * 2, a1 = (i + 1) / n * Math.PI * 2, rr = i % 2 ? ri : R;
+      if (i === 0) sh.moveTo(Math.cos(a0) * rr, Math.sin(a0) * rr); else sh.lineTo(Math.cos(a0) * rr, Math.sin(a0) * rr);
+      sh.lineTo(Math.cos(a1) * rr, Math.sin(a1) * rr);
+    }
+    const hole = new THREE.Path(); hole.absarc(0, 0, R * 0.32, 0, Math.PI * 2, true); sh.holes.push(hole);
+    const geo = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: false, curveSegments: 6 }); geo.translate(0, 0, -depth / 2);
+    return mesh(geo, mat, parent, x, y, z);
+  };
+  const pipe = (parent, pts, rad) => mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(a => new V3(...a))), 20, rad, 6), joint, parent);
   function legDetail(pivot, knee, r, len, side, w, front) {
     const pw = [1.7, 2.5, 2.6][w] * r;
     // bolts and a seam across the thigh plate
@@ -535,6 +601,16 @@ function makeFighterModel(build, accent) {
     }
     // ankle joint
     const ank = mesh(new THREE.CylinderGeometry(r * (w === 2 ? 0.7 : 0.6), r * (w === 2 ? 0.7 : 0.6), r * (w === 2 ? 2.6 : 1.9), 10), joint, knee, 0, -len * 0.5 + (w === 2 ? 0.1 : 0.04), 0); ank.rotation.z = Math.PI / 2;
+    // knee hinge with end caps
+    const kh = mesh(new THREE.CylinderGeometry(r * 0.5, r * 0.5, r * [2.3, 2.5, 2.7][w], 10), joint, knee); kh.rotation.z = Math.PI / 2;
+    for (const sx of [-1, 1]) mesh(new THREE.CylinderGeometry(r * 0.65, r * 0.65, 0.02, 12), dark, knee, sx * r * [1.15, 1.25, 1.35][w], 0, 0).rotation.z = Math.PI / 2;
+    // armor bands around the thigh
+    if (!(w === 1 && !B.armor)) for (const y of [[-0.06, -0.38], [-0.04, -0.32], [-0.06, -0.42]][w]) mesh(rbox(pw * 1.05, len * 0.03, [2.8, 2.9, 2.6][w] * r, len * 0.008), dark, pivot, 0, len * y, w === 0 ? 0.01 : 0);
+    // ribs down the outside of the shin
+    const sh = [0.65, 1.1, 1.2][w] * r, sz = [-0.4, 0.5, 0][w] * r, sd = [2.4, 1.0, 1.8][w] * r;
+    for (let i = 0; i < 3; i++) mesh(rbox(0.02, len * 0.025, sd, 0.006), dark, knee, side * (sh + 0.008), -len * (0.16 + i * 0.09), sz);
+    // hip drive gear
+    if (w > 0) gear(pivot, r * [0, 0.9, 0.8][w], 9, 0.03, side * r * [0, 1.3, 1.45][w], -0.02, 0).rotation.y = Math.PI / 2;
   }
   function armDetail(pivot, elbow, fist, armR, armLen, fistR, side, w) {
     // elbow piston on the outside of the arm
@@ -550,6 +626,16 @@ function makeFighterModel(build, accent) {
     // fingers: four knuckles curled toward the front, plus a thumb
     for (let i = 0; i < 4; i++) mesh(rbox(fistR * 0.42, fistR * 0.55, fistR * 0.5, fistR * 0.12), joint, fist, -fistR * 0.66 + i * fistR * 0.44, -fistR * 0.62, fistR * 0.72);
     mesh(rbox(fistR * 0.4, fistR * 0.8, fistR * 0.42, fistR * 0.12), joint, fist, -side * fistR * 0.98, -fistR * 0.2, fistR * 0.4);
+    // armor bands on the upper arm
+    for (const y of [-0.1, -0.34]) mesh(rbox(armR * [1.95, 2.25, 2.55][w], armLen * 0.035, armR * [2.35, 2.25, 2.55][w], armLen * 0.01), dark, pivot, 0, armLen * y, 0);
+    // elbow hinge with end caps
+    const hinge = mesh(new THREE.CylinderGeometry(armR * 0.55, armR * 0.55, armR * [2.4, 2.6, 2.9][w], 10), joint, elbow); hinge.rotation.z = Math.PI / 2;
+    for (const sx of [-1, 1]) mesh(new THREE.CylinderGeometry(armR * 0.7, armR * 0.7, 0.02, 12), dark, elbow, sx * armR * [1.2, 1.3, 1.45][w], 0, 0).rotation.z = Math.PI / 2;
+    // ribs across the back of the forearm
+    const fz = -armR * [1.4, 1.2, 1.45][w], fwid = armR * [1.3, 2.0, 2.6][w];
+    for (let i = 0; i < 3; i++) mesh(rbox(fwid, armLen * 0.03, 0.03, 0.008), dark, elbow, 0, -armLen * (0.16 + i * 0.09), fz - 0.01);
+    // shoulder drive gear
+    gear(pivot, armR * 0.9, 8, 0.025, side * armR * 1.08, -0.01, 0).rotation.y = Math.PI / 2;
   }
   function chestDetail(w, tw, th, td, base, faceScale, prof) {
     const rAt = y => { for (let i = 1; i < prof.length; i++) { const [r0, y0] = prof[i - 1], [r1, y1] = prof[i]; if (y <= y1 && y >= y0 && y1 > y0) return r0 + (r1 - r0) * (y - y0) / (y1 - y0); } return prof[prof.length - 2][0]; };
@@ -571,6 +657,59 @@ function makeFighterModel(build, accent) {
     for (let i = 0; i < 4; i++) { const yf = 0.3 + i * 0.16; mesh(rbox(0.07, th * 0.1, 0.05, 0.015), joint, body, 0, base + th * yf, -front(yf) + 0.005); }
     // collar plates
     for (const sx of [-1, 1]) { const c = mesh(rbox(tw * 0.22, 0.05, td * 0.5, 0.015), midM, body, sx * tw * 0.16, base + th * 0.985, 0); c.rotation.z = -sx * 0.25; }
+    const cy = base + th * 0.65;
+    // flank gears: a big cog driving a small one, on a painted hub
+    const gR = [0.05, 0.075, 0.1][w], gy = base + th * 0.4, gz = -td * 0.22;
+    for (const sx of [-1, 1]) {
+      const xs = sx * (sideX(0.4) + 0.012);
+      gear(body, gR, 10, 0.03, xs, gy, gz).rotation.y = Math.PI / 2;
+      if (w > 0) gear(body, gR * 0.6, 7, 0.026, xs + sx * 0.004, gy + gR * 1.3, gz + gR * 0.7).rotation.y = Math.PI / 2;
+      mesh(new THREE.CylinderGeometry(gR * 0.3, gR * 0.3, 0.06, 10), midM, body, xs, gy, gz).rotation.z = Math.PI / 2;
+    }
+    // breastplate layers (or crossed harness straps on light chests)
+    if (w === 0) {
+      for (const sx of [-1, 1]) mesh(rbox(0.035, th * 0.62, 0.02, 0.008), dark, body, sx * tw * 0.1, base + th * 0.6, front(0.6) + 0.012).rotation.z = sx * 0.42;
+      gear(body, 0.045, 8, 0.02, 0, base + th * 0.6, front(0.6) + 0.026);
+    } else if (plain) {
+      const pz = front(0.88);
+      mesh(rbox(tw * 0.78, th * 0.12, 0.06, 0.02), midM, body, 0, base + th * 0.88, pz - 0.01).rotation.x = -0.25;
+      for (let i = 0; i < 5; i++) bolt(body, -tw * 0.3 + i * tw * 0.15, base + th * 0.835, pz + 0.018, 0.012);
+      if (w === 2 && M.id !== 'furnace') mesh(rbox(tw * 0.62, th * 0.09, 0.06, 0.02), midM, body, 0, base + th * 0.54, front(0.54) + 0.005).rotation.x = 0.12;
+    }
+    // pressure gauge
+    if (w > 0) {
+      const gx = -tw * 0.27, gyy = base + th * 0.5, gzz = front(0.5);
+      mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.03, 16), joint, body, gx, gyy, gzz + 0.005).rotation.x = Math.PI / 2;
+      mesh(new THREE.CircleGeometry(0.03, 16), g, body, gx, gyy, gzz + 0.021);
+      mesh(rbox(0.005, 0.026, 0.004, 0.001), dark, body, gx + 0.007, gyy + 0.006, gzz + 0.025).rotation.z = -0.6;
+    }
+    // coolant pipes from the back, around the flanks, into the belly
+    const pr = [0.012, 0.018, 0.026][w];
+    for (const sx of (w === 0 ? [1] : [-1, 1])) {
+      const pts = [[sx * tw * 0.2, base + th * 0.72, -front(0.72) - 0.03], [sx * (sideX(0.56) + 0.04), base + th * 0.56, -td * 0.05], [sx * (sideX(0.34) + 0.03), base + th * 0.3, td * 0.2], [sx * tw * 0.24, base + th * 0.2, front(0.2) + 0.03]];
+      pipe(body, pts, pr);
+      for (const a of [pts[0], pts[3]]) mesh(new THREE.CylinderGeometry(pr * 1.7, pr * 1.7, pr * 3, 8), dark, body, ...a);
+    }
+    // canisters on the back (heavy chests carry a backpack instead)
+    if (w < 2) for (const sx of (w === 0 ? [1] : [-1, 1])) {
+      const cx = sx * tw * 0.15, cyy = base + th * 0.6, cz = -front(0.6) - 0.05;
+      mesh(new THREE.CylinderGeometry(0.04, 0.04, th * 0.32, 12), midM, body, cx, cyy, cz);
+      for (const dy of [-1, 1]) mesh(new THREE.CylinderGeometry(0.046, 0.046, 0.02, 12), joint, body, cx, cyy + dy * th * 0.16, cz);
+      mesh(rbox(0.05, 0.012, 0.012, 0.004), g, body, cx, cyy, cz - 0.042);
+    }
+    // heavy: ribbed exhaust stacks and a gear and rivets on the backpack
+    if (w === 2) {
+      for (const sx of [-1, 1]) for (const dy of [-0.06, 0, 0.06]) mesh(new THREE.TorusGeometry(0.06, 0.01, 6, 14), dark, body, sx * tw * 0.18, cy + th * 0.22 + dy, -td * 0.5 - 0.1).rotation.x = Math.PI / 2;
+      const bz = -td * 0.5 - 0.19;
+      gear(body, 0.075, 9, 0.03, 0, cy - 0.04, bz);
+      for (const sx of [-1, 1]) for (const dy of [-1, 1]) bolt(body, sx * tw * 0.26, cy - 0.04 + dy * th * 0.2, bz, 0.014);
+    }
+    // belt pouches
+    if (w > 0) for (const sx of [-1, 1]) {
+      const pzz = front(0.04) + 0.03;
+      mesh(rbox(0.1, 0.09, 0.06, 0.02), dark, body, sx * tw * 0.27, base + 0.01, pzz);
+      bolt(body, sx * tw * 0.27, base + 0.03, pzz + 0.032, 0.01);
+    }
   }
 
   // ---- bottom
@@ -669,7 +808,7 @@ function makeFighterModel(build, accent) {
   const tw = [0.5, 0.7, 0.95][mw], th = [0.74, 0.84, 0.92][mw], td = [0.32, 0.42, 0.56][mw];
   const torsoBase = hipY + (mw === 0 ? 0.14 : 0.06);
   const tg = new THREE.Group(); tg.scale.set(tw, th, td); tg.position.y = torsoBase + th / 2; body.add(tg);
-  mesh(torsoGeo(M.segs, M.taper, mw), midM, tg);
+  { const tgeo = torsoGeo(M.segs, M.taper, mw), uv = tgeo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * Math.PI * tw * 0.9, uv.getY(i) * th); mesh(tgeo, midM, tg); }
   const faceScale = M.segs === 4 ? 0.71 : 1;
   const chestZ = td * 0.5 * faceScale * Math.max(1, M.taper * 0.97);
   const chestY = torsoBase + th * 0.65;
@@ -790,7 +929,7 @@ function makeTrail(scene, color) {
   };
 }
 function newPose() { return { aR: { x: 0, z: 0, e: 0 }, aL: { x: 0, z: 0, e: 0 }, lR: { x: 0, k: 0 }, lL: { x: 0, k: 0 }, bx: 0, bz: 0, by: 0, tw: 0 }; }
-function disposeObj(o) { o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); }); }
+function disposeObj(o) { o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) { for (const k of ['map', 'bumpMap']) { const t = c.material[k]; if (t && t !== HALO_TEX && (!DETAIL || (t !== DETAIL.map && t !== DETAIL.bump))) t.dispose(); } c.material.dispose(); } }); }
 
 /* procedural animation — computes a target pose from fighter state, eases toward it */
 function animateRig(rig, f, dt, time) {
