@@ -357,7 +357,7 @@ const PARTS = {
     { id: 'strider',  w: 'light',  name: 'Strider',  perk: 'Rolls on a ball. +20% dodge distance', mod: { dodgeSpeedMul: 0.2 }, color: 0xe2e6ea, type: 'ball' },
     { id: 'sprinter', w: 'light',  name: 'Sprinter', perk: '+10% move speed',          mod: { moveMul: 0.10 }, color: 0x6fc2b0, type: 'sculpt' },
     { id: 'phantom',  w: 'light',  name: 'Phantom',  perk: 'Hovers. 25% faster dodge recharge', mod: { dodgeCdMul: -0.25 }, color: 0xb7b4e6, type: 'hover' },
-    { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 health',               mod: { hp: 10 }, color: 0x6f7f96, type: 'legs', r: 0.12, len: 0.95 },
+    { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 health',               mod: { hp: 10 }, color: 0x6f7f96, type: 'snake' },
     { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x6e8a4e, type: 'legs', r: 0.115, len: 1.0, kneeGlow: true },
     { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+4% defense',              mod: { def: 0.04 }, color: 0x7a6f9a, type: 'legs', r: 0.13, len: 0.92, armor: true },
     { id: 'treads',   w: 'heavy',  name: 'Treads',   perk: 'Tank treads. +30% knockback resistance, +8% defense, +8 health', mod: { kbRes: 0.3, def: 0.08, hp: 8 }, color: 0x4a4f44, type: 'treads' },
@@ -854,6 +854,41 @@ function makeFighterModel(build, accent) {
     halo(body, ac, 0, hipY - 0.85, 0, 0.9, 0.9);
     for (const s of [-1, 1]) { const fin = mesh(rbox(0.05, 0.42, 0.3, 0.02), dark, body, s * 0.33, hipY - 0.22, -0.06); fin.rotation.z = s * 0.38; }
     mesh(rbox(0.5, 0.18, 0.36, 0.06), dark, body, 0, hipY + 0.02, 0);
+  } else if (B.type === 'snake') {
+    // Middle: a chained mechanical serpent. The front rises to the hips like a cobra and the rest coils on the ground on centipede legs
+    hipY = 1.04;
+    mesh(rbox(0.36, 0.14, 0.3, 0.05), dark, body, 0, hipY, 0);
+    const col = mesh(new THREE.TorusGeometry(0.14, 0.03, 8, 22), joint, body, 0, hipY - 0.08, 0); col.rotation.x = Math.PI / 2;
+    const pts = [[0, hipY - 0.06, 0], [0, hipY - 0.36, 0.02], [0, 0.4, -0.1], [0, 0.17, -0.34]];
+    for (let i = 0; i <= 12; i++) { const a = -Math.PI / 2 - 0.25 - i / 12 * Math.PI * 1.35, rc = 0.6 - i * 0.012; pts.push([Math.cos(a) * rc, Math.max(0.06, 0.12 - i * 0.005), Math.sin(a) * rc]); }
+    const curve = new THREE.CatmullRomCurve3(pts.map(a => new V3(...a)));
+    const SP = 0.14, n = Math.floor(curve.getLength() / SP), segs = [], base = [];
+    for (let i = 0; i < n; i++) {
+      const u = i / (n - 1), r = 0.14 - u * 0.08, ground = curve.getPointAt(u).y < 0.2, tail = i === n - 1;
+      const sg = new THREE.Group(); body.add(sg); segs.push(sg);
+      if (tail) {
+        // whip blade at the tip of the tail
+        const bl = mesh(new THREE.ConeGeometry(0.07, 0.34, 4), joint, sg, 0, 0, 0.12); bl.rotation.x = Math.PI / 2; bl.scale.set(0.35, 1, 1);
+        mesh(rbox(0.012, 0.012, 0.26, 0.004), g, sg, 0, 0.022, 0.1);
+        mesh(new THREE.SphereGeometry(r * 1.1, 10, 8), dark, sg);
+      } else {
+        const core = mesh(new THREE.CylinderGeometry(r, r * 0.9, SP * 0.74, 12), botM, sg); core.rotation.x = Math.PI / 2;
+        mesh(rbox(r * 1.35, r * 0.4, SP * 0.62, r * 0.15), dark, sg, 0, r * 0.82, 0);
+        mesh(rbox(r * 0.3, r * 0.22, SP * 0.5, r * 0.08), joint, sg, 0, r * 1.08, 0);
+        mesh(new THREE.TorusGeometry(r * 1.02, r * 0.13, 6, 16), joint, sg, 0, 0, SP * 0.37);
+        const link = mesh(new THREE.CylinderGeometry(r * 0.42, r * 0.42, SP * 0.4, 8), joint, sg, 0, 0, -SP * 0.45); link.rotation.x = Math.PI / 2;
+        for (const sx of [-1, 1]) mesh(new THREE.SphereGeometry(Math.max(0.012, r * 0.16), 6, 5), g, sg, sx * r * 0.96, r * 0.2, 0);
+      }
+      const legs = [];
+      if (ground && !tail) for (const sx of [-1, 1]) {
+        const lp = new THREE.Group(); lp.position.set(sx * r * 0.85, -r * 0.2, 0); sg.add(lp);
+        const l1 = mesh(new THREE.CylinderGeometry(0.012, 0.016, 0.12, 6), joint, lp, sx * 0.05, -0.02, 0); l1.rotation.z = sx * 1.25;
+        const l2 = mesh(new THREE.ConeGeometry(0.014, 0.09, 6), dark, lp, sx * 0.1, -0.06, 0.01); l2.rotation.z = Math.PI + sx * 0.35;
+        legs.push({ lp, sx });
+      }
+      base.push({ u, p: curve.getPointAt(u), legs, ground });
+    }
+    rig.snake = { segs, base, n, len: curve.getLength(), phase: 0, whip: 0 };
   } else if (B.type === 'roller') {
     // Heavy: a spiked roller drum held in side brackets on a turntable, so it spins to roll and swivels to steer
     const R = 0.22, SL = 0.12, HL = 0.5, cy = R + SL * 0.55; hipY = 0.9;
@@ -1169,6 +1204,7 @@ function makeTrail(scene, color) {
     dispose() { scene.remove(m); geo.dispose(); m.material.dispose(); },
   };
 }
+function smooth01(x) { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); }
 function newPose() { return { aR: { x: 0, z: 0, e: 0, r: 1 }, aL: { x: 0, z: 0, e: 0, r: 1 }, lR: { x: 0, k: 0 }, lL: { x: 0, k: 0 }, bx: 0, bz: 0, by: 0, tw: 0 }; }
 function disposeObj(o) { o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) { for (const k of ['map', 'bumpMap']) { const t = c.material[k]; if (t && t !== HALO_TEX && (!DETAIL || (t !== DETAIL.map && t !== DETAIL.bump))) t.dispose(); } c.material.dispose(); } }); }
 
@@ -1257,6 +1293,29 @@ function animateRig(rig, f, dt, time) {
     }
     const v = Math.hypot(vx, vz);
     if (v > 1e-3) rig.ball.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new V3(vz / v, 0, -vx / v), v * dt / rig.ballR));
+  }
+  if (rig.snake) {
+    // slither: a sideways wave runs down the body (faster when moving), little legs paddle, and the tail lashes during a whip
+    const S = rig.snake, nS = S.n, up = new V3(0, 1, 0), back = new V3(0, 0, -1);
+    S.phase += dt * (2.2 + sp * 9);
+    const pos = [];
+    for (let i = 0; i < nS; i++) {
+      const b = S.base[i], s0 = b.u * S.len, amp = smooth01((b.u - 0.12) / 0.2) * (0.035 + 0.05 * sp);
+      const p = b.p.clone();
+      const i2 = Math.min(nS - 1, i + 1), i1 = Math.max(0, i - 1), t = S.base[i2].p.clone().sub(S.base[i1].p).normalize();
+      const side = new V3().crossVectors(up, t); if (side.lengthSq() < 1e-4) side.set(1, 0, 0); side.normalize();
+      p.addScaledVector(side, Math.sin(s0 * 6 - S.phase) * amp);
+      if (S.whip > 0) { const k = smooth01((b.u - 0.6) / 0.4) * S.whip; p.y += k * 0.45 * Math.sin(S.whipT * 9); p.addScaledVector(side, k * 0.6 * Math.sin(S.whipT * 12)); }
+      pos.push(p);
+    }
+    const m = new THREE.Matrix4();
+    for (let i = 0; i < nS; i++) {
+      const t = pos[Math.min(nS - 1, i + 1)].clone().sub(pos[Math.max(0, i - 1)]).normalize();
+      const hint = up.clone().addScaledVector(back, 1.5 * Math.abs(t.y)).normalize();
+      const right = new V3().crossVectors(hint, t).normalize(), u2 = new V3().crossVectors(t, right);
+      m.makeBasis(right, u2, t); const sg = S.segs[i]; sg.position.copy(pos[i]); sg.quaternion.setFromRotationMatrix(m);
+      for (const L of S.base[i].legs) L.lp.rotation.x = Math.sin(S.phase * 1.6 + i * 1.1 + (L.sx > 0 ? Math.PI : 0)) * (0.35 + sp * 0.4);
+    }
   }
   if (rig.roller) {
     // swivel the drum to face the direction of travel (either way round), then roll it by the distance moved
