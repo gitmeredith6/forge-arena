@@ -361,7 +361,7 @@ const PARTS = {
     { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x6e8a4e, type: 'legs', r: 0.115, len: 1.0, kneeGlow: true },
     { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+4% defense',              mod: { def: 0.04 }, color: 0x7a6f9a, type: 'legs', r: 0.13, len: 0.92, armor: true },
     { id: 'treads',   w: 'heavy',  name: 'Treads',   perk: 'Tank treads. +30% knockback resistance, +8% defense, +8 health', mod: { kbRes: 0.3, def: 0.08, hp: 8 }, color: 0x4a4f44, type: 'treads' },
-    { id: 'pillar',   w: 'heavy',  name: 'Pillar',   perk: '+18 health',               mod: { hp: 18 }, color: 0x2f4f9a, type: 'roller' },
+    { id: 'pillar',   w: 'heavy',  name: 'Pillar',   perk: '+18 health',               mod: { hp: 18 }, color: 0x1f2124, type: 'roller' },
     { id: 'juggernaut', w: 'heavy', name: 'Juggernaut', perk: '+10% guard, +14 health', mod: { blockRed: 0.10, hp: 14 }, color: 0x7a4636, type: 'legs', r: 0.22, len: 0.88, armor: true },
   ],
 };
@@ -844,7 +844,7 @@ function makeFighterModel(build, accent) {
   } else if (B.type === 'roller') {
     // Heavy: a spiked roller drum held in side brackets on a turntable, so it spins to roll and swivels to steer
     const R = 0.22, SL = 0.12, HL = 0.5, cy = R + SL * 0.55; hipY = 0.9;
-    const brass = stdMat(0xd8a640, { metalness: 0.85, roughness: 0.3 }); rig.mats.push(brass);
+    const brass = stdMat(0xd4d8de, { metalness: 1.0, roughness: 0.18 }); rig.mats.push(brass);
     // hip mount and turntable under the midsection
     mesh(rbox(0.5, 0.14, 0.4, 0.05), dark, body, 0, hipY - 0.02, 0);
     const tt = mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.06, 24), joint, body, 0, hipY - 0.12, 0);
