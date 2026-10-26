@@ -55,6 +55,30 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .home-glow i { position: absolute; left: 50%; top: 56%; width: 900px; height: 900px; margin: -450px 0 0 -450px; border-radius: 50%; border: 2px solid #ffb54726; transform: rotateX(72deg); animation: ringSpin 14s linear infinite; }
 .home-glow i:nth-child(2) { width: 620px; height: 620px; margin: -310px 0 0 -310px; border-color: #ff4d6d2a; animation-duration: 10s; animation-direction: reverse; }
 .home-glow i:nth-child(3) { width: 360px; height: 360px; margin: -180px 0 0 -180px; border: 3px dashed #ffb54740; animation-duration: 7s; }
+#arenas { position: fixed; inset: 0; z-index: 30; overflow-y: auto; padding: 24px 16px; background: radial-gradient(1200px 500px at 50% -10%, #1b2740 0%, transparent 70%), var(--bg); }
+.ar-in { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.ar-head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.ar-title { margin: 0; font-family: var(--f-display); font-weight: 700; font-size: 48px; line-height: 0.9; letter-spacing: 0.02em; }
+.ar-title span { color: var(--p1); }
+.ar-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.ar-card { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px; color: var(--fg); transition: border-color .12s, transform .12s; }
+.ar-card:hover { border-color: #ffffff40; }
+.ar-card[aria-pressed="true"] { border-color: var(--p1); box-shadow: inset 0 0 0 1px var(--p1), 0 0 24px #ffb54726; }
+.ar-card canvas { width: 100%; aspect-ratio: 1.35; display: block; border-radius: 8px; background: #05070c; }
+.ar-name { font-family: var(--f-display); font-size: 32px; line-height: 0.9; font-weight: 700; }
+.ar-tag { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--p1); font-weight: 700; }
+.ar-desc { margin: 0; font-size: 13.5px; color: var(--muted); }
+.ar-note { margin: 0; color: var(--muted); font-size: 13.5px; }
+.ar-fight { align-self: flex-end; min-width: 220px; }
+.vs .mid small { display: block; font-family: var(--f-body); font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-top: 10px; }
+@media (max-width: 720px) {
+  .ar-grid { grid-template-columns: 1fr; }
+  .ar-card { display: grid; grid-template-columns: 120px 1fr; gap: 4px 10px; align-items: start; }
+  .ar-card canvas { grid-row: span 3; aspect-ratio: 1; }
+  .ar-name { font-size: 28px; }
+  .ar-title { font-size: 38px; }
+  .ar-fight { align-self: stretch; }
+}
 @keyframes ringSpin { to { transform: rotateX(72deg) rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .home-glow i, .home-begin { animation: none; } }
 .tagline { color: var(--muted); margin: 0; max-width: 60ch; }
@@ -200,7 +224,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 .vs .who { font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; }
 .vs .nm { font-family: var(--f-display); font-size: clamp(30px, 5.5vw, 64px); line-height: 0.85; font-weight: 700; overflow-wrap: anywhere; }
 .vs .mid { font-family: var(--f-display); font-size: clamp(60px, 12vw, 140px); font-weight: 700; line-height: 0.8; color: #fff; }
-.vs .ws { display: flex; gap: 4px; }
+.vs .vsw { display: flex; gap: 4px; }
 
 .touch { position: absolute; inset: auto 0 0 0; height: 46%; pointer-events: none; display: none; }
 .touch.on { display: block; }
@@ -296,6 +320,18 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   </div>
 </section>
 
+<section id="arenas" aria-label="Choose an arena" hidden>
+  <div class="ar-in">
+    <div class="ar-head">
+      <button type="button" class="btn" id="arBack">Back to build</button>
+      <h2 class="ar-title">CHOOSE AN <span>ARENA</span></h2>
+    </div>
+    <div class="ar-grid" id="arGrid"></div>
+    <p class="ar-note">Ramps lead up to platforms. Hits from the high ground do 15% more damage, and walls and barriers stop beams, flames and shots.</p>
+    <button type="button" class="btn btn-go ar-fight" id="arFight">FIGHT</button>
+  </div>
+</section>
+
 <section id="battle" hidden aria-label="Arena">
   <canvas id="battleCanvas"></canvas>
   <div class="fx" id="fx"></div>
@@ -333,9 +369,9 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   </div>
   <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click light</span><span><kbd>K</kbd>/right-click heavy</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>E</kbd> special</span></div>
   <div class="vs" id="vs" hidden>
-    <div class="side"><div class="who" style="color: var(--p1)">You</div><div class="nm" id="vsP1"></div><div class="ws" id="vsP1w"></div></div>
-    <div class="mid">VS</div>
-    <div class="side r"><div class="who" style="color: var(--p2)" id="vsP2who">Rival</div><div class="nm" id="vsP2"></div><div class="ws" id="vsP2w"></div></div>
+    <div class="side"><div class="who" style="color: var(--p1)">You</div><div class="nm" id="vsP1"></div><div class="vsw" id="vsP1w"></div></div>
+    <div class="mid">VS<small id="vsArena"></small></div>
+    <div class="side r"><div class="who" style="color: var(--p2)" id="vsP2who">Rival</div><div class="nm" id="vsP2"></div><div class="vsw" id="vsP2w"></div></div>
   </div>
   <div class="overlay" id="overlay" hidden>
     <div class="ov-box">
@@ -1688,6 +1724,8 @@ const SFX = {
 let build = { head: 'sentinel', top: 'sentinel', middle: 'furnace', bottom: 'sprinter', weapons: ['laser', 'rockets', 'blades'] };
 let curSec = 'top';
 let difficulty = 'normal';
+let arenaId = 'guerrilla';
+try { const a = localStorage.getItem('forge-arena-map'); if (['classic', 'guerrilla', 'citadel'].includes(a)) arenaId = a; } catch (e) {}
 try { const s = JSON.parse(localStorage.getItem('forge-arena-build') || 'null'); if (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) build = Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons, head: headById(s.head) ? s.head : s.top }); } catch (e) {}
 try { const d = localStorage.getItem('forge-arena-diff'); if (['easy', 'normal', 'hard'].includes(d)) difficulty = d; } catch (e) {}
 const save = () => { try { localStorage.setItem('forge-arena-build', JSON.stringify(build)); localStorage.setItem('forge-arena-diff', difficulty); } catch (e) {} };
@@ -1801,9 +1839,20 @@ function renderAll() {
 }
 $('diff').onclick = e => { const d = e.target.closest('button'); if (!d) return; difficulty = d.dataset.d; save(); renderAll(); };
 $('randomBtn').onclick = () => { build = randomBuild(); save(); renderAll(); };
-$('fightBtn').onclick = () => { SFX.init(); Battle.start(); };
+function renderArenas() {
+  const G = $('arGrid');
+  G.innerHTML = ARENAS.map(A => `<button type="button" class="ar-card" data-a="${A.id}" aria-pressed="${A.id === arenaId}"><canvas aria-hidden="true"></canvas><div class="ar-tag">${A.tag}</div><div class="ar-name">${A.name}</div><p class="ar-desc">${A.desc}</p></button>`).join('');
+  [...G.children].forEach((b, i) => drawArenaMap(b.querySelector('canvas'), ARENAS[i]));
+}
+function showArenas() { $('builder').hidden = true; $('home').hidden = true; $('arenas').hidden = false; renderArenas(); }
+$('arGrid').onclick = e => { const b = e.target.closest('.ar-card'); if (!b) return; arenaId = b.dataset.a; try { localStorage.setItem('forge-arena-map', arenaId); } catch (err) {} for (const c of $('arGrid').children) c.setAttribute('aria-pressed', String(c === b)); };
+$('arGrid').ondblclick = e => { if (e.target.closest('.ar-card')) $('arFight').click(); };
+$('arBack').onclick = () => { $('arenas').hidden = true; $('builder').hidden = false; Preview.resize(); };
+$('arFight').onclick = () => { SFX.init(); Battle.start(); };
+addEventListener('resize', () => { if (!$('arenas').hidden) renderArenas(); });
+$('fightBtn').onclick = () => { SFX.init(); showArenas(); };
 $('beginBtn').onclick = () => { SFX.init(); $('home').hidden = true; $('builder').hidden = false; Preview.resize(); };
-function goHome() { $('builder').hidden = true; $('home').hidden = false; }
+function goHome() { $('builder').hidden = true; $('arenas').hidden = true; $('home').hidden = false; }
 
 /* ---------- preview renderer ---------- */
 const Preview = (() => {
@@ -1864,6 +1913,168 @@ const KICKS = {
 function kickFor(build) { const b = partById('bottom', build.bottom); return b.type === 'snake' ? KICKS.whip : b.type === 'spider' ? KICKS.stab : KICKS[b.w]; }
 const ARENA_R = 13;
 const ROUND_TIME = 90;
+/* ---------- arenas ----------
+   Solids stand on the floor: 'box' (w along local x, d along local z, rotated by rot about y), 'ramp' (a box whose top rises
+   from h0 at local -z to h1 at local +z) and 'cyl'. Kinds pick the look; 'plat' tops are walkable high ground reached by ramps.
+   Layouts are point-symmetric (x, z -> -x, -z) so both spawns get the same cover. */
+const STEP = 0.35;
+const mirrorLayout = list => list.concat(list.map(s => Object.assign({}, s, { x: -s.x, z: -s.z, rot: (s.rot || 0) + Math.PI })));
+const ARENAS = [
+  { id: 'classic', name: 'Classic', tag: 'Open ring', desc: 'The original ring. Nothing between you and your rival.',
+    theme: { floor: ['#2a3346', '#161c29', '#0d1119'], line: '#ffb547', l1: 0xffb547, l2: 0xff4d6d, fog: 0x070a12, rim: 0x1a2130, glow: 0xffb547 },
+    solids: [] },
+  { id: 'guerrilla', name: 'Guerrilla', tag: 'Cover and platforms', desc: 'Walls, chest-high barriers and two raised platforms. Take cover, flank, and fight for the high ground.',
+    theme: { floor: ['#34352a', '#202119', '#11120e'], line: '#e0c25a', l1: 0xffc46b, l2: 0xff6a4d, fog: 0x0a0b08, rim: 0x2a2c22, glow: 0xffc24a,
+      steel: 0x3d4236, concrete: 0x77736a, crate: 0x6e6a44, plat: 0x4a4e44 },
+    solids: mirrorLayout([
+      { type: 'box', kind: 'plat', x: 8.2, z: 0.5, w: 3.6, d: 4.2, h: 1.25 },
+      { type: 'ramp', kind: 'ramp', x: 8.2, z: -3.3, w: 1.8, d: 3.4, h0: 0, h1: 1.25 },
+      { type: 'box', kind: 'wall', x: 6.55, z: 1.5, w: 0.3, d: 1.8, h: 2.25 },
+      { type: 'box', kind: 'wall', x: 3.2, z: 3.4, w: 3.0, d: 0.45, h: 2.3, rot: 0.45 },
+      { type: 'box', kind: 'barrier', x: -2.2, z: 1.0, w: 2.6, d: 0.6, h: 1.45 },
+      { type: 'box', kind: 'barrier', x: -5.5, z: 7.5, w: 2.4, d: 0.6, h: 1.45, rot: -0.7 },
+      { type: 'cyl', kind: 'pillar', x: -8.5, z: -6.5, r: 0.6, h: 2.8 },
+      { type: 'box', kind: 'crate', x: -0.3, z: 9.6, w: 1.2, d: 1.2, h: 1.1, rot: 0.2 },
+      { type: 'box', kind: 'crate', x: 1.0, z: 9.9, w: 1.0, d: 1.0, h: 2.0, rot: -0.15 },
+    ]) },
+  { id: 'citadel', name: 'Citadel', tag: 'King of the hill', desc: 'A fortress in the middle with a ramp on each side and battlements to hide behind. Hold the top.',
+    theme: { floor: ['#2b2a46', '#171628', '#0b0b15'], line: '#8f7bff', l1: 0x7fe6ff, l2: 0xb07aff, fog: 0x08070f, rim: 0x201d36, glow: 0x7fe6ff,
+      steel: 0x34364c, concrete: 0x55566e, crate: 0x4a4560, plat: 0x3c3e58 },
+    solids: [{ type: 'box', kind: 'plat', x: 0, z: 0, w: 4.4, d: 3.0, h: 1.4 }].concat(mirrorLayout([
+      { type: 'ramp', kind: 'ramp', x: 4.1, z: 0, w: 1.6, d: 3.8, h0: 0, h1: 1.4, rot: -Math.PI / 2 },
+      { type: 'box', kind: 'wall', x: 1.7, z: 1.2, w: 0.6, d: 0.6, h: 2.3 },
+      { type: 'box', kind: 'wall', x: -1.7, z: 1.2, w: 0.6, d: 0.6, h: 2.3 },
+      { type: 'cyl', kind: 'pillar', x: 6.2, z: 6.2, r: 0.7, h: 3.0 },
+      { type: 'cyl', kind: 'pillar', x: -6.2, z: 6.2, r: 0.7, h: 3.0 },
+      { type: 'box', kind: 'barrier', x: 0, z: 9.0, w: 3.2, d: 0.6, h: 1.45 },
+      { type: 'box', kind: 'barrier', x: 9.6, z: -2.6, w: 2.4, d: 0.6, h: 1.45, rot: Math.PI / 2 },
+    ])) },
+];
+const arenaById = id => ARENAS.find(a => a.id === id);
+
+const World = {
+  solids: [], plats: [], ramps: [],
+  set(arena) {
+    this.arena = arena;
+    this.solids = arena.solids.map(d => {
+      const s = Object.assign({ rot: 0 }, d);
+      s.c = Math.cos(s.rot); s.sn = Math.sin(s.rot);
+      if (s.type === 'cyl') { s.br = s.r; s.top = s.h; } else { s.hw = s.w / 2; s.hd = s.d / 2; s.br = Math.hypot(s.hw, s.hd); s.top = s.type === 'ramp' ? Math.max(s.h0, s.h1) : s.h; }
+      return s;
+    });
+    this.plats = this.solids.filter(s => s.kind === 'plat'); this.ramps = this.solids.filter(s => s.type === 'ramp');
+    for (const P of this.plats) P.ramps = [];
+    for (const R of this.ramps) {
+      const [tx, tz] = this.world(R, 0, R.hd + 0.3);
+      R.plat = this.plats.find(P => this.inside(P, tx, tz));
+      const [fx, fz] = this.world(R, 0, -R.hd - 0.7), [ux, uz] = this.world(R, 0, R.hd + 0.9);
+      R.foot = new V3(fx, 0, fz); R.up = new V3(ux, R.top, uz);
+      if (R.plat) R.plat.ramps.push(R);
+    }
+  },
+  local(s, x, z) { const dx = x - s.x, dz = z - s.z; return [dx * s.c - dz * s.sn, dx * s.sn + dz * s.c]; },
+  world(s, lx, lz) { return [s.x + lx * s.c + lz * s.sn, s.z - lx * s.sn + lz * s.c]; },
+  topAt(s, lz) { return s.type === 'ramp' ? s.h0 + (s.h1 - s.h0) * clamp((lz + s.hd) / (2 * s.hd), 0, 1) : s.h; },
+  heightAt(s, x, z) { return s.type === 'ramp' ? this.topAt(s, this.local(s, x, z)[1]) : s.h; },
+  inside(s, x, z, pad = 0) {
+    if (Math.abs(x - s.x) > s.br + pad || Math.abs(z - s.z) > s.br + pad) return false;
+    if (s.type === 'cyl') return Math.hypot(x - s.x, z - s.z) <= s.r + pad;
+    const [lx, lz] = this.local(s, x, z); return Math.abs(lx) <= s.hw + pad && Math.abs(lz) <= s.hd + pad;
+  },
+  groundAt(x, z, maxY = Infinity) { let g = 0; for (const s of this.solids) if (this.inside(s, x, z)) { const h = this.heightAt(s, x, z); if (h <= maxY && h > g) g = h; } return g; },
+  solidAt(x, y, z) { if (y < 0) return null; for (const s of this.solids) if (y < s.top && this.inside(s, x, z) && y < this.heightAt(s, x, z)) return s; return null; },
+  // first point where the segment a->b enters a solid, or null when the line is clear
+  losHit(a, b, skip = 0.3) {
+    if (!this.solids.length) return null;
+    const d = a.distanceTo(b), n = Math.max(1, Math.ceil(d / 0.14));
+    for (let i = 1; i <= n; i++) {
+      const t = i / n; if (t * d < skip) continue;
+      const x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t, z = a.z + (b.z - a.z) * t;
+      if (this.solidAt(x, y, z)) return new V3(x, y, z);
+    }
+    return null;
+  },
+  segHits(s, a, b) {
+    const n = 24;
+    for (let i = 1; i < n; i++) { const t = i / n, x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t, z = a.z + (b.z - a.z) * t; if (y < s.top && this.inside(s, x, z, 0.15) && y < this.heightAt(s, x, z) + 0.1) return true; }
+    return false;
+  },
+  // push a fighter out of anything it can't step onto, then settle it on the ground below (falling if needed). Returns landing speed.
+  resolve(f, dt) {
+    const p = f.pos;
+    for (let it = 0; it < 2; it++) for (const s of this.solids) {
+      if (Math.abs(p.x - s.x) > s.br + f.radius || Math.abs(p.z - s.z) > s.br + f.radius) continue;
+      let nx, nz, pen;
+      if (s.type === 'cyl') {
+        if (s.h <= p.y + STEP) continue;
+        const dx = p.x - s.x, dz = p.z - s.z, l = Math.hypot(dx, dz); pen = s.r + f.radius - l; if (pen <= 0) continue;
+        nx = l > 1e-4 ? dx / l : 1; nz = l > 1e-4 ? dz / l : 0;
+      } else {
+        const [lx, lz] = this.local(s, p.x, p.z), cx = clamp(lx, -s.hw, s.hw), cz = clamp(lz, -s.hd, s.hd);
+        if (this.topAt(s, cz) <= p.y + STEP) continue;
+        const ox = lx - cx, oz = lz - cz, l = Math.hypot(ox, oz); let ux, uz;
+        if (l > 1e-5) { pen = f.radius - l; if (pen <= 0) continue; ux = ox / l; uz = oz / l; }
+        else { const px = s.hw - Math.abs(lx), pz = s.hd - Math.abs(lz); if (px < pz) { ux = Math.sign(lx) || 1; uz = 0; pen = px + f.radius; } else { ux = 0; uz = Math.sign(lz) || 1; pen = pz + f.radius; } }
+        nx = ux * s.c + uz * s.sn; nz = -ux * s.sn + uz * s.c;
+      }
+      p.x += nx * pen; p.z += nz * pen;
+      for (const v of [f.knock, f.moveVel]) { const vn = v.x * nx + v.z * nz; if (vn < 0) { v.x -= vn * nx; v.z -= vn * nz; } }
+    }
+    const g = this.groundAt(p.x, p.z, p.y + STEP);
+    let land = 0;
+    if (p.y > g + 1e-3) {
+      if (!f.air && p.y - g <= STEP) p.y = g;
+      else { f.air = true; f.vy -= 26 * dt; p.y += f.vy * dt; if (p.y <= g) { land = -f.vy; p.y = g; f.vy = 0; f.air = false; } }
+    } else { if (f.air) land = -f.vy; p.y = g; f.vy = 0; f.air = false; }
+    return land;
+  },
+  /* --- helpers for the CPU --- */
+  walkable(f, x, z, stayUp) {
+    if (Math.hypot(x, z) > ARENA_R - f.radius * 0.8) return false;
+    for (const s of this.solids) if (this.inside(s, x, z, f.radius * 0.6) && this.heightAt(s, x, z) > f.pos.y + STEP) return false;
+    return !stayUp || this.groundAt(x, z, f.pos.y + STEP) >= f.pos.y - 0.1;
+  },
+  // steer a wished direction around whatever is in the way
+  avoid(f, wx, wz, side, stayUp) {
+    const l = Math.hypot(wx, wz); if (!this.solids.length || l < 0.05) return [wx, wz];
+    const base = Math.atan2(wx, wz), probe = f.radius + 0.55;
+    for (const da of [0, 0.45, -0.45, 0.9, -0.9, 1.35, -1.35, 1.8, -1.8, 2.4, -2.4]) {
+      const a = base + da * side, dx = Math.sin(a), dz = Math.cos(a);
+      if (this.walkable(f, f.pos.x + dx * probe, f.pos.z + dz * probe, stayUp)) return [dx * l, dz * l];
+    }
+    return [wx, wz];
+  },
+  platAt(x, z) { for (const s of this.solids) if (this.inside(s, x, z)) { if (s.kind === 'plat') return s; if (s.type === 'ramp' && s.plat) return s.plat; } return null; },
+  // where to walk next to reach a point that may be up on a platform
+  route(f, t) {
+    const ty = this.groundAt(t.x, t.z);
+    if (ty - f.pos.y <= STEP) return t;
+    const P = this.platAt(t.x, t.z); if (!P || !P.ramps.length) return t;
+    let best = null, bd = Infinity;
+    for (const R of P.ramps) { if (this.inside(R, f.pos.x, f.pos.z, 0.2)) return R.up; const d = Math.hypot(R.foot.x - f.pos.x, R.foot.z - f.pos.z); if (d < bd) { bd = d; best = R; } }
+    return bd < 0.8 ? best.up : best.foot;
+  },
+  // a spot behind something tall, on the far side from the opponent
+  coverPoint(me, opp) {
+    let best = null, bs = Infinity;
+    const oa = new V3(opp.pos.x, opp.pos.y + opp.rig.chestY, opp.pos.z);
+    for (const s of this.solids) {
+      if (s.kind === 'plat' || s.type === 'ramp' || s.top < 1.4) continue;
+      let dx = s.x - opp.pos.x, dz = s.z - opp.pos.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+      const ext = s.type === 'cyl' ? s.r : Math.abs(dx * s.c - dz * s.sn) * s.hw + Math.abs(dx * s.sn + dz * s.c) * s.hd;
+      const x = s.x + dx * (ext + me.radius + 0.3), z = s.z + dz * (ext + me.radius + 0.3);
+      const gy = this.groundAt(x, z);
+      if (Math.abs(gy - me.pos.y) > 1 || !this.walkable({ pos: new V3(x, gy, z), radius: me.radius }, x, z)) continue;
+      if (!this.losHit(oa, new V3(x, gy + me.rig.chestY * 0.78, z))) continue;
+      const score = Math.hypot(x - me.pos.x, z - me.pos.z) - Math.hypot(x - opp.pos.x, z - opp.pos.z) * 0.3;
+      if (score < bs) { bs = score; best = new V3(x, gy, z); }
+    }
+    return best;
+  },
+};
+World.set(ARENAS[0]);
+const aimPt = f => new V3(f.pos.x, f.pos.y + f.rig.chestY * 0.78, f.pos.z);
+
 
 class Fighter {
   constructor(build, accent, scene) {
@@ -1880,7 +2091,7 @@ class Fighter {
   }
   reset(p, yaw) {
     this.pos.copy(p); this.yaw = yaw; this.hp = this.stats.hp; this.hpTrail = this.hp; this.energy = 0;
-    this.state = 'idle'; this.t = 0; this.knock.set(0, 0, 0); this.moveVel.set(0, 0, 0);
+    this.state = 'idle'; this.t = 0; this.knock.set(0, 0, 0); this.moveVel.set(0, 0, 0); this.vy = 0; this.air = false;
     this.dodgeCdT = 0; this.fortifyT = 0; this.buffer = null; this.invuln = false; this.attackId = 0; this.punchSide = 0;
     this.hitDone = false; this.blockHeld = false; this.flash = 0; this.speedNow = 0; this.stunDur = 0;
     this.wcd = [0, 0, 0]; this.wpn = null; this.burnT = 0; this.burnDps = 0; this.burnBy = null; this.slowT = 0; this.wShieldT = 0; this.tickT = 0; this.shots = 0;
@@ -2025,7 +2236,7 @@ const AI_LEVELS = {
   hard:   { think: 0.22, react: 0.13, guard: 0.7,  aggro: 0.72, heavy: 0.35, kick: 0.2, weapon: 0.45, combo: 0.6 },
 };
 class AIController {
-  constructor(level) { this.L = AI_LEVELS[level]; this.clock = 0; this.next = 0.8; this.mx = 0; this.mz = 0; this.strafe = Math.random() < 0.5 ? -1 : 1; this.blockUntil = 0; this.pending = null; this.seenAttack = -1; this.queue = []; }
+  constructor(level) { this.L = AI_LEVELS[level]; this.mode = null; this.goal = null; this.modeUntil = 0; this.side = 1; this.stuckT = 0; this.lastPos = null; this.clock = 0; this.next = 0.8; this.mx = 0; this.mz = 0; this.strafe = Math.random() < 0.5 ? -1 : 1; this.blockUntil = 0; this.pending = null; this.seenAttack = -1; this.queue = []; }
   input(dt, me, opp) {
     this.clock += dt;
     const inp = { mx: this.mx, mz: this.mz, light: false, heavy: false, kick: false, w1: false, w2: false, w3: false, block: this.clock < this.blockUntil, dodge: false, special: false };
@@ -2056,12 +2267,29 @@ class AIController {
         const id = me.special.id;
         if ((id === 'blink' && dist > 2.8 && dist < 8.5) || (id === 'pulse' && dist < 3.4) || (id === 'fortify' && dist < 5)) inp.special = true;
       }
+      // arenas with cover: duck behind walls when shot at or hurt, and climb to high ground with ranged weapons
+      if (World.solids.length) {
+        if (this.mode && (this.clock > this.modeUntil || dist < 2.6 || opp.state === 'ko')) this.mode = null;
+        const ranged = W => W.kind === 'beam' || W.kind === 'cone' || W.kind === 'zap' || W.kind === 'proj';
+        if (this.mode === 'cover') this.goal = World.coverPoint(me, opp) || this.goal;
+        else if (!this.mode && dist > 4) {
+          const r = Math.random(), shot = opp.state === 'weapon' && ranged(opp.wpn);
+          if ((shot && r < L.guard * 0.6) || (me.hp < me.stats.hp * 0.4 && r < L.guard * 0.3)) {
+            const c = World.coverPoint(me, opp); if (c) { this.mode = 'cover'; this.goal = c; this.modeUntil = this.clock + rand(1.5, 3); }
+          } else if (me.weapons.some(ranged) && me.pos.y < 0.5 && r < L.aggro * 0.3) {
+            let best = null, bd = Infinity;
+            for (const P of World.plats) { if (!P.ramps.length || World.inside(P, opp.pos.x, opp.pos.z, 0.5)) continue; const d = Math.hypot(P.x - me.pos.x, P.z - me.pos.z); if (d < bd && d < 11) { bd = d; best = P; } }
+            if (best) { this.mode = 'high'; this.goal = new V3(best.x, best.h, best.z); this.modeUntil = this.clock + rand(5, 8); }
+          }
+        }
+      }
       // weapons: fire whichever ready weapon suits the current distance
+      const clear = !World.losHit(new V3(me.pos.x, me.pos.y + me.rig.chestY, me.pos.z), aimPt(opp), me.radius + 0.1);
       if (!inp.special && opp.state !== 'ko' && Math.random() < L.weapon) {
         const reachM = me.stats.reach + opp.radius;
         const fits = W => W.kind === 'shield' ? (opp.state === 'weapon' || me.hp < me.stats.hp * 0.5) :
-          W.kind === 'cone' ? dist < W.range : W.kind === 'zap' ? dist < W.range - 0.3 : W.kind === 'melee' || W.kind === 'grind' ? dist < reachM + W.reach :
-          W.pull ? dist > 3.5 && dist < W.range : dist > 2.2 && dist < (W.range || 14);
+          W.kind === 'cone' ? dist < W.range && clear : W.kind === 'zap' ? dist < W.range - 0.3 && clear : W.kind === 'melee' || W.kind === 'grind' ? dist < reachM + W.reach :
+          W.pull ? dist > 3.5 && dist < W.range && clear : dist > 2.2 && dist < (W.range || 14) && (clear || W.proj === 'rocket');
         const ready = me.weapons.map((W, i) => [W, i]).filter(([W, i]) => me.wcd[i] <= 0 && fits(W));
         if (ready.length) inp['w' + (pick(ready)[1] + 1)] = true;
       }
@@ -2080,7 +2308,27 @@ class AIController {
       if (opp.state === 'stun' && dist < range + 0.6) { inp.light = true; }
     }
     if (inp.block) { inp.mz = Math.min(inp.mz, 0); }
+    if (World.solids.length && !inp.dodge) this.steer(dt, me, opp, inp, dist);
     return inp;
+  }
+  // turn the opponent-relative stick into a world direction, route it via ramps and around cover, then turn it back
+  steer(dt, me, opp, inp, dist) {
+    const fx = (opp.pos.x - me.pos.x) / (dist || 1), fz = (opp.pos.z - me.pos.z) / (dist || 1), rx = -fz, rz = fx;
+    let wx = rx * inp.mx + fx * inp.mz, wz = rz * inp.mx + fz * inp.mz, stayUp = false;
+    if (this.mode && this.goal) {
+      const t = World.route(me, this.goal), dx = t.x - me.pos.x, dz = t.z - me.pos.z, l = Math.hypot(dx, dz);
+      const there = l < 0.6 && Math.abs(this.goal.y - me.pos.y) < 0.4;
+      if (there) { wx *= 0.25; wz *= 0.25; if (this.mode === 'high') stayUp = true; } else { wx = dx / l; wz = dz / l; }
+    } else if (inp.mz > 0.3 || opp.pos.y - me.pos.y > STEP) {
+      const t = World.route(me, opp.pos);
+      if (t !== opp.pos) { const dx = t.x - me.pos.x, dz = t.z - me.pos.z, l = Math.hypot(dx, dz) || 1; wx = dx / l; wz = dz / l; }
+    }
+    if (me.pos.y > 0.5 && this.mode === 'high') stayUp = true;
+    // stuck against something: try the other way round
+    this.stuckT += dt;
+    if (this.stuckT > 0.7) { if (this.lastPos && Math.hypot(wx, wz) > 0.5 && this.lastPos.distanceTo(me.pos) < 0.35) { this.side *= -1; this.strafe *= -1; if (this.mode) this.mode = null; } this.lastPos = me.pos.clone(); this.stuckT = 0; }
+    [wx, wz] = World.avoid(me, wx, wz, this.side, stayUp);
+    inp.mx = wx * rx + wz * rz; inp.mz = wx * fx + wz * fz;
   }
 }
 
@@ -2139,9 +2387,9 @@ bCanvas.addEventListener('contextmenu', e => e.preventDefault());
 })();
 
 /* ---------- arena scene ---------- */
-function makeFloorTexture() {
+function makeFloorTexture(th) {
   const c = document.createElement('canvas'); c.width = c.height = 1024; const x = c.getContext('2d');
-  const g = x.createRadialGradient(512, 512, 40, 512, 512, 512); g.addColorStop(0, '#2a3346'); g.addColorStop(0.8, '#161c29'); g.addColorStop(1, '#0d1119');
+  const g = x.createRadialGradient(512, 512, 40, 512, 512, 512); g.addColorStop(0, th.floor[0]); g.addColorStop(0.8, th.floor[1]); g.addColorStop(1, th.floor[2]);
   x.fillStyle = g; x.fillRect(0, 0, 1024, 1024);
   x.translate(512, 512);
   x.strokeStyle = '#ffffff14'; x.lineWidth = 2;
@@ -2149,11 +2397,95 @@ function makeFloorTexture() {
   for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; x.beginPath(); x.moveTo(Math.cos(a) * 60, Math.sin(a) * 60); x.lineTo(Math.cos(a) * 500, Math.sin(a) * 500); x.stroke(); }
   // plate seams noise
   for (let i = 0; i < 1400; i++) { x.fillStyle = Math.random() < 0.5 ? '#ffffff08' : '#00000018'; const a = Math.random() * Math.PI * 2, r = Math.random() * 500; x.fillRect(Math.cos(a) * r, Math.sin(a) * r, rand(2, 10), rand(2, 10)); }
-  x.strokeStyle = '#ffb54766'; x.lineWidth = 6; x.beginPath(); x.arc(0, 0, 486, 0, Math.PI * 2); x.stroke();
-  x.strokeStyle = '#ffb54733'; x.lineWidth = 3; x.beginPath(); x.arc(0, 0, 120, 0, Math.PI * 2); x.stroke();
+  x.strokeStyle = th.line + '66'; x.lineWidth = 6; x.beginPath(); x.arc(0, 0, 486, 0, Math.PI * 2); x.stroke();
+  x.strokeStyle = th.line + '33'; x.lineWidth = 3; x.beginPath(); x.arc(0, 0, 120, 0, Math.PI * 2); x.stroke();
   // center emblem
   x.fillStyle = '#ffffff10'; x.font = '700 150px Teko, Impact, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('FORGE', 0, 6);
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t;
+}
+let HAZARD_TEX = null;
+function hazardTex() {
+  if (HAZARD_TEX) return HAZARD_TEX;
+  const c = document.createElement('canvas'); c.width = 128; c.height = 32; const x = c.getContext('2d');
+  x.fillStyle = '#e8b931'; x.fillRect(0, 0, 128, 32); x.fillStyle = '#16140f';
+  for (let i = -2; i < 8; i++) { x.beginPath(); x.moveTo(i * 24, 32); x.lineTo(i * 24 + 12, 32); x.lineTo(i * 24 + 28, 0); x.lineTo(i * 24 + 16, 0); x.fill(); }
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping; return (HAZARD_TEX = t);
+}
+// the meshes for one solid, built at its spot with its own materials so the camera can fade it
+function buildSolidMesh(s, th) {
+  const g = new THREE.Group(); g.position.set(s.x, 0, s.z); g.rotation.y = s.rot;
+  const steel = stdMat(th.steel || 0x3a4152, { metalness: 0.6, roughness: 0.45, envMapIntensity: 0.5 });
+  const glow = glowMat(th.glow);
+  const box = (w, h, d, m, x, y, z) => mesh(new THREE.BoxGeometry(w, h, d), m, g, x, y, z);
+  if (s.kind === 'plat') {
+    const top = stdMat(th.plat || 0x4a4e44, { metalness: 0.5, roughness: 0.55 });
+    box(s.w, s.h - 0.06, s.d, steel, 0, (s.h - 0.06) / 2, 0); box(s.w, 0.06, s.d, top, 0, s.h - 0.03, 0);
+    for (const sx of [-1, 1]) { box(s.w + 0.02, 0.05, 0.05, glow, 0, s.h + 0.005, sx * s.d / 2); box(0.05, 0.05, s.d + 0.02, glow, sx * s.w / 2, s.h + 0.005, 0); }
+    for (let i = 0; i < Math.floor(s.w / 0.6); i++) for (const sx of [-1, 1]) box(0.08, s.h * 0.8, 0.05, steel, -s.w / 2 + 0.3 + i * 0.6, s.h * 0.45, sx * (s.d / 2 + 0.02));
+    for (let i = 0; i < Math.floor(s.d / 0.6); i++) for (const sx of [-1, 1]) box(0.05, s.h * 0.8, 0.08, steel, sx * (s.w / 2 + 0.02), s.h * 0.45, -s.d / 2 + 0.3 + i * 0.6);
+  } else if (s.type === 'ramp') {
+    const geo = new THREE.BoxGeometry(s.w, 1, s.d); geo.translate(0, 0.5, 0);
+    const P = geo.attributes.position;
+    for (let i = 0; i < P.count; i++) if (P.getY(i) > 0.5) P.setY(i, Math.max(0.02, World.topAt(s, P.getZ(i))));
+    geo.computeVertexNormals(); mesh(geo, steel, g);
+    const slope = Math.atan2(s.h1 - s.h0, s.d), grip = stdMat(0x1a1c20, { metalness: 0.3, roughness: 0.8 });
+    for (let z = -s.hd + 0.3; z < s.hd - 0.1; z += 0.42) { const b = box(s.w - 0.25, 0.035, 0.12, grip, 0, World.topAt(s, z) + 0.02, z); b.rotation.x = -slope; }
+    for (const sx of [-1, 1]) { const e = box(0.05, 0.05, Math.hypot(s.d, s.h1 - s.h0), glow, sx * (s.w / 2 - 0.02), (s.h0 + s.h1) / 2 + 0.02, 0); e.rotation.x = -slope; }
+  } else if (s.kind === 'wall') {
+    const panel = stdMat(th.steel || 0x3a4152, { metalness: 0.7, roughness: 0.35 });
+    box(s.w, s.h, s.d, steel, 0, s.h / 2, 0);
+    const n = Math.max(1, Math.round(s.w / 0.75));
+    for (let i = 0; i < n; i++) for (const sz of [-1, 1]) if (s.d > 0.35) box(s.w / n - 0.08, s.h - 0.35, 0.04, panel, -s.w / 2 + (i + 0.5) * s.w / n, s.h / 2 - 0.05, sz * (s.d / 2 + 0.01));
+    box(s.w + 0.04, 0.06, s.d + 0.04, glow, 0, s.h - 0.12, 0);
+    box(s.w + 0.06, 0.08, s.d + 0.06, steel, 0, s.h + 0.02, 0);
+  } else if (s.kind === 'barrier') {
+    const conc = stdMat(th.concrete || 0x77736a, { metalness: 0.05, roughness: 0.9, envMapIntensity: 0.2 });
+    const hd = s.d / 2, sh = new THREE.Shape();
+    [[-hd, 0], [hd, 0], [hd, 0.22], [hd * 0.42, 0.5], [hd * 0.36, s.h], [-hd * 0.36, s.h], [-hd * 0.42, 0.5], [-hd, 0.22]].forEach(([x, y], i) => i ? sh.lineTo(x, y) : sh.moveTo(x, y));
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: s.w, bevelEnabled: false }); geo.translate(0, 0, -s.w / 2); geo.rotateY(Math.PI / 2);
+    mesh(geo, conc, g);
+    const hz = new THREE.MeshStandardMaterial({ map: hazardTex().clone(), roughness: 0.7, metalness: 0 }); hz.map.needsUpdate = true; hz.map.repeat.set(s.w / 1.2, 1);
+    for (const sz of [-1, 1]) { const b = new THREE.Mesh(new THREE.PlaneGeometry(s.w - 0.1, 0.16), hz); b.position.set(0, s.h - 0.22, sz * (hd * 0.38 + 0.005)); if (sz < 0) b.rotation.y = Math.PI; b.rotation.x = sz * -0.05; g.add(b); }
+  } else if (s.kind === 'pillar') {
+    mesh(new THREE.CylinderGeometry(s.r, s.r * 1.1, s.h, 24), steel, g, 0, s.h / 2, 0);
+    mesh(new THREE.CylinderGeometry(s.r * 1.25, s.r * 1.3, 0.25, 24), steel, g, 0, 0.125, 0);
+    mesh(new THREE.CylinderGeometry(s.r * 1.2, s.r * 1.12, 0.2, 24), steel, g, 0, s.h + 0.1, 0);
+    for (const y of [0.9, s.h - 0.4]) { const t = mesh(new THREE.TorusGeometry(s.r * 1.04, 0.035, 8, 32), glow, g, 0, y, 0); t.rotation.x = Math.PI / 2; }
+  } else if (s.kind === 'crate') {
+    const wood = stdMat(th.crate || 0x6e6a44, { metalness: 0.15, roughness: 0.8 }), frame = stdMat(0x2a2b26, { metalness: 0.6, roughness: 0.5 });
+    box(s.w - 0.06, s.h - 0.06, s.d - 0.06, wood, 0, s.h / 2, 0);
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) box(0.09, s.h, 0.09, frame, sx * (s.w / 2 - 0.04), s.h / 2, sz * (s.d / 2 - 0.04));
+    for (const y of [0.04, s.h - 0.04]) { box(s.w, 0.08, 0.09, frame, 0, y, -s.d / 2 + 0.04); box(s.w, 0.08, 0.09, frame, 0, y, s.d / 2 - 0.04); box(0.09, 0.08, s.d, frame, -s.w / 2 + 0.04, y, 0); box(0.09, 0.08, s.d, frame, s.w / 2 - 0.04, y, 0); }
+    if (s.h > 1.5) box(s.w + 0.02, 0.06, s.d + 0.02, frame, 0, s.h / 2, 0);
+  }
+  g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  const mats = new Set(); g.traverse(o => { if (o.material) mats.add(o.material); });
+  s.mats = [...mats].map(m => ({ m, op: m.opacity })); s.fade = 1; s.group = g;
+  return g;
+}
+// top-down map of an arena for the picker
+function drawArenaMap(cv, A) {
+  const dpr = Math.min(devicePixelRatio || 1, 2), W = cv.clientWidth || 220, H = cv.clientHeight || 160;
+  cv.width = W * dpr; cv.height = H * dpr; const x = cv.getContext('2d'); x.scale(dpr, dpr);
+  const th = A.theme, R = Math.min(W, H) / 2 - 6, k = R / (ARENA_R + 0.9);
+  x.translate(W / 2, H / 2);
+  const gr = x.createRadialGradient(0, 0, 4, 0, 0, R); gr.addColorStop(0, th.floor[0]); gr.addColorStop(1, th.floor[2]);
+  x.fillStyle = gr; x.beginPath(); x.arc(0, 0, R, 0, Math.PI * 2); x.fill();
+  x.strokeStyle = th.line; x.globalAlpha = 0.7; x.lineWidth = 2; x.stroke(); x.globalAlpha = 1;
+  // the camera looks along +z from the player's spawn, so the player sits at the bottom and +x is screen left
+  const P = (wx, wz) => [-wx * k, -wz * k];
+  const sorted = A.solids.slice().sort((a, b) => (a.kind === 'plat' ? -1 : 0) - (b.kind === 'plat' ? -1 : 0));
+  for (const d of sorted) {
+    const s = Object.assign({ rot: 0 }, d); s.c = Math.cos(s.rot); s.sn = Math.sin(s.rot);
+    const fill = { plat: '#ffffff30', ramp: '#ffffff22', wall: '#c9d2e6', barrier: '#e8b931', pillar: '#c9d2e6', crate: '#a08f5a' }[s.kind] || '#fff';
+    x.fillStyle = fill; x.strokeStyle = s.kind === 'plat' || s.kind === 'ramp' ? th.line : 'transparent'; x.lineWidth = 1.2;
+    x.beginPath();
+    if (s.type === 'cyl') { const [px, py] = P(s.x, s.z); x.arc(px, py, s.r * k, 0, Math.PI * 2); }
+    else { const hw = s.w / 2, hd = s.d / 2; [[-hw, -hd], [hw, -hd], [hw, hd], [-hw, hd]].forEach(([lx, lz], i) => { const [px, py] = P(s.x + lx * s.c + lz * s.sn, s.z - lx * s.sn + lz * s.c); i ? x.lineTo(px, py) : x.moveTo(px, py); }); x.closePath(); }
+    x.fill(); x.stroke();
+    if (s.type === 'ramp') { x.strokeStyle = th.line; x.globalAlpha = 0.6; for (let lz = -s.d / 2 + 0.4; lz < s.d / 2; lz += 0.6) { const a = P(s.x - s.w / 2 * s.c + lz * s.sn, s.z + s.w / 2 * s.sn + lz * s.c), b = P(s.x + s.w / 2 * s.c + lz * s.sn, s.z - s.w / 2 * s.sn + lz * s.c); x.beginPath(); x.moveTo(...a); x.lineTo(...b); x.stroke(); } x.globalAlpha = 1; }
+  }
+  for (const [z, c] of [[-4.5, '#ffb547'], [4.5, '#ff4d6d']]) { const [px, py] = P(0, z); x.fillStyle = c; x.beginPath(); x.arc(px, py, 4.5, 0, Math.PI * 2); x.fill(); }
 }
 const Battle = {
   active: false, paused: false,
@@ -2170,13 +2502,13 @@ const Battle = {
     const sun = new THREE.DirectionalLight(0xffe7c8, 1.35); sun.position.set(8, 18, 6); sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -16, right: 16, top: 16, bottom: -16, near: 1, far: 50 }); sun.shadow.bias = -0.0005;
     S.add(sun);
-    const p1 = new THREE.PointLight(0xffb547, 0.9, 24); p1.position.set(-12, 5, -6); S.add(p1);
-    const p2 = new THREE.PointLight(0xff4d6d, 0.8, 24); p2.position.set(12, 5, 6); S.add(p2);
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(ARENA_R + 0.6, 96), new THREE.MeshStandardMaterial({ map: makeFloorTexture(), roughness: 0.6, metalness: 0.2, envMapIntensity: 0.35 }));
+    const p1 = this.l1 = new THREE.PointLight(0xffb547, 0.9, 24); p1.position.set(-12, 5, -6); S.add(p1);
+    const p2 = this.l2 = new THREE.PointLight(0xff4d6d, 0.8, 24); p2.position.set(12, 5, 6); S.add(p2);
+    const floor = this.floor = new THREE.Mesh(new THREE.CircleGeometry(ARENA_R + 0.6, 96), new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0.2, envMapIntensity: 0.35 })); this.floorTex = {};
     floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; S.add(floor);
     const wallM = stdMat(0x1a2130, { metalness: 0.6, roughness: 0.4, envMapIntensity: 0.4 });
-    const wall = new THREE.Mesh(new THREE.CylinderGeometry(ARENA_R + 0.9, ARENA_R + 0.9, 0.7, 96, 1, true), wallM); wall.position.y = 0.35; wallM.side = THREE.DoubleSide; wall.receiveShadow = true; S.add(wall);
-    const lip = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R + 0.9, 0.06, 8, 128), glowMat(0xffb547)); lip.rotation.x = Math.PI / 2; lip.position.y = 0.72; S.add(lip);
+    this.wallM = wallM; const wall = new THREE.Mesh(new THREE.CylinderGeometry(ARENA_R + 0.9, ARENA_R + 0.9, 0.7, 96, 1, true), wallM); wall.position.y = 0.35; wallM.side = THREE.DoubleSide; wall.receiveShadow = true; S.add(wall);
+    const lip = this.lip = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R + 0.9, 0.06, 8, 128), glowMat(0xffb547)); lip.rotation.x = Math.PI / 2; lip.position.y = 0.72; S.add(lip);
     const outer = new THREE.Mesh(new THREE.CylinderGeometry(34, 30, 9, 64, 1, true), stdMat(0x0b0f1a, { side: THREE.BackSide, roughness: 1, metalness: 0, envMapIntensity: 0.1 })); outer.position.y = 2; S.add(outer);
     const ground = new THREE.Mesh(new THREE.CircleGeometry(40, 64), stdMat(0x0b0f18, { roughness: 0.9, metalness: 0.1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; S.add(ground);
     for (let i = 0; i < 10; i++) {
@@ -2201,9 +2533,35 @@ const Battle = {
     addEventListener('resize', onResize); onResize(); this.onResize = onResize;
     $('pauseBtn').onclick = () => this.togglePause();
   },
+  setArena(id) {
+    const A = arenaById(id) || ARENAS[0];
+    if (this.arenaId === A.id) return;
+    this.arenaId = A.id; World.set(A);
+    if (this.arenaGroup) { this.scene.remove(this.arenaGroup); disposeObj(this.arenaGroup); }
+    const th = A.theme, G = this.arenaGroup = new THREE.Group();
+    for (const s of World.solids) G.add(buildSolidMesh(s, th));
+    this.scene.add(G);
+    const fm = this.floor.material; fm.map = this.floorTex[A.id] || (this.floorTex[A.id] = makeFloorTexture(th)); fm.needsUpdate = true;
+    this.l1.color.setHex(th.l1); this.l2.color.setHex(th.l2);
+    this.lip.material.color.setHex(th.glow).convertSRGBToLinear(); this.lip.material.emissive.copy(this.lip.material.color);
+    this.wallM.color.setHex(th.rim).convertSRGBToLinear();
+    this.scene.background.setHex(th.fog); this.scene.fog.color.setHex(th.fog);
+  },
+  // fade anything standing between the camera and either fighter
+  fadeCover(dt) {
+    if (!World.solids.length) return;
+    const c = this.cam.position, a = new V3(this.p1.pos.x, this.p1.pos.y + this.p1.rig.chestY, this.p1.pos.z), b = new V3(this.p2.pos.x, this.p2.pos.y + this.p2.rig.chestY, this.p2.pos.z);
+    for (const s of World.solids) {
+      const want = World.segHits(s, c, a) ? 0.22 : World.segHits(s, c, b) ? 0.45 : 1;
+      s.fade += (want - s.fade) * (1 - Math.exp(-10 * dt));
+      const on = s.fade < 0.985;
+      for (const q of s.mats) { q.m.transparent = on || q.op < 1; q.m.opacity = q.op * s.fade; q.m.depthWrite = !on; }
+    }
+  },
   start() {
     this.init();
-    $('builder').hidden = true; $('battle').hidden = false; this.onResize();
+    this.setArena(arenaId);
+    $('builder').hidden = true; $('arenas').hidden = true; $('battle').hidden = false; this.onResize();
     this.active = true; this.paused = false; $('overlay').hidden = true;
     this.clearWeapons();
     for (const f of [this.p1, this.p2]) if (f) { this.scene.remove(f.rig.root); disposeObj(f.rig.root); f.trails.forEach(t => t.dispose()); if (f.fx) { for (const m of [...f.fx.beams, f.fx.cone, f.fx.bolt]) { this.scene.remove(m); m.geometry.dispose(); m.material.dispose(); } } }
@@ -2219,7 +2577,7 @@ const Battle = {
     $('p2Name').innerHTML = `<small>CPU · ${difficulty.toUpperCase()}</small>${buildName(this.enemyBuild)}`;
     $('vsP1').textContent = buildName(build); $('vsP1w').innerHTML = wchips(build);
     $('vsP2').textContent = buildName(this.enemyBuild); $('vsP2w').innerHTML = wchips(this.enemyBuild);
-    $('vsP2who').textContent = `Rival · CPU ${difficulty}`;
+    $('vsP2who').textContent = `Rival · CPU ${difficulty}`; $('vsArena').textContent = World.arena.name;
     $('vs').hidden = false; this.phase = 'vs'; this.phaseT = 0;
     this.placeFighters(); this.snapCamera();
     this.updatePips();
@@ -2250,6 +2608,7 @@ const Battle = {
     $('overlay').hidden = false; setTimeout(() => A.firstChild && A.firstChild.focus(), 30);
   },
   exit() { this.active = false; $('battle').hidden = true; $('builder').hidden = false; $('overlay').hidden = true; Preview.resize(); },
+  toArenas() { this.exit(); showArenas(); },
   updatePips() {
     [...$('p1Pips').children].forEach((p, i) => p.classList.toggle('on', this.wins[0] > i));
     [...$('p2Pips').children].forEach((p, i) => p.classList.toggle('on', this.wins[1] > i));
@@ -2258,6 +2617,7 @@ const Battle = {
   facing(a, b) { const fx = Math.sin(a.yaw), fz = Math.cos(a.yaw); const dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z; const l = Math.hypot(dx, dz) || 1; return (fx * dx + fz * dz) / l; },
   melee(att, def, kind) {
     const d = Math.hypot(def.pos.x - att.pos.x, def.pos.z - att.pos.z);
+    if (Math.abs(def.pos.y - att.pos.y) > 1.0) { this.sfx('whoosh'); return; }
     if (kind === 'kick') {
       const K = att.kick;
       if (d > att.stats.reach + K.reach + def.radius || this.facing(att, def) < K.arc) { this.sfx('whoosh'); return; }
@@ -2268,12 +2628,12 @@ const Battle = {
   },
   specialHit(att, def) {
     const d = Math.hypot(def.pos.x - att.pos.x, def.pos.z - att.pos.z);
-    if (d <= att.stats.reach + def.radius + 0.9) this.applyHit(att, def, { mult: 2.3, kb: 10, stun: 0.6, guardBreak: true, stop: 0.12, heavy: true });
+    if (d <= att.stats.reach + def.radius + 0.9 && Math.abs(def.pos.y - att.pos.y) < 1.0) this.applyHit(att, def, { mult: 2.3, kb: 10, stun: 0.6, guardBreak: true, stop: 0.12, heavy: true });
   },
   pulse(att, def) {
     this.sfx('special'); this.ring(att.pos, att.accent);
     const d = Math.hypot(def.pos.x - att.pos.x, def.pos.z - att.pos.z);
-    if (d < 4.2 + def.radius) this.applyHit(att, def, { mult: 1.9, kb: 17, stun: 0.7, unblockable: true, stop: 0.12, heavy: true });
+    if (d < 4.2 + def.radius && Math.abs(def.pos.y - att.pos.y) < 1.6) this.applyHit(att, def, { mult: 1.9, kb: 17, stun: 0.7, unblockable: true, stop: 0.12, heavy: true });
   },
   onSpecialStart(f) {
     this.sfx('special');
@@ -2286,6 +2646,7 @@ const Battle = {
     // weapons hit for a fixed amount so they don't stack on top of a heavy middle's power
     let dmg = (o.weapon ? 10 : att.stats.power) * o.mult * (att.fortifyT > 0 ? 1.2 : 1);
     const crit = Math.random() < att.stats.crit; if (crit) dmg *= 1.5;
+    const hg = att.pos.y - def.pos.y > 0.5; if (hg) dmg *= 1.15;
     dmg *= 1 - def.stats.def * (o.weapon ? 0.3 : 1);
     let kb = o.kb * att.stats.kbDealt, stun = o.stun, blocked = false;
     if (def.state === 'block' && !o.unblockable && this.facing(def, att) > 0.2) {
@@ -2305,20 +2666,20 @@ const Battle = {
     if (o.quiet) {
       // rapid ticks (beams, flame, saws, bullets): small sparks and one running damage number instead of a full hit
       def.flash = 0.05;
-      const hp = def.pos.clone(); hp.y = def.rig.chestY; hp.addScaledVector(n, -def.radius * 0.6);
+      const hp = def.pos.clone(); hp.y += def.rig.chestY; hp.addScaledVector(n, -def.radius * 0.6);
       this.burst(hp, blocked ? 0x9fd3ff : (o.color || att.accent), 3, 4);
       this.tally(def, dmg, blocked);
       if (def.hp <= 0) this.ko(def, att);
       return;
     }
     def.flash = blocked ? 0.04 : 0.1;
-    const hp = def.pos.clone(); hp.y = def.rig.chestY; hp.addScaledVector(n, -def.radius * 0.6);
+    const hp = def.pos.clone(); hp.y += def.rig.chestY; hp.addScaledVector(n, -def.radius * 0.6);
     this.burst(hp, blocked ? 0x9fd3ff : att.accent, o.heavy ? 22 : 12, o.heavy ? 7 : 5);
     this.flash(hp, blocked ? 0x9fd3ff : att.accent, o.heavy ? 2.6 : 1.6);
     this.hitstop = (o.stop ?? 0.05) * (blocked ? 0.5 : 1);
     this.shake = Math.max(this.shake, o.heavy ? 0.35 : 0.14) * (def === this.p1 ? 1.3 : 1);
     if (blocked) { this.sfx('block'); this.popAt(def, Math.round(dmg) + ' BLOCKED', 'blk'); }
-    else { this.sfx('hit', !!o.heavy); this.popAt(def, (crit ? 'CRIT ' : '') + Math.round(dmg), crit ? 'crit' : ''); }
+    else { this.sfx('hit', !!o.heavy); this.popAt(def, (hg ? '▲ ' : '') + (crit ? 'CRIT ' : '') + Math.round(dmg), crit ? 'crit' : ''); }
     if (def.hp <= 0) this.ko(def, att);
   },
   /* --- weapons --- */
@@ -2331,7 +2692,7 @@ const Battle = {
   dot(f, dmg) {
     if (f.state === 'ko' || this.phase !== 'fight') return;
     f.hp = Math.max(0, f.hp - dmg); this.tally(f, dmg, false);
-    if (Math.random() < 0.25) { const p = f.pos.clone(); p.y = f.rig.chestY * rand(0.6, 1.2); this.burst(p, 0xff7a1a, 1, 2.5); }
+    if (Math.random() < 0.25) { const p = f.pos.clone(); p.y += f.rig.chestY * rand(0.6, 1.2); this.burst(p, 0xff7a1a, 1, 2.5); }
     if (f.hp <= 0) this.ko(f, f.burnBy || (f === this.p1 ? this.p2 : this.p1));
   },
   shielded(def) {
@@ -2347,7 +2708,7 @@ const Battle = {
     f.rig.root.updateMatrixWorld();
     const pts = this.mountPoints(f, W);
     if (pts && pts.length) return pts[i % pts.length].getWorldPosition(new V3());
-    const p = f.pos.clone(); p.y = f.rig.chestY; return p.add(new V3(Math.sin(f.yaw), 0, Math.cos(f.yaw)).multiplyScalar(f.radius + 0.1));
+    const p = f.pos.clone(); p.y += f.rig.chestY; return p.add(new V3(Math.sin(f.yaw), 0, Math.cos(f.yaw)).multiplyScalar(f.radius + 0.1));
   },
   onWeaponStart(f, W) {
     this.sfx('whoosh');
@@ -2362,7 +2723,7 @@ const Battle = {
       f.tickT -= dt; if (f.tickT > 0) return; f.tickT += W.tick;
       const face = this.facing(f, opp);
       const ok = W.kind === 'beam' ? d <= W.range + opp.radius && face > 0.94 : W.kind === 'cone' ? d <= W.range + opp.radius && face > 0.72 : d <= f.stats.reach + W.reach + opp.radius && face > 0.3;
-      if (!ok || opp.invuln || this.shielded(opp)) return;
+      if (!ok || opp.invuln || (W.kind !== 'grind' && World.losHit(this.originOf(f, W, 0), aimPt(opp))) || this.shielded(opp)) return;
       this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.kb || 0.3, stun: W.stun || 0, quiet: true, energy: 0.25, color: W.color });
       if (W.burn) { opp.burnT = W.burn; opp.burnDps = 2.4; opp.burnBy = f; }
       return;
@@ -2374,8 +2735,8 @@ const Battle = {
     }
     if (f.hitDone) return; f.hitDone = true;
     if (W.kind === 'zap') {
-      const hit = d <= W.range + opp.radius;
-      this.zapFx(f, opp, W, hit); this.sfx('special');
+      const blk = World.losHit(this.originOf(f, W, 0), aimPt(opp)), hit = d <= W.range + opp.radius && !blk;
+      this.zapFx(f, opp, W, hit, blk); this.sfx('special');
       if (hit && !opp.invuln && !this.shielded(opp)) this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.kb, stun: W.stun, stop: 0.08, heavy: true });
     } else if (W.kind === 'melee') {
       if (d <= f.stats.reach + W.reach + opp.radius && this.facing(f, opp) >= W.arc) this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.kb, stun: W.stun, stop: 0.09, heavy: true });
@@ -2390,7 +2751,7 @@ const Battle = {
     return (this._pg = { rocket: rk, frost: new THREE.IcosahedronGeometry(0.13, 0), shell: new THREE.SphereGeometry(0.1, 12, 8), bullet: bl, hook: hk });
   },
   spawnProj(f, opp, W, i) {
-    const o = this.originOf(f, W, i), tgt = new V3(opp.pos.x, opp.rig.chestY, opp.pos.z);
+    const o = this.originOf(f, W, i), tgt = aimPt(opp);
     const dir = tgt.clone().sub(o).normalize(), vel = dir.clone().multiplyScalar(W.speed);
     if (W.proj === 'rocket') { const side = new V3(-dir.z, 0, dir.x); vel.multiplyScalar(0.55).addScaledVector(side, (i % 2 ? 1 : -1) * rand(2, 4)).add(new V3(0, rand(3, 5), 0)); }
     if (W.proj === 'bullet') { vel.x += rand(-0.6, 0.6); vel.y += rand(-0.3, 0.3); }
@@ -2413,13 +2774,15 @@ const Battle = {
     for (let i = this.projs.length - 1; i >= 0; i--) {
       const P = this.projs[i], T = P.target, W = P.W;
       P.life -= dt;
-      if (W.homing && T.state !== 'ko') { const want = new V3(T.pos.x, T.rig.chestY, T.pos.z).sub(P.pos).normalize().multiplyScalar(W.speed); P.vel.lerp(want, 1 - Math.exp(-W.homing * dt)); }
+      if (W.homing && T.state !== 'ko') { const want = aimPt(T).sub(P.pos).normalize().multiplyScalar(W.speed); P.vel.lerp(want, 1 - Math.exp(-W.homing * dt)); }
+      const half = P.pos.clone().addScaledVector(P.vel, dt * 0.5);
       P.pos.addScaledVector(P.vel, dt); P.m.position.copy(P.pos); P.m.lookAt(P.pos.clone().add(P.vel));
+      if (World.solids.length && (World.solidAt(half.x, half.y, half.z) || World.solidAt(P.pos.x, P.pos.y, P.pos.z))) { this.burst(P.pos, W.color, W.proj === 'bullet' ? 3 : 9, 4); if (W.proj === 'rocket' || W.proj === 'shell') this.flash(P.pos, W.color, 0.9); this.killProj(i); continue; }
       if (W.proj === 'rocket' && Math.random() < 0.5) this.burst(P.pos, 0xffb547, 1, 1.5);
       if (W.proj === 'frost') P.m.rotation.z += dt * 8;
       if (P.chain) { const a = this.originOf(P.owner, W, 0); P.chain.geometry.setFromPoints([a, P.pos]); }
       const hd = Math.hypot(T.pos.x - P.pos.x, T.pos.z - P.pos.z);
-      if (hd < T.radius + 0.22 && P.pos.y > 0.05 && P.pos.y < T.rig.height + 0.15 && T.state !== 'ko' && !T.invuln) {
+      if (hd < T.radius + 0.22 && P.pos.y > T.pos.y + 0.05 && P.pos.y < T.pos.y + T.rig.height + 0.15 && T.state !== 'ko' && !T.invuln) {
         if (this.shielded(T)) { this.burst(P.pos, 0x7fb6ff, 8, 4); this.killProj(i); continue; }
         const many = W.count > 3;
         this.applyHit(P.owner, T, { weapon: true, mult: W.mult, kb: W.kb, stun: W.stun || 0, stop: many ? 0 : 0.05, quiet: many, energy: many ? 0.35 : 1, heavy: W.proj === 'shell', color: W.color });
@@ -2443,10 +2806,11 @@ const Battle = {
     const bolt = new THREE.Line(new THREE.BufferGeometry().setFromPoints(Array.from({ length: 12 }, () => new V3())), new THREE.LineBasicMaterial({ color: 0xbfe9ff })); bolt.visible = false; bolt.frustumCulled = false; this.scene.add(bolt);
     return (f.fx = { beams: [add(bg, 0xffffff), add(bg, 0xffffff), add(bg, 0xffffff)], cone: add(cg, 0xff7a1a), bolt, boltT: 0, bolt0: new V3(), bolt1: new V3() });
   },
-  zapFx(f, opp, W, hit) {
+  zapFx(f, opp, W, hit, blk) {
     const fx = this.fxFor(f); fx.boltT = 0.28; fx.bolt0.copy(this.originOf(f, W, 0));
-    fx.bolt1.set(opp.pos.x, opp.rig.chestY, opp.pos.z);
-    if (!hit) fx.bolt1.copy(fx.bolt0).add(new V3(Math.sin(f.yaw), -0.3, Math.cos(f.yaw)).multiplyScalar(W.range));
+    fx.bolt1.copy(aimPt(opp));
+    if (blk) { fx.bolt1.copy(blk); this.burst(blk, W.color, 8, 4); }
+    else if (!hit) fx.bolt1.copy(fx.bolt0).add(new V3(Math.sin(f.yaw), -0.3, Math.cos(f.yaw)).multiplyScalar(W.range));
   },
   weaponFx(dt) {
     for (const [f, o] of [[this.p1, this.p2], [this.p2, this.p1]]) {
@@ -2463,10 +2827,11 @@ const Battle = {
       if (W.kind === 'beam') {
         if (t < W.w && Math.random() < 0.5) this.flash(this.originOf(f, W, 0), W.color, W.wide ? 0.4 + t / W.w * 0.8 : 0.3);
         if (!live) continue;
-        const n = W.from === 'eyes' ? 2 : 1, tgt = new V3(o.pos.x, o.rig.chestY, o.pos.z);
+        const n = W.from === 'eyes' ? 2 : 1, tgt = aimPt(o);
         const d = Math.hypot(o.pos.x - f.pos.x, o.pos.z - f.pos.z), onT = d <= W.range + o.radius && this.facing(f, o) > 0.94;
         for (let i = 0; i < n; i++) {
-          const a = this.originOf(f, W, i), end = onT ? tgt.clone().add(new V3(0, rand(-0.05, 0.05), 0)) : a.clone().addScaledVector(fwd, W.range);
+          const a = this.originOf(f, W, i); let end = onT ? tgt.clone().add(new V3(0, rand(-0.05, 0.05), 0)) : a.clone().addScaledVector(fwd, W.range);
+          const blk = World.losHit(a, end); if (blk) { end = blk; if (Math.random() < 0.5) this.burst(blk, W.color, 1, 3); }
           const b = fx.beams[i], r = (W.wide ? 0.1 : 0.022) * rand(0.8, 1.25);
           b.visible = true; b.material.color.setHex(W.color); b.position.copy(a); b.lookAt(end); b.scale.set(r, r, a.distanceTo(end));
           if (W.wide) { const c = fx.beams[2]; c.visible = true; c.material.color.setHex(0xffffff); c.position.copy(a); c.lookAt(end); c.scale.set(r * 0.4, r * 0.4, a.distanceTo(end)); }
@@ -2475,7 +2840,8 @@ const Battle = {
       } else if (W.kind === 'cone' && live) {
         const a = this.originOf(f, W, 0), c = fx.cone;
         c.visible = true; c.position.copy(a); c.lookAt(a.clone().add(fwd).add(new V3(0, -0.12, 0)));
-        const fl = rand(0.85, 1.1); c.scale.set(1.1 * fl, 1.1 * fl, W.range * fl); c.material.opacity = rand(0.35, 0.6);
+        const blk = World.losHit(a, a.clone().addScaledVector(fwd, W.range).add(new V3(0, -0.12 * W.range, 0)));
+        const len = blk ? a.distanceTo(blk) + 0.2 : W.range, fl = rand(0.85, 1.1); c.scale.set(1.1 * fl * len / W.range, 1.1 * fl * len / W.range, len * fl); c.material.opacity = rand(0.35, 0.6);
         if (Math.random() < 0.7) { const p = a.clone().addScaledVector(fwd, rand(0.5, W.range)); this.burst(p, Math.random() < 0.5 ? 0xff7a1a : 0xffc24a, 1, 2); }
       } else if (W.kind === 'grind' && live && Math.random() < 0.6) {
         const tp = f.rig.arms[Math.random() < 0.5 ? 0 : 1].fist.getWorldPosition(new V3()); this.burst(tp, 0xffc24a, 1, 4);
@@ -2514,7 +2880,7 @@ const Battle = {
     m.rotation.x = Math.PI / 2; m.position.set(p.x, 0.6, p.z); this.scene.add(m); this.rings.push({ m, t: 0 });
   },
   popAt(f, text, cls, life) {
-    const v = f.pos.clone(); v.y = f.rig.height + 0.3; v.project(this.cam);
+    const v = f.pos.clone(); v.y += f.rig.height + 0.3; v.project(this.cam);
     if (v.z > 1) return;
     const d = document.createElement('div'); d.className = 'dmg ' + (cls || ''); d.textContent = text;
     d.style.left = ((v.x + 1) / 2 * innerWidth + rand(-20, 20)) + 'px'; d.style.top = ((1 - v.y) / 2 * innerHeight) + 'px';
@@ -2526,20 +2892,22 @@ const Battle = {
     const dir = new V3(p.x - e.x, 0, p.z - e.z); const dist = dir.length(); if (dist > 1e-3) dir.divideScalar(dist); else dir.set(0, 0, -1);
     const side = new V3(dir.z, 0, -dir.x);
     const back = 5.4 + Math.max(0, dist - 7) * 0.35;
-    const want = new V3(p.x, 0, p.z).addScaledVector(dir, back).addScaledVector(side, -1.5); want.y = 3.3 + Math.max(0, dist - 7) * 0.15;
-    const look = new V3().lerpVectors(p, e, 0.5); look.y = 1.2;
+    const want = new V3(p.x, 0, p.z).addScaledVector(dir, back).addScaledVector(side, -1.5); want.y = 3.3 + Math.max(0, dist - 7) * 0.15 + p.y * 0.8;
+    const look = new V3().lerpVectors(p, e, 0.5); look.y = 1.2 + (p.y + e.y) * 0.5;
     const k = snap ? 1 : 1 - Math.exp(-6 * dt);
     this.cam.position.lerp(want, k); this.camLook.lerp(look, k);
     if (this.shake > 0) { this.cam.position.x += rand(-1, 1) * this.shake * 0.3; this.cam.position.y += rand(-1, 1) * this.shake * 0.3; }
     this.cam.lookAt(this.camLook);
   },
-  separate() {
+  separate(dt = 1 / 60) {
     const a = this.p1, b = this.p2;
     const dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z, l = Math.hypot(dx, dz), min = a.radius + b.radius;
-    if (l < min && l > 1e-4) { const push = (min - l) / 2, nx = dx / l, nz = dz / l; a.pos.x -= nx * push; a.pos.z -= nz * push; b.pos.x += nx * push; b.pos.z += nz * push; }
+    if (l < min && l > 1e-4 && Math.abs(a.pos.y - b.pos.y) < 1.0) { const push = (min - l) / 2, nx = dx / l, nz = dz / l; a.pos.x -= nx * push; a.pos.z -= nz * push; b.pos.x += nx * push; b.pos.z += nz * push; }
     for (const f of [a, b]) {
       const r = Math.hypot(f.pos.x, f.pos.z), max = ARENA_R - f.radius;
       if (r > max) { f.pos.x *= max / r; f.pos.z *= max / r; const nx = f.pos.x / r, nz = f.pos.z / r; const kn = f.knock.x * nx + f.knock.z * nz; if (kn > 0) { f.knock.x -= 1.5 * kn * nx; f.knock.z -= 1.5 * kn * nz; } }
+      const land = World.resolve(f, dt);
+      if (land > 5) { this.burst(f.pos.clone().setY(f.pos.y + 0.1), 0xc8ccd6, 10, 3); this.sfx('block'); if (f === this.p1) this.shake = Math.max(this.shake, 0.18); }
     }
   },
   /* --- main step --- */
@@ -2567,7 +2935,7 @@ const Battle = {
       this.p1.update(simDt, this.p2, pin, this);
       this.p2.update(simDt, this.p1, ain, this);
       this.stepProjectiles(simDt);
-      this.separate();
+      this.separate(simDt);
       if (fighting) { this.timeLeft -= simDt; if (this.timeLeft <= 0) { this.timeLeft = 0; this.timeOut(); } }
     }
     if (!this.paused) Input.clearPressed();
@@ -2592,6 +2960,7 @@ const Battle = {
     this.p1.visuals(simDt || rawDt * 0.05, time); this.p2.visuals(simDt || rawDt * 0.05, time);
     this.weaponFx(simDt);
     this.updateCamera(rawDt);
+    this.fadeCover(rawDt);
     this.renderer.render(this.scene, this.cam);
     this.hud(rawDt);
   },
@@ -2619,7 +2988,7 @@ const Battle = {
     const won = this.wins[0] >= 2;
     this.banner('');
     this.showOverlay(won ? 'Victory' : 'Defeat', `${this.wins[0]} – ${this.wins[1]} against ${buildName(this.enemyBuild)}.`,
-      [['Rematch', () => this.start(), true], ['Change build', () => this.exit()], ['Home screen', () => { this.exit(); goHome(); }]]);
+      [['Rematch', () => this.start(), true], ['Change arena', () => this.toArenas()], ['Change build', () => this.exit()], ['Home screen', () => { this.exit(); goHome(); }]]);
   },
 };
 
@@ -2637,7 +3006,7 @@ function boot(data) {
 }
 window.claude?.hot?.snapshot?.(() => ({ build }));
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
-window.__forge = { Battle, computeStats, PARTS, get build() { return build; } };
+window.__forge = { Battle, World, ARENAS, computeStats, PARTS, get build() { return build; } };
 })();
 </script>
 
