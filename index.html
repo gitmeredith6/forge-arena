@@ -35,12 +35,28 @@ button { font: inherit; color: inherit; cursor: pointer; }
 button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); outline-offset: 2px; }
 
 /* ---------- builder ---------- */
+[hidden] { display: none !important; }
 #builder { min-height: 100%; display: flex; flex-direction: column; gap: 14px;
   padding-block: 14px 18px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   background: radial-gradient(1200px 500px at 50% -10%, #1b2740 0%, transparent 70%), var(--bg); }
 .top-bar { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .logo { font-family: var(--f-display); font-weight: 700; font-size: 44px; line-height: 0.8; letter-spacing: 0.02em; margin: 0; }
 .logo span { color: var(--p1); }
+#home { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; overflow: hidden; padding: 24px 16px;
+  background: radial-gradient(ellipse at 50% 120%, #ffb54733 0%, transparent 55%), radial-gradient(ellipse at 50% 40%, #1c2a46 0%, #070a12 70%); }
+.home-in { position: relative; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 640px; }
+.home-kicker { margin: 0; font-size: 13px; letter-spacing: 0.32em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.home-logo { margin: 0; font-family: var(--f-display); font-weight: 700; font-size: clamp(72px, 17vw, 170px); line-height: 0.8; letter-spacing: 0.02em; text-shadow: 0 6px 40px #ffb54740; }
+.home-logo span { color: var(--p1); }
+.home-sub { margin: 0; color: var(--muted); font-size: 16px; max-width: 34ch; }
+.home-begin { margin-top: 18px; font-size: 40px; padding: 14px 56px 8px; border-radius: 12px; box-shadow: 0 0 0 0 #ffb54766; animation: beginPulse 2.2s ease-in-out infinite; }
+@keyframes beginPulse { 50% { box-shadow: 0 0 0 14px #ffb54700; } }
+.home-glow { position: absolute; inset: 0; pointer-events: none; }
+.home-glow i { position: absolute; left: 50%; top: 56%; width: 900px; height: 900px; margin: -450px 0 0 -450px; border-radius: 50%; border: 2px solid #ffb54726; transform: rotateX(72deg); animation: ringSpin 14s linear infinite; }
+.home-glow i:nth-child(2) { width: 620px; height: 620px; margin: -310px 0 0 -310px; border-color: #ff4d6d2a; animation-duration: 10s; animation-direction: reverse; }
+.home-glow i:nth-child(3) { width: 360px; height: 360px; margin: -180px 0 0 -180px; border: 3px dashed #ffb54740; animation-duration: 7s; }
+@keyframes ringSpin { to { transform: rotateX(72deg) rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .home-glow i, .home-begin { animation: none; } }
 .tagline { color: var(--muted); margin: 0; max-width: 60ch; }
 .b-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 0.9fr); gap: 14px; flex: 1; min-height: 0; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
@@ -218,7 +234,17 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 @media (prefers-reduced-motion: reduce) { .banner .pop, .dmg, .enbar.ready .fill { animation-duration: 0.01s; } }
 </style>
 
-<section id="builder" aria-label="Fighter builder">
+<section id="home" aria-label="Home">
+  <div class="home-glow" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="home-in">
+    <p class="home-kicker">Build · Arm · Battle</p>
+    <h1 class="home-logo">FORGE <span>ARENA</span></h1>
+    <p class="home-sub">Forge a fighter from heads, arms, torsos, legs and weapons, then take it into the arena.</p>
+    <button type="button" class="btn btn-go home-begin" id="beginBtn">BEGIN</button>
+  </div>
+</section>
+
+<section id="builder" aria-label="Fighter builder" hidden>
   <div class="top-bar">
     <h1 class="logo">FORGE <span>ARENA</span></h1>
     <p class="tagline">Pick a head, then build Arms, a Middle and a Bottom, each in Light, Middle or Heavy, and add three weapons.</p>
@@ -1776,6 +1802,8 @@ function renderAll() {
 $('diff').onclick = e => { const d = e.target.closest('button'); if (!d) return; difficulty = d.dataset.d; save(); renderAll(); };
 $('randomBtn').onclick = () => { build = randomBuild(); save(); renderAll(); };
 $('fightBtn').onclick = () => { SFX.init(); Battle.start(); };
+$('beginBtn').onclick = () => { SFX.init(); $('home').hidden = true; $('builder').hidden = false; Preview.resize(); };
+function goHome() { $('builder').hidden = true; $('home').hidden = false; }
 
 /* ---------- preview renderer ---------- */
 const Preview = (() => {
@@ -2213,7 +2241,7 @@ const Battle = {
   togglePause() {
     if (!this.active || this.phase === 'over') return;
     this.paused = !this.paused;
-    if (this.paused) this.showOverlay('Paused', 'Take a breather.', [['Resume', () => this.togglePause(), true], ['Restart match', () => this.start()], ['Back to builder', () => this.exit()]]);
+    if (this.paused) this.showOverlay('Paused', 'Take a breather.', [['Resume', () => this.togglePause(), true], ['Restart match', () => this.start()], ['Back to builder', () => this.exit()], ['Home screen', () => { this.exit(); goHome(); }]]);
     else $('overlay').hidden = true;
   },
   showOverlay(title, text, actions) {
@@ -2591,7 +2619,7 @@ const Battle = {
     const won = this.wins[0] >= 2;
     this.banner('');
     this.showOverlay(won ? 'Victory' : 'Defeat', `${this.wins[0]} – ${this.wins[1]} against ${buildName(this.enemyBuild)}.`,
-      [['Rematch', () => this.start(), true], ['Change build', () => this.exit()]]);
+      [['Rematch', () => this.start(), true], ['Change build', () => this.exit()], ['Home screen', () => { this.exit(); goHome(); }]]);
   },
 };
 
