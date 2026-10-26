@@ -355,7 +355,7 @@ const PARTS = {
   ],
   bottom: [
     { id: 'strider',  w: 'light',  name: 'Strider',  perk: 'Rolls on a ball. +20% dodge distance', mod: { dodgeSpeedMul: 0.2 }, color: 0xe2e6ea, type: 'ball' },
-    { id: 'sprinter', w: 'light',  name: 'Sprinter', perk: '+10% move speed',          mod: { moveMul: 0.10 }, color: 0x6fc2b0, type: 'legs', r: 0.065, len: 1.0, stripes: true },
+    { id: 'sprinter', w: 'light',  name: 'Sprinter', perk: '+10% move speed',          mod: { moveMul: 0.10 }, color: 0x6fc2b0, type: 'sculpt' },
     { id: 'phantom',  w: 'light',  name: 'Phantom',  perk: 'Hovers. 25% faster dodge recharge', mod: { dodgeCdMul: -0.25 }, color: 0xb7b4e6, type: 'hover' },
     { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 health',               mod: { hp: 10 }, color: 0x6f7f96, type: 'legs', r: 0.12, len: 0.95 },
     { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x6e8a4e, type: 'legs', r: 0.115, len: 1.0, kneeGlow: true },
@@ -745,6 +745,46 @@ function makeFighterModel(build, accent) {
       mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.06, 10), joint, body, sx * R * 0.86, cy0 + 0.12, -0.11).rotation.x = Math.PI / 2;
     }
     mesh(rbox(waist * 2.1, 0.1, waist * 1.6, 0.03), dark, body, 0, hipY, 0);
+  } else if (B.type === 'sculpt') {
+    // Light: sculpted armored legs shaped like an athlete's, with quads, kneecaps, calves and tapered ankles
+    const r = 0.075, len = 1.04, L = len * 0.5; hipY = len + 0.09;
+    const hipW = 0.14, ground = -(L + 0.09);
+    // smooth, sleek plating instead of the panelled texture, with a few deliberate seams
+    const sm = stdMat(B.color, { metalness: 0.6, roughness: 0.26 }); rig.mats.push(sm);
+    const lathe = pts => new THREE.LatheGeometry(pts.map(([rr, y]) => new THREE.Vector2(rr, y)), 22);
+    mesh(rbox(hipW * 2 + 0.16, 0.17, 0.24, 0.06), dark, body, 0, hipY, 0);
+    mesh(rbox(0.13, 0.12, 0.05, 0.025), sm, body, 0, hipY - 0.03, 0.13);
+    for (const side of [-1, 1]) {
+      const pivot = new THREE.Group(); pivot.position.set(side * hipW, hipY, 0); body.add(pivot);
+      // rounded hip guard on the outside of the hip
+      const hg = mesh(new THREE.SphereGeometry(r * 1.55, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), sm, pivot, side * r * 0.6, -0.03, 0); hg.rotation.z = -side * 1.25;
+      mesh(new THREE.TorusGeometry(r * 1.5, 0.008, 6, 28), g, pivot, side * r * 0.62, -0.03, 0).rotation.set(0, Math.PI / 2, 0);
+      // thigh: full at the top, swelling over the quads, tapering into the knee
+      mesh(lathe([[0, -L - 0.01], [r * 0.82, -L], [r * 0.92, -L * 0.88], [r * 1.28, -L * 0.6], [r * 1.5, -L * 0.32], [r * 1.52, -L * 0.14], [r * 1.3, 0], [0, 0.03]]), sm, pivot).scale.set(1, 1, 1.12);
+      mesh(new THREE.SphereGeometry(r * 1.12, 20, 14), sm, pivot, 0, -L * 0.42, r * 0.66).scale.set(0.95, 2.2, 0.75);
+      mesh(new THREE.SphereGeometry(r * 0.8, 16, 12), sm, pivot, -side * r * 0.55, -L * 0.72, r * 0.45).scale.set(0.8, 1.4, 0.75);
+      mesh(rbox(0.012, L * 0.62, 0.012, 0.004), g, pivot, side * r * 1.43, -L * 0.42, 0);
+      const knee = new THREE.Group(); knee.position.y = -L; pivot.add(knee);
+      mesh(new THREE.SphereGeometry(r * 0.86, 14, 10), joint, knee);
+      mesh(new THREE.CylinderGeometry(r * 0.4, r * 0.4, r * 2.1, 10), joint, knee).rotation.z = Math.PI / 2;
+      // kneecap with a glowing rim
+      mesh(new THREE.SphereGeometry(r * 0.8, 18, 12), sm, knee, 0, 0.01, r * 0.72).scale.set(1.05, 1.18, 0.68);
+      mesh(new THREE.TorusGeometry(r * 0.4, 0.007, 6, 22), g, knee, 0, 0.012, r * 1.22);
+      // shin narrowing to a slim ankle, with the calf swelling out behind
+      mesh(lathe([[0, -L - 0.01], [r * 0.66, -L * 0.98], [r * 0.52, -L * 0.86], [r * 0.78, -L * 0.62], [r * 1.02, -L * 0.36], [r * 0.98, -L * 0.15], [r * 0.82, 0], [0, 0.03]]), sm, knee).scale.set(0.95, 1, 1.05);
+      mesh(new THREE.SphereGeometry(r * 1.08, 20, 14), sm, knee, 0, -L * 0.3, -r * 0.55).scale.set(0.95, 1.9, 0.95);
+      mesh(rbox(r * 0.8, L * 0.52, 0.03, 0.012), sm, knee, 0, -L * 0.48, r * 0.98);
+      for (const sx of [-1, 1]) mesh(rbox(0.01, L * 0.46, 0.01, 0.003), g, knee, sx * r * 0.98, -L * 0.42, r * 0.15);
+      // armor seams where the plates meet
+      for (const [grp, y, rr] of [[pivot, -L * 0.7, r * 1.16], [knee, -L * 0.7, r * 0.7]]) { const sr = mesh(new THREE.TorusGeometry(rr, 0.006, 6, 24), dark, grp, 0, y, 0); sr.rotation.x = Math.PI / 2; sr.scale.set(1, 1.1, 1); }
+      // ankle and a sleek boot
+      mesh(new THREE.CylinderGeometry(r * 0.52, r * 0.52, r * 1.7, 10), joint, knee, 0, -L - 0.02, 0).rotation.z = Math.PI / 2;
+      mesh(rbox(r * 2.0, 0.05, r * 4.3, 0.02), dark, knee, 0, ground + 0.025, r * 0.95);
+      mesh(new THREE.SphereGeometry(r, 20, 14), sm, knee, 0, ground + 0.08, r * 1.05).scale.set(1.0, 0.72, 2.05);
+      mesh(new THREE.SphereGeometry(r * 0.72, 14, 10), sm, knee, 0, ground + 0.08, -r * 0.55).scale.set(1, 0.9, 1.1);
+      mesh(rbox(r * 1.4, 0.012, 0.012, 0.004), g, knee, 0, ground + 0.06, r * 3.0);
+      rig.legs.push({ pivot, knee, side });
+    }
   } else if (B.type === 'hover') {
     hipY = 1.05; rig.hover = true;
     const skirt = [[0, -0.78], [0.1, -0.74], [0.24, -0.5], [0.34, -0.22], [0.37, -0.06], [0.3, 0.06], [0, 0.06]];
