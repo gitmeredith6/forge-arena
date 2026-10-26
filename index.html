@@ -354,7 +354,7 @@ const PARTS = {
     { id: 'brute',    w: 'heavy',  name: 'Brute',    perk: '+40% knockback, +13% power', mod: { kbDealt: 0.4, powerMul: 0.13 }, color: 0x8a5a3a, segs: 16, taper: 0.95 },
   ],
   bottom: [
-    { id: 'strider',  w: 'light',  name: 'Strider',  perk: '+20% dodge distance',      mod: { dodgeSpeedMul: 0.2 }, color: 0xe2e6ea, type: 'legs', r: 0.06, len: 1.08 },
+    { id: 'strider',  w: 'light',  name: 'Strider',  perk: 'Rolls on a ball. +20% dodge distance', mod: { dodgeSpeedMul: 0.2 }, color: 0xe2e6ea, type: 'ball' },
     { id: 'sprinter', w: 'light',  name: 'Sprinter', perk: '+10% move speed',          mod: { moveMul: 0.10 }, color: 0x6fc2b0, type: 'legs', r: 0.065, len: 1.0, stripes: true },
     { id: 'phantom',  w: 'light',  name: 'Phantom',  perk: 'Hovers. 25% faster dodge recharge', mod: { dodgeCdMul: -0.25 }, color: 0xb7b4e6, type: 'hover' },
     { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 health',               mod: { hp: 10 }, color: 0x6f7f96, type: 'legs', r: 0.12, len: 0.95 },
@@ -715,7 +715,37 @@ function makeFighterModel(build, accent) {
   // ---- bottom
   let hipY;
   const bw = wi[B.w];
-  if (B.type === 'hover') {
+  if (B.type === 'ball') {
+    // Light: a single rolling ball held in a cradle, with a waist skirt shaped to the chosen midsection
+    const mwB = wi[M.w], R = [0.38, 0.42, 0.48][mwB]; hipY = R * 2 + 0.2; rig.ballR = R;
+    const segsB = M.segs === 4 ? 4 : Math.max(10, M.segs), phiB = M.segs === 4 ? Math.PI / 4 : 0;
+    const waist = Math.max(0.12, TORSO_PROFILES[mwB](M.taper)[1][0] * [0.5, 0.7, 0.95][mwB]);
+    const ball = new THREE.Group(); ball.position.y = R; root.add(ball); rig.ball = ball;
+    mesh(new THREE.SphereGeometry(R, 36, 26), botM, ball);
+    for (const sx of [-1, 1]) {
+      mesh(new THREE.CylinderGeometry(R * 0.56, R * 0.56, 0.03, 30), dark, ball, sx * R * 0.83, 0, 0).rotation.z = Math.PI / 2;
+      mesh(new THREE.TorusGeometry(R * 0.44, 0.012, 6, 32), g, ball, sx * R * 0.85, 0, 0).rotation.y = Math.PI / 2;
+      gear(ball, R * 0.3, 10, 0.025, sx * R * 0.86, 0, 0).rotation.y = Math.PI / 2;
+      mesh(new THREE.CylinderGeometry(R * 0.1, R * 0.1, 0.05, 12), joint, ball, sx * R * 0.87, 0, 0).rotation.z = Math.PI / 2;
+    }
+    mesh(new THREE.TorusGeometry(R * 1.002, 0.014, 6, 64), g, ball).rotation.y = Math.PI / 2;
+    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; bolt(ball, 0, Math.cos(a) * R * 0.99, Math.sin(a) * R * 0.99, 0.016); }
+    // cradle ring resting on the upper ball, with three bearing rollers
+    const cy0 = R * 1.62;
+    mesh(new THREE.TorusGeometry(R * 0.8, 0.04, 8, 36), joint, body, 0, cy0, 0).rotation.x = Math.PI / 2;
+    for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2 + Math.PI / 6; mesh(new THREE.SphereGeometry(0.05, 10, 8), dark, body, Math.cos(a) * R * 0.68, cy0 + 0.05, Math.sin(a) * R * 0.68); }
+    // skirt from the cradle up to the waist, faceted like the torso so the two read as one body
+    const skirt = [[R * 0.86, 0], [R * 0.92, 0.05], [R * 0.82, 0.14], [waist * 1.2, 0.3], [waist * 1.02, hipY - cy0 + 0.03], [0, hipY - cy0 + 0.03]];
+    mesh(new THREE.LatheGeometry(skirt.map(([r, y]) => new THREE.Vector2(r, y)), segsB, phiB), botM, body, 0, cy0 - 0.02, 0);
+    mesh(new THREE.TorusGeometry(R * 0.9, 0.012, 6, 36), g, body, 0, cy0 + 0.03, 0).rotation.x = Math.PI / 2;
+    // side thrusters on the skirt for steering
+    for (const sx of [-1, 1]) {
+      mesh(rbox(0.08, 0.14, 0.18, 0.03), dark, body, sx * R * 0.86, cy0 + 0.12, 0);
+      for (const dy of [-0.03, 0.03]) mesh(rbox(0.012, 0.012, 0.12, 0.004), g, body, sx * (R * 0.86 + 0.042), cy0 + 0.12 + dy, 0);
+      mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.06, 10), joint, body, sx * R * 0.86, cy0 + 0.12, -0.11).rotation.x = Math.PI / 2;
+    }
+    mesh(rbox(waist * 2.1, 0.1, waist * 1.6, 0.03), dark, body, 0, hipY, 0);
+  } else if (B.type === 'hover') {
     hipY = 1.05; rig.hover = true;
     const skirt = [[0, -0.78], [0.1, -0.74], [0.24, -0.5], [0.34, -0.22], [0.37, -0.06], [0.3, 0.06], [0, 0.06]];
     mesh(new THREE.LatheGeometry(skirt.map(([r, y]) => new THREE.Vector2(r, y)), 14), botM, body, 0, hipY, 0);
@@ -1005,6 +1035,16 @@ function animateRig(rig, f, dt, time) {
   rig.body.rotation.set(cur.bx, cur.tw, cur.bz);
   rig.body.position.y = cur.by;
   if (rig.flame) { rig.flame.scale.y = 0.8 + Math.random() * 0.4 + sp * 0.5; }
+  if (rig.ball) {
+    // roll the ball by the distance travelled: axis = up x velocity, in the fighter's local frame
+    let vx = 0, vz = Math.sin(time * 0.8) * 0.25;
+    if (f) {
+      const wx = f.moveVel.x + f.knock.x, wz = f.moveVel.z + f.knock.z, yaw = rig.root.rotation.y, c = Math.cos(yaw), sn = Math.sin(yaw);
+      vx = wx * c - wz * sn; vz = wx * sn + wz * c;
+    }
+    const v = Math.hypot(vx, vz);
+    if (v > 1e-3) rig.ball.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new V3(vz / v, 0, -vx / v), v * dt / rig.ballR));
+  }
 }
 
 /* ======================= SOUND (tiny synth) ======================= */
