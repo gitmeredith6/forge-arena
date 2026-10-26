@@ -645,11 +645,12 @@ function makeEnv(renderer, warm) {
 /* Each fighter is built from ~90 small meshes. Merge the static ones inside each
    moving group, per material, so a fighter costs a handful of draw calls. */
 // Sprinter foot: lofted from heel to toe, with a raised arch, a sloped instep and a pointed tip
-function sprintFootGeo() {
-  const rows = 28, ring = 20, z0 = -0.08, z1 = 0.255;
+function sprintFootGeo() { return loftFootGeo(-0.08, 0.255, [[0, 0.075], [0.2, 0.112], [0.38, 0.1], [0.62, 0.072], [0.82, 0.05], [1, 0.022]], [[0, 0.036], [0.2, 0.042], [0.45, 0.047], [0.7, 0.055], [0.88, 0.04], [1, 0.012]]); }
+// Ranger boot: same loft, but tall at the heel, broad and blunt at the toe
+function bootGeo() { return loftFootGeo(-0.11, 0.25, [[0, 0.13], [0.25, 0.16], [0.5, 0.125], [0.75, 0.085], [0.92, 0.062], [1, 0.035]], [[0, 0.05], [0.25, 0.06], [0.6, 0.066], [0.85, 0.062], [1, 0.035]]); }
+function loftFootGeo(z0, z1, H, W) {
+  const rows = 28, ring = 20;
   const lerpPts = (pts, t) => { for (let i = 1; i < pts.length; i++) if (t <= pts[i][0]) { const [ta, va] = pts[i - 1], [tb, vb] = pts[i]; const k = (t - ta) / (tb - ta); return va + (vb - va) * (k * k * (3 - 2 * k)); } return pts[pts.length - 1][1]; };
-  const H = [[0, 0.075], [0.2, 0.112], [0.38, 0.1], [0.62, 0.072], [0.82, 0.05], [1, 0.022]];
-  const W = [[0, 0.036], [0.2, 0.042], [0.45, 0.047], [0.7, 0.055], [0.88, 0.04], [1, 0.012]];
   const pos = [], uv = [], idx = [];
   for (let i = 0; i <= rows; i++) {
     const t = i / rows, heel = Math.sqrt(Math.min(1, t / 0.09) * (2 - Math.min(1, t / 0.09)));
@@ -921,65 +922,80 @@ function makeFighterModel(build, accent) {
     }
     mesh(rbox(waist * 2.1, 0.1, waist * 1.6, 0.03), dark, body, 0, hipY, 0);
   } else if (B.type === 'mech') {
-    // Middle: layered mech armour, with rotary actuator discs at hip, knee and ankle, exposed pistons, a bulging calf and a chunky boot
+    // Middle: curved armour shells wrapped over a sculpted leg (quads, a forward-bulging shin guard and calf), with rotary
+    // actuator discs at hip, knee and ankle, exposed pistons and a smooth chunky boot
     const r = B.r, len = B.len, L = len * 0.5; hipY = len + 0.09;
     const hipW = 0.2, ground = -(L + 0.09);
-    const am = stdMat(B.color, { metalness: 0.55, roughness: 0.3 }), am2 = stdMat(new THREE.Color(B.color).lerp(new THREE.Color(0xffffff), 0.2).getHex(), { metalness: 0.55, roughness: 0.28 });
+    const am = stdMat(B.color, { metalness: 0.55, roughness: 0.3, side: THREE.DoubleSide }), am2 = stdMat(new THREE.Color(B.color).lerp(new THREE.Color(0xffffff), 0.2).getHex(), { metalness: 0.55, roughness: 0.26, side: THREE.DoubleSide });
     const chrome = stdMat(0xc9ced6, { metalness: 1, roughness: 0.16 }); rig.mats.push(am, am2, chrome);
-    const lathe = pts => new THREE.LatheGeometry(pts.map(([rr, y]) => new THREE.Vector2(rr, y)), 22);
-    const disc = (grp, x, y, z, R, side) => {
-      const d = mesh(new THREE.CylinderGeometry(R, R, 0.045, 22), dark, grp, x, y, z); d.rotation.z = Math.PI / 2;
-      const rim = mesh(new THREE.TorusGeometry(R * 0.82, R * 0.1, 6, 22), joint, grp, x + side * 0.024, y, z); rim.rotation.y = Math.PI / 2;
-      const hub = mesh(new THREE.CylinderGeometry(R * 0.38, R * 0.38, 0.03, 14), joint, grp, x + side * 0.035, y, z); hub.rotation.z = Math.PI / 2;
-      mesh(rbox(0.012, R * 0.6, R * 0.14, 0.004), dark, grp, x + side * 0.05, y, z);
+    const V2 = THREE.Vector2;
+    const lathe = (pts, n = 24) => new THREE.LatheGeometry(pts.map(([rr, y]) => new V2(rr, y)), n);
+    // a curved armour plate: a slice of the surface of revolution `prof` pushed out by `off`, `t` thick, spanning angles phi0..phi0+len
+    const plate = (prof, off, phi0, phiLen, t = 0.016) => {
+      const pts = prof.map(([rr, y]) => new V2(rr + off, y));
+      const lip = prof.slice().reverse().map(([rr, y]) => new V2(rr + off - t, y));
+      return new THREE.LatheGeometry(pts.concat(lip, [pts[0].clone()]), 18, phi0, phiLen);
     };
-    mesh(rbox(hipW * 2 + r * 2, 0.2, 0.3 + r, 0.07), dark, body, 0, hipY, 0);
+    // a smooth bulge (one muscle) laid on the leg
+    const bulge = (grp, x, y, z, sx, sy, sz, rx, mat) => { const m = mesh(new THREE.SphereGeometry(r, 22, 16), mat, grp, x, y, z); m.scale.set(sx, sy, sz); m.rotation.x = rx || 0; return m; };
+    const disc = (grp, x, y, z, R, side) => {
+      const d = mesh(new THREE.CylinderGeometry(R, R * 0.92, 0.045, 24), dark, grp, x, y, z); d.rotation.z = -side * Math.PI / 2;
+      const rim = mesh(new THREE.TorusGeometry(R * 0.8, R * 0.1, 8, 24), joint, grp, x + side * 0.024, y, z); rim.rotation.y = Math.PI / 2;
+      const hub = mesh(new THREE.SphereGeometry(R * 0.36, 14, 10), joint, grp, x + side * 0.026, y, z); hub.scale.set(0.5, 1, 1);
+      const c = mesh(new THREE.TorusGeometry(R * 0.2, R * 0.05, 6, 16, Math.PI * 1.5), dark, grp, x + side * 0.042, y, z); c.rotation.y = Math.PI / 2;
+    };
+    mesh(rbox(hipW * 2 + r * 2, 0.2, 0.3 + r, 0.08), dark, body, 0, hipY, 0);
+    const TP = [[r * 0.9, -L * 0.84], [r * 1.12, -L * 0.66], [r * 1.24, -L * 0.42], [r * 1.26, -L * 0.2], [r * 1.12, -L * 0.02], [r * 0.96, 0.04]];
+    const SP = [[r * 0.6, -L * 0.9], [r * 0.66, -L * 0.74], [r * 1.1, -L * 0.46], [r * 1.22, -L * 0.24], [r * 1.02, -0.03]];
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group(); pivot.position.set(side * hipW, hipY, 0); body.add(pivot);
-      // thigh: dark core inside a deep armour shell, a front plate, a hooked hip cap and a rear plate
+      const tsc = [0.92, 1, 1.18];
+      const T = m => { m.scale.set(...tsc); return m; };
+      // thigh: dark core inside a deep armour shell
       mesh(new THREE.CylinderGeometry(r * 0.5, r * 0.5, L, 12), dark, pivot, 0, -L / 2, 0);
-      mesh(lathe([[0, -L * 0.86], [r * 0.9, -L * 0.84], [r * 1.16, -L * 0.62], [r * 1.28, -L * 0.32], [r * 1.24, -L * 0.08], [r * 1.02, 0.02], [0, 0.06]]), am, pivot).scale.set(0.92, 1, 1.22);
-      mesh(rbox(r * 1.45, L * 0.62, 0.05, 0.02), am2, pivot, 0, -L * 0.44, r * 1.36).rotation.x = -0.08;
-      mesh(rbox(r * 2.3, 0.08, r * 2.8, 0.03), am, pivot, 0, 0.05, 0.01);
-      mesh(rbox(r * 1.7, 0.16, 0.06, 0.025), am2, pivot, 0, 0.0, r * 1.45).rotation.x = 0.45;
-      mesh(rbox(r * 1.35, L * 0.5, 0.05, 0.02), am, pivot, 0, -L * 0.4, -r * 1.36).rotation.x = 0.1;
-      mesh(rbox(0.04, L * 0.46, r * 1.7, 0.015), am2, pivot, side * r * 1.15, -L * 0.42, 0.01);
-      disc(pivot, side * r * 1.2, -L * 0.14, 0, r * 0.42, side);
-      disc(pivot, side * r * 1.2, -L * 0.62, -r * 0.2, r * 0.32, side);
-      for (const y of [-L * 0.3, -L * 0.52]) mesh(new THREE.SphereGeometry(0.014, 6, 5), joint, pivot, -side * r * 0.5, y, r * 1.4);
+      T(mesh(lathe([[0, -L * 0.86]].concat(TP, [[0, 0.08]])), am, pivot));
+      // quads: rectus femoris down the front, vastus lateralis on the outside and the teardrop vastus medialis above the knee
+      bulge(pivot, 0, -L * 0.36, r * 0.82, 0.62, 2.3, 0.62, -0.06, am2);
+      bulge(pivot, side * r * 0.62, -L * 0.42, r * 0.5, 0.58, 2.0, 0.62, -0.04, am2).rotation.z = side * 0.12;
+      bulge(pivot, -side * r * 0.55, -L * 0.7, r * 0.62, 0.55, 1.05, 0.55, 0.1, am2);
+      // a groove between the quads
+      for (const sx of [-1, 1]) { const gv = mesh(new THREE.CylinderGeometry(0.006, 0.006, L * 0.55, 6), dark, pivot, sx * r * 0.33, -L * 0.42, r * 1.38); gv.rotation.z = sx * -0.06; }
+      // curved plates: side guard over the outer thigh, rear plate, and a domed hip cap with a hooked front lip
+      T(mesh(plate(TP.slice(1, 5), 0.012, side * Math.PI / 2 - 0.62, 1.24), am, pivot));
+      T(mesh(plate(TP.slice(1, 5), 0.012, Math.PI - 0.62, 1.24), am, pivot));
+      const cap = mesh(new THREE.SphereGeometry(r * 1.32, 24, 14, 0, Math.PI * 2, 0, Math.PI * 0.45), am, pivot, 0, -0.02, 0); cap.scale.set(1, 0.6, 1.25);
+      const hook = mesh(new THREE.TorusGeometry(r * 0.9, r * 0.2, 10, 20, Math.PI * 0.8), am2, pivot, 0, -0.02, r * 0.55); hook.rotation.set(0, Math.PI / 2, Math.PI * 0.1); hook.scale.set(1, 0.8, 1);
+      disc(pivot, side * r * 1.32, -L * 0.16, -r * 0.1, r * 0.42, side);
+      disc(pivot, side * r * 1.3, -L * 0.6, -r * 0.3, r * 0.3, side);
       // piston sleeve behind the lower thigh; its rod rides on the shin
-      mesh(new THREE.CylinderGeometry(r * 0.24, r * 0.24, L * 0.42, 12), dark, pivot, 0, -L * 0.7, -r * 0.95);
-      mesh(new THREE.CylinderGeometry(r * 0.27, r * 0.27, 0.025, 12), joint, pivot, 0, -L * 0.9, -r * 0.95);
+      mesh(new THREE.CylinderGeometry(r * 0.24, r * 0.24, L * 0.42, 14), dark, pivot, 0, -L * 0.7, -r * 1.0);
+      mesh(new THREE.TorusGeometry(r * 0.25, 0.01, 6, 16), joint, pivot, 0, -L * 0.9, -r * 1.0).rotation.x = Math.PI / 2;
       const knee = new THREE.Group(); knee.position.y = -L; pivot.add(knee);
       // knee: big actuator discs on both sides, an axle and a rounded cap
-      mesh(new THREE.CylinderGeometry(r * 0.45, r * 0.45, r * 2.1, 14), joint, knee).rotation.z = Math.PI / 2;
-      for (const sx of [-1, 1]) disc(knee, sx * r * 1.05, 0, 0, r * 0.68, sx);
-      mesh(new THREE.SphereGeometry(r * 0.8, 18, 12), am2, knee, 0, 0.02, r * 0.8).scale.set(1.05, 1.15, 0.7);
-      if (B.kneeGlow) { mesh(rbox(r * 1.0, r * 0.25, 0.02, 0.008), g, knee, 0, 0.02, r * 1.36); halo(knee, ac, 0, 0.02, r * 1.4, 0.22, 0.9); }
-      mesh(new THREE.CylinderGeometry(r * 0.11, r * 0.11, L * 0.5, 10), chrome, knee, 0, -L * 0.02, -r * 0.95);
-      mesh(new THREE.CylinderGeometry(r * 0.2, r * 0.2, L * 0.12, 10), dark, knee, 0, -L * 0.3, -r * 0.95);
-      // shin: dark core, a big shin guard that bulges forward, a vented front plate, side struts and an exposed piston behind
-      mesh(new THREE.CylinderGeometry(r * 0.45, r * 0.4, L, 12), dark, knee, 0, -L / 2, 0);
-      mesh(lathe([[0, -L * 0.84], [r * 0.72, -L * 0.82], [r * 0.8, -L * 0.68], [r * 1.18, -L * 0.42], [r * 1.26, -L * 0.22], [r * 1.04, -0.03], [0, 0.02]]), am, knee, 0, 0, r * 0.18).scale.set(0.95, 1, 1.12);
-      const shin = mesh(rbox(r * 1.3, L * 0.5, 0.05, 0.02), am2, knee, 0, -L * 0.36, r * 1.5); shin.rotation.x = 0.14;
-      for (let i = 0; i < 3; i++) mesh(rbox(0.012, 0.055, 0.012, 0.004), dark, knee, (i - 1) * 0.022, -L * 0.36, r * 1.5 + 0.03);
-      mesh(new THREE.CylinderGeometry(r * 0.2, r * 0.2, L * 0.3, 10), dark, knee, 0, -L * 0.5, -r * 0.95);
-      mesh(new THREE.CylinderGeometry(r * 0.1, r * 0.1, L * 0.3, 10), chrome, knee, 0, -L * 0.78, -r * 0.95);
-      mesh(new THREE.SphereGeometry(r * 0.2, 10, 8), joint, knee, 0, -L * 0.93, -r * 0.95);
-      for (const sx of [-1, 1]) mesh(rbox(0.03, L * 0.55, 0.04, 0.01), dark, knee, sx * r * 1.18, -L * 0.5, -r * 0.35);
-      mesh(new THREE.SphereGeometry(0.016, 6, 5), joint, knee, side * r * 1.2, -L * 0.2, -r * 0.35);
-      // ankle actuators
-      mesh(new THREE.CylinderGeometry(r * 0.3, r * 0.3, r * 1.9, 12), joint, knee, 0, -L - 0.01, 0).rotation.z = Math.PI / 2;
-      for (const sx of [-1, 1]) disc(knee, sx * r * 0.9, -L - 0.01, 0, r * 0.42, sx);
-      // boot: dark sole, armoured upper, angled toe cap, sloped instep plate and a heel block
+      mesh(new THREE.CylinderGeometry(r * 0.45, r * 0.45, r * 2.0, 16), joint, knee).rotation.z = Math.PI / 2;
+      for (const sx of [-1, 1]) disc(knee, sx * r * 1.02, 0, 0, r * 0.66, sx);
+      bulge(knee, 0, 0.02, r * 0.8, 0.82, 0.95, 0.6, 0, am2);
+      if (B.kneeGlow) { mesh(new THREE.TorusGeometry(r * 0.32, 0.008, 6, 20), g, knee, 0, 0.02, r * 1.38); halo(knee, ac, 0, 0.02, r * 1.45, 0.22, 0.9); }
+      mesh(new THREE.CylinderGeometry(r * 0.11, r * 0.11, L * 0.5, 12), chrome, knee, 0, -L * 0.02, -r * 1.0);
+      // shin: dark core, a calf that swells out behind, a curved shin guard bulging forward, side struts and a rear piston
+      mesh(new THREE.CylinderGeometry(r * 0.42, r * 0.36, L, 12), dark, knee, 0, -L / 2, 0);
+      mesh(lathe([[0, -L * 0.9]].concat(SP, [[0, 0.02]])), am, knee, 0, 0, r * 0.12).scale.set(0.92, 1, 1.05);
+      bulge(knee, 0, -L * 0.36, -r * 0.42, 0.95, 2.1, 0.95, 0.08, am);
+      bulge(knee, side * r * 0.08, -L * 0.3, -r * 0.62, 0.62, 1.5, 0.62, 0.1, am2);
+      const guard = mesh(plate(SP.slice(0, 5), 0.014, -0.72, 1.44, 0.02), am2, knee, 0, 0, r * 0.12); guard.scale.set(0.92, 1, 1.05);
+      for (let i = 0; i < 3; i++) { const v = mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.05, 6), dark, knee, (i - 1) * 0.02, -L * 0.3, r * 0.12 + r * 1.24 * 1.05 + 0.02); v.rotation.x = 0.15; }
+      for (const sx of [-1, 1]) mesh(new THREE.CylinderGeometry(0.014, 0.014, L * 0.5, 8), dark, knee, sx * r * 1.1, -L * 0.48, -r * 0.4);
+      mesh(new THREE.CylinderGeometry(r * 0.2, r * 0.2, L * 0.3, 12), dark, knee, 0, -L * 0.5, -r * 1.05);
+      mesh(new THREE.CylinderGeometry(r * 0.1, r * 0.1, L * 0.3, 10), chrome, knee, 0, -L * 0.76, -r * 1.05);
+      // ankle: small actuators on the sides only, so the calf stays visible
+      for (const sx of [-1, 1]) disc(knee, sx * r * 0.62, -L - 0.01, 0, r * 0.36, sx);
+      // boot: a smooth lofted boot on a dark sole, with a domed toe cap and a rounded ankle cover
       const foot = new THREE.Group(); foot.position.y = ground; knee.add(foot);
-      mesh(rbox(r * 1.75, 0.05, 0.34, 0.02), dark, foot, 0, 0.025, 0.05);
-      mesh(rbox(r * 1.6, 0.1, 0.24, 0.035), am, foot, 0, 0.09, 0.05);
-      mesh(rbox(r * 1.66, 0.085, 0.11, 0.035), am2, foot, 0, 0.065, 0.19).rotation.x = 0.28;
-      mesh(rbox(r * 1.0, 0.02, 0.012, 0.004), dark, foot, 0, 0.085, 0.152);
-      mesh(rbox(r * 1.5, 0.11, 0.15, 0.03), am2, foot, 0, 0.16, 0.06).rotation.x = -0.55;
-      mesh(rbox(r * 1.45, 0.11, 0.1, 0.03), am, foot, 0, 0.075, -0.1);
-      mesh(new THREE.CylinderGeometry(0.022, 0.022, r * 1.5, 10), joint, foot, 0, 0.06, -0.075).rotation.z = Math.PI / 2;
+      mesh(bootGeo(), am, foot, 0, 0.01, 0.02);
+      mesh(bootGeo(), dark, foot, 0, 0.003, 0.02).scale.set(1.08, 0.3, 1.04);
+      const toe = mesh(new THREE.SphereGeometry(0.07, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2), am2, foot, 0, 0.012, 0.17); toe.scale.set(0.98, 0.95, 1.25);
+      bulge(foot, 0, 0.115, 0.02, 0.5, 0.42, 0.7, -0.3, am2);
+      const hd = mesh(new THREE.CylinderGeometry(0.016, 0.016, r * 1.1, 12), joint, foot, 0, 0.06, -0.1); hd.rotation.z = Math.PI / 2;
       rig.legs.push({ pivot, knee, side });
     }
   } else if (B.type === 'sculpt') {
