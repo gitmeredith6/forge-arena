@@ -1792,8 +1792,8 @@ function makeFighterModel(build, accent, shOff = 0) {
       (rig.mount.arms.cannon = rig.mount.arms.cannon || [])[ai] = mark(wg, 0, -L * 1.1, 0);
       arm.fist.position.set(0, -L * 1.0, 0);
     } else if (FW === 'blades') {
-      // long sword blade after Sam's mech reference: an armoured forearm housing, a collar, then a long, narrow, straight blade
-      // that tapers gently to a sharp point, with a lit accent line down the spine. Polished silver; thick at the root, thin at the tip
+      // long sword blade after Sam's mech reference: an armoured forearm housing, a collar, then a long curved scimitar blade
+      // with a needle point and a honed edge, with a lit accent line down the fuller. Polished silver; thick at the root, thin at the tip
       const BL = Lw * [2.15, 2.0, 1.45][tw2], bw = vr * 0.95, t = Math.max(0.018, vr * 0.16), y0 = -Lw * 0.42, V3_ = THREE.Vector3;
       mesh(rbox(vr * 2.1, Lw * 0.36, vr * 2.2, vr * 0.3), dark, wg, 0, -Lw * 0.2, 0);
       mesh(rbox(vr * 2.16, Lw * 0.12, vr * 2.26, vr * 0.2), topM, wg, 0, -Lw * 0.1, 0);
@@ -1804,26 +1804,36 @@ function makeFighterModel(build, accent, shOff = 0) {
       mesh(rbox(vr * 1.2, vr * 0.3, vr * 1.7, vr * 0.1), frameM, wg, 0, y0 + vr * 0.05, 0);
       mesh(rbox(vr * 0.8, vr * 0.18, bw * 1.5, vr * 0.06), joint, wg, 0, y0 - vr * 0.18, 0);
       const tz = (x, y) => new V3_(0, y, x);   // shape coordinates (x across, y down) to the forearm's (z forward, y down)
+      // scimitar: the blade sweeps back as it goes down, the cutting edge bellies out toward the tip, and the back is clipped
+      // into a false edge so the point is needle sharp. u runs 0 at the root to 1 at the point
+      const ss = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+      const mid = u => -bw * 1.4 * u * u;
+      const edgeX = u => mid(u) + bw * (0.42 + 0.78 * ss(0.05, 0.8, u));
+      const backX = u => mid(u) - bw * 0.3;
+      const tipX = mid(1) - bw * 0.5, N = 16, E1 = 0.86, B1 = 0.62;
       const sh = new THREE.Shape();
-      sh.moveTo(-bw * 0.42, 0); sh.lineTo(bw * 0.5, 0);
-      sh.lineTo(bw * 0.4, -BL * 0.88);                 // straight cutting edge, narrowing slightly
-      sh.lineTo(bw * 0.05, -BL);                       // long angled point
-      sh.lineTo(-bw * 0.32, -BL * 0.93);
-      sh.lineTo(-bw * 0.42, 0);                        // straight spine
-      const bg = new THREE.ExtrudeGeometry(sh, { depth: t, bevelEnabled: true, bevelThickness: t * 0.3, bevelSize: Math.min(0.01, bw * 0.06), bevelSegments: 2, curveSegments: 4 });
+      sh.moveTo(backX(0), 0);
+      for (let k = 0; k <= N; k++) { const u = E1 * k / N; sh.lineTo(edgeX(u), -BL * u); }
+      // the edge rolls round in a tight curve into the point
+      for (let k = 1; k <= 4; k++) { const v = k / 5, u = E1 + (1 - E1) * v; sh.lineTo(lerp(edgeX(E1), tipX, v * v) + bw * 0.12 * Math.sin(Math.PI * v), -BL * u); }
+      sh.lineTo(tipX, -BL);
+      // false edge: a straight, sharpened clip from the point back up to the spine
+      sh.lineTo(backX(B1) + bw * 0.06, -BL * B1);
+      for (let k = 1; k <= N; k++) { const u = B1 * (1 - k / N); sh.lineTo(backX(u), -BL * u); }
+      const bg = new THREE.ExtrudeGeometry(sh, { depth: t, bevelEnabled: true, bevelThickness: t * 0.3, bevelSize: Math.min(0.008, bw * 0.05), bevelSegments: 2, curveSegments: 4 });
       bg.translate(0, 0, -t / 2);
-      // taper the thickness: heavy at the root, thinning steadily to a fine tip
-      const thick = y => lerp(2.0, 0.35, clamp(-y / BL, 0, 1));
-      { const P = bg.attributes.position; for (let i = 0; i < P.count; i++) P.setZ(i, P.getZ(i) * thick(P.getY(i))); bg.computeVertexNormals(); }
+      // taper the thickness: heavy at the root, thinning steadily to a fine tip, and thinner toward the edge than the spine
+      const thick = y => lerp(2.0, 0.3, clamp(-y / BL, 0, 1));
+      { const P = bg.attributes.position; for (let i = 0; i < P.count; i++) { const u = clamp(-P.getY(i) / BL, 0, 1), x = P.getX(i), w = (x - backX(u)) / Math.max(1e-4, edgeX(Math.min(u, E1)) - backX(u)); P.setZ(i, P.getZ(i) * thick(P.getY(i)) * lerp(1.15, 0.45, clamp(w, 0, 1))); } bg.computeVertexNormals(); }
       bg.rotateY(-Math.PI / 2);
       mesh(bg, bladeM, wg, 0, y0 - vr * 0.2, 0);
       const taper = g => { const P = g.attributes.position; for (let i = 0; i < P.count; i++) P.setX(i, P.getX(i) * thick(P.getY(i) - y0)); g.computeVertexNormals(); return g; };
-      // darker steel spine and a lit accent line running most of the way down, like the reference's yellow stripe
-      const yb = y0 - vr * 0.2;
-      mesh(taper(new THREE.TubeGeometry(new THREE.LineCurve3(tz(-bw * 0.4, yb - BL * 0.02), tz(-bw * 0.32, yb - BL * 0.9)), 8, t * 1.1, 6, false)), frameM, wg);
-      mesh(taper(new THREE.TubeGeometry(new THREE.LineCurve3(tz(-bw * 0.12, yb - BL * 0.05), tz(-bw * 0.06, yb - BL * 0.78)), 8, t * 0.75, 5, false)), gT, wg);
-      mesh(taper(new THREE.TubeGeometry(new THREE.LineCurve3(tz(bw * 0.5, yb - BL * 0.03), tz(bw * 0.4, yb - BL * 0.88)), 8, t * 0.7, 5, false)), edge, wg);
-      arm.fist.position.set(0, yb - BL * 0.9, 0);
+      const yb = y0 - vr * 0.2, along = (f, u0, u1, r, m) => { const pts = []; for (let k = 0; k <= 10; k++) { const u = lerp(u0, u1, k / 10); pts.push(tz(f(u), yb - BL * u)); } mesh(taper(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, r, 6, false)), m, wg); };
+      // darker steel spine, a lit fuller line following the curve, and a bright honed bevel along the cutting edge
+      along(u => backX(u) + bw * 0.04, 0.02, B1 - 0.02, t * 1.05, frameM);
+      along(u => mid(u) + bw * 0.02, 0.05, 0.74, t * 0.7, gT);
+      along(u => edgeX(u) - bw * 0.035, 0.03, E1 - 0.02, t * 0.55, edge);
+      arm.fist.position.set(0, yb - BL * 0.9, mid(0.9));
     } else {
       const BL = Lw * [1.3, 1.2, 0.95][tw2], bw = vr * 1.45, t = Math.max(0.018, vr * 0.2), y0 = -Lw * 0.42, h = bw / 2;
       // rounded engine housing with glowing rings, an exhaust and a pull handle
