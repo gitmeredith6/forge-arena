@@ -575,7 +575,7 @@ const STAT_VIEW = [
 const WEAPON_GROUPS = [
   { slot: 'head',  label: 'Head',     effect: 'Eyes and coil', color: '#ff6b6b' },
   { slot: 'chest', label: 'Chest & shoulders', effect: 'Reactor and rockets', color: '#7fd8ff' },
-  { slot: 'arms',  label: 'Arms',     effect: 'Cannons, swords or saws', color: '#ffb547' },
+  { slot: 'arms',  label: 'Arms',     effect: 'Cannons or saws', color: '#ffb547' },
 ];
 const WEAPONS = [
   { id: 'laser',   slot: 'head',  name: 'Laser Eyes',      desc: 'Beams fire straight from the eyes and burn the target at long range.', cd: 7,  w: 0.25, a: 0.6,  r: 0.25, move: 0.5,  kind: 'beam',  from: 'eyes',  tick: 0.1,  mult: 0.46, kb: 0.4, range: 14, color: 0xff3b3b },
@@ -583,13 +583,12 @@ const WEAPONS = [
   { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 0.7, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
   { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 0.68, kb: 4, homing: 2.4, color: 0xffb547 },
   { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Forearm cannons. J or K fires that arm; both together fire a heavy double blast.', cd: 6, w: 0.3, a: 0.15, r: 0.35, move: 0.3, kind: 'proj', proj: 'shell', count: 2, speed: 20, mult: 0.65, kb: 9, stun: 0.3, color: 0xffd27a },
-  { id: 'blades',  slot: 'arms',  name: 'Arm Blades',      desc: 'Long forearm swords. J or K slashes with that arm; both together make a hard double slash.', cd: 5, w: 0.18, a: 0.12, r: 0.32, move: 0.4, kind: 'melee', reach: 0.7, arc: 0.0, mult: 1.4, kb: 7, stun: 0.4, color: 0xd8f0ff },
   { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Forearm chainsaws. J or K jabs with that arm; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
 ];
 const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
 const MAX_WEAPONS = 2;
-// cannons, swords and saws replace a forearm. One of them goes on both arms; two different ones go one per arm
-const ARM_SWAP = ['cannon', 'blades', 'saws'];
+// cannons and saws replace a forearm. One of them goes on both arms; two different ones go one per arm
+const ARM_SWAP = ['cannon', 'saws'];
 // tabled ideas, kept in the code but switched off
 const FURNACE_JETPACK = false;
 /* abilities: pick one. Used with R in a fight, each on its own cooldown. They run through the weapon state like a weapon would */
@@ -616,7 +615,6 @@ const armLoadout = ws => { const a = (ws || []).filter(id => ARM_SWAP.includes(i
 // (side 1 = left, 0 = right, matching punchSide); both buttons use the full double-arm version
 const ARM_SINGLE = {
   cannon: { count: 1, w: 0.12, a: 0.05, r: 0.3, mult: 0.5, kb: 4, stun: 0, move: 0.4 },
-  blades: { w: 0.12, a: 0.1, r: 0.24, mult: 0.85, kb: 3, stun: 0, arc: 0.2 },
   saws:   { w: 0.1, a: 0.32, r: 0.2, mult: 0.2, stun: 0.08 },
 };
 const armVariant = (W, side) => side < 0 ? W : Object.assign({}, W, ARM_SINGLE[W.id], { side });
@@ -1798,7 +1796,7 @@ function makeFighterModel(build, accent, shOff = 0) {
     // alternate sides so a volley leaves from both shoulders
     if (heavyMarks.length) for (let i = 0; i < heavyMarks[0].length; i++) for (const m of heavyMarks) rig.mount.rockets.push(m[i]);
   }
-  // forearm weapons: cannons, swords or chainsaws take the place of the forearms and fists (one kind on both, or one each).
+  // forearm weapons: cannons or chainsaws take the place of the forearms and fists (one kind on both, or one each).
   // The empty fist group moves to the weapon tip so swing trails and punches still follow it
   rig.mount.arms = {}; rig.saws = [];
   const vr = [0.1, 0.13, 0.21][tw2] * (T.id === 'titan' ? 1.15 : 1), Lw = armLen * 0.5 + fistR * 1.5;
@@ -1826,56 +1824,6 @@ function makeFighterModel(build, accent, shOff = 0) {
       const ring = mesh(new THREE.TorusGeometry(br * 0.82, br * 0.1, 8, 24), gT, wg, 0, -L * 1.045, 0); ring.rotation.x = Math.PI / 2;
       (rig.mount.arms.cannon = rig.mount.arms.cannon || [])[ai] = mark(wg, 0, -L * 1.1, 0);
       arm.fist.position.set(0, -L * 1.0, 0);
-    } else if (FW === 'blades') {
-      // long sword blade after Sam's mech reference: an armoured forearm housing, a collar, then a long curved scimitar blade
-      // with a needle point and a honed edge, with a lit accent line down the fuller. Polished silver; thick at the root, thin at the tip
-      const BL = Lw * [2.15, 2.0, 1.45][tw2], bw = vr * 0.95, t = Math.max(0.018, vr * 0.16), y0 = -Lw * 0.42, V3_ = THREE.Vector3;
-      mesh(rbox(vr * 2.1, Lw * 0.36, vr * 2.2, vr * 0.3), dark, wg, 0, -Lw * 0.2, 0);
-      mesh(rbox(vr * 2.16, Lw * 0.12, vr * 2.26, vr * 0.2), topM, wg, 0, -Lw * 0.1, 0);
-      for (let i = 0; i < 3; i++) mesh(rbox(vr * 2.2, 0.01, vr * 0.5, 0.003), joint, wg, 0, -Lw * (0.22 + i * 0.05), vr * 0.95);
-      for (const sx of [-1, 1]) mesh(rbox(0.012, Lw * 0.14, vr * 0.5, 0.004), gT, wg, sx * vr * 1.06, -Lw * 0.25, -vr * 0.3);
-      const bladeM = stdMat(0xc4cbd4, { metalness: 1, roughness: 0.2 }), frameM = stdMat(0x5d646e, { metalness: 0.9, roughness: 0.35 }); rig.mats.push(bladeM, frameM);
-      // collar and a short guard where the blade leaves the housing
-      mesh(rbox(vr * 1.2, vr * 0.3, vr * 1.7, vr * 0.1), frameM, wg, 0, y0 + vr * 0.05, 0);
-      mesh(rbox(vr * 0.8, vr * 0.18, bw * 1.5, vr * 0.06), joint, wg, 0, y0 - vr * 0.18, 0);
-      // shape coordinates (x across, y down) to the forearm's (y down, z mirrored) so the edge and long point face up when the arm swings forward
-      const tz = (x, y) => new V3_(0, y, -x);
-      // scimitar: the blade sweeps back as it goes down, the cutting edge bellies out toward the tip, and the back is clipped
-      // into a false edge so the point is needle sharp. u runs 0 at the root to 1 at the point
-      const ss = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
-      const mid = u => -bw * 1.4 * u * u;
-      const edgeX = u => mid(u) + bw * (0.42 + 0.78 * ss(0.05, 0.8, u));
-      const backX = u => mid(u) - bw * 0.3;
-      const tipX = mid(1) - bw * 0.5, N = 16, E1 = 0.86, B1 = 0.62;
-      const sh = new THREE.Shape();
-      sh.moveTo(backX(0), 0);
-      // the cutting edge starts with a short row of serrations near the root, each tooth raked back toward the hand, then runs smooth
-      const S0 = 0.08, S1 = 0.4, NT = 5, depth = bw * 0.2;
-      for (let k = 0; k < NT; k++) {
-        const ua = lerp(S0, S1, k / NT), ub = lerp(S0, S1, (k + 1) / NT), um = lerp(ua, ub, 0.7);
-        sh.lineTo(edgeX(ua), -BL * ua); sh.lineTo(edgeX(um) + depth, -BL * um);
-      }
-      for (let k = 0; k <= N; k++) { const u = S1 + (E1 - S1) * k / N; sh.lineTo(edgeX(u), -BL * u); }
-      // the edge rolls round in a tight curve into the point
-      for (let k = 1; k <= 4; k++) { const v = k / 5, u = E1 + (1 - E1) * v; sh.lineTo(lerp(edgeX(E1), tipX, v * v) + bw * 0.12 * Math.sin(Math.PI * v), -BL * u); }
-      sh.lineTo(tipX, -BL);
-      // false edge: a straight, sharpened clip from the point back up to the spine
-      sh.lineTo(backX(B1) + bw * 0.06, -BL * B1);
-      for (let k = 1; k <= N; k++) { const u = B1 * (1 - k / N); sh.lineTo(backX(u), -BL * u); }
-      const bg = new THREE.ExtrudeGeometry(sh, { depth: t, bevelEnabled: true, bevelThickness: t * 0.3, bevelSize: Math.min(0.008, bw * 0.05), bevelSegments: 2, curveSegments: 4 });
-      bg.translate(0, 0, -t / 2);
-      // taper the thickness: heavy at the root, thinning steadily to a fine tip, and thinner toward the edge than the spine
-      const thick = y => lerp(2.0, 0.3, clamp(-y / BL, 0, 1));
-      { const P = bg.attributes.position; for (let i = 0; i < P.count; i++) { const u = clamp(-P.getY(i) / BL, 0, 1), x = P.getX(i), w = (x - backX(u)) / Math.max(1e-4, edgeX(Math.min(u, E1)) - backX(u)); P.setZ(i, P.getZ(i) * thick(P.getY(i)) * lerp(1.15, 0.45, clamp(w, 0, 1))); } bg.computeVertexNormals(); }
-      bg.rotateY(Math.PI / 2);
-      mesh(bg, bladeM, wg, 0, y0 - vr * 0.2, 0);
-      const taper = g => { const P = g.attributes.position; for (let i = 0; i < P.count; i++) P.setX(i, P.getX(i) * thick(P.getY(i) - y0)); g.computeVertexNormals(); return g; };
-      const yb = y0 - vr * 0.2, along = (f, u0, u1, r, m) => { const pts = []; for (let k = 0; k <= 10; k++) { const u = lerp(u0, u1, k / 10); pts.push(tz(f(u), yb - BL * u)); } mesh(taper(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, r, 6, false)), m, wg); };
-      // darker steel spine, a lit fuller line following the curve, and a bright honed bevel along the cutting edge
-      along(u => backX(u) + bw * 0.04, 0.02, B1 - 0.02, t * 1.05, frameM);
-      along(u => mid(u) + bw * 0.02, 0.05, 0.74, t * 0.7, gT);
-      along(u => edgeX(u) - bw * 0.035, 0.41, E1 - 0.02, t * 0.55, edge);
-      arm.fist.position.set(0, yb - BL * 0.9, -mid(0.9));
     } else {
       const BL = Lw * [1.3, 1.2, 0.95][tw2], bw = vr * 1.45, t = Math.max(0.018, vr * 0.2), y0 = -Lw * 0.42, h = bw / 2;
       // rounded engine housing with glowing rings, an exhaust and a pull handle
@@ -2037,7 +1985,7 @@ function animateRig(rig, f, dt, time) {
         else { P.aR.x = P.aL.x = -0.6; P.aR.e = P.aL.e = -1.2; P.bx = 0.1; }
       }
     } else if (st === 'weapon') {
-      // aim the hardware: arm guns point both arms at the target, blades slash across, saws jab, head and chest weapons lean in
+      // aim the hardware: arm guns point both arms at the target, saws jab, head and chest weapons lean in
       const W = f.wpn, live = t >= W.w && t < W.w + W.a + W.r * 0.4;
       rate = 20;
       if (W.side !== undefined) {
@@ -2316,7 +2264,7 @@ const SFX = {
 };
 
 /* ======================= BUILDER UI ======================= */
-let build = { head: 'sentinel', top: 'sentinel', middle: 'furnace', bottom: 'sprinter', weapons: ['laser', 'blades'], ability: 'jetpack' };
+let build = { head: 'sentinel', top: 'sentinel', middle: 'furnace', bottom: 'sprinter', weapons: ['laser', 'cannon'], ability: 'jetpack' };
 let curSec = null;
 let difficulty = 'normal';
 let arenaId = 'guerrilla';
@@ -2371,7 +2319,7 @@ function renderAbilities() {
 }
 function renderWeapons() {
   const full = build.weapons.length >= MAX_WEAPONS;
-  $('secDesc').textContent = `Add up to ${MAX_WEAPONS} weapons to your fighter. Head and chest weapons fire with 1 and 2 and each has its own cooldown.` + ' Cannons, swords and saws replace your forearms and your punches. Pick one to fit it on both arms, or two to fit one on each: the first goes on your left arm (J), the second on your right (K).' + (full ? ' To swap one, tap a chosen weapon to remove it first.' : '');
+  $('secDesc').textContent = `Add up to ${MAX_WEAPONS} weapons to your fighter. Head and chest weapons fire with 1 and 2 and each has its own cooldown.` + ' Cannons and saws replace your forearms and your punches. Pick one to fit it on both arms, or two to fit one on each: the first goes on your left arm (J), the second on your right (K).' + (full ? ' To swap one, tap a chosen weapon to remove it first.' : '');
   const W = $('weights'); W.innerHTML = '';
   for (const grp of WEAPON_GROUPS) {
     const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', grp.color);
