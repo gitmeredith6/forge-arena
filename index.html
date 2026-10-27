@@ -127,11 +127,17 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .weights { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .wcol { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .wcol h3 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 22px; line-height: 1; letter-spacing: 0.04em; text-transform: uppercase; color: var(--wc); }
-.wcol .weffect { margin: -4px 0 2px; font-size: 12.5px; color: var(--muted); min-height: 2.6em; line-height: 1.3; }
+.wcol .weffect { margin: 0 0 2px; font-size: 12.5px; color: var(--muted); line-height: 1.3; }
 .part { text-align: left; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; transition: border-color .12s, background .12s; }
 .part:hover { border-color: color-mix(in srgb, var(--wc) 60%, var(--line)); }
-.part .pn { font-family: var(--f-display); font-size: 22px; line-height: 1; font-weight: 600; }
-.part .pp { font-size: 13px; color: var(--muted); line-height: 1.25; }
+/* every box is the same size and shows only the part's name; the chosen one expands to show its perk */
+.part { min-height: 44px; justify-content: center; }
+.part .pn { font-family: var(--f-display); font-size: 22px; line-height: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.part.wrap .pn { white-space: normal; line-height: 1.05; }
+.whead { display: flex; flex-direction: column; gap: 4px; }
+.part .pp { font-size: 13px; color: var(--muted); line-height: 1.25; display: none; }
+.part[aria-pressed="true"] .pp { display: block; margin-top: 4px; animation: ppIn .18s ease-out; }
+@keyframes ppIn { from { opacity: 0; transform: translateY(-3px); } }
 .part[aria-pressed="true"] { border-color: var(--wc); background: color-mix(in srgb, var(--wc) 16%, var(--panel-2)); box-shadow: inset 0 0 0 1px var(--wc); }
 .part[aria-pressed="true"] .pp { color: var(--fg); }
 .part.dim { opacity: 0.5; }
@@ -181,11 +187,13 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(--fg); background: var(--panel-2); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; }
 
 @media (max-width: 1100px) {
-  .b-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .b-preview { grid-column: 2; grid-row: 1; }
-  .b-parts { grid-column: 1; grid-row: 1 / span 2; }
-  .b-stats { grid-column: 2; grid-row: 2; }
+  /* narrower screens keep the same three columns: options left, bot in the middle, stats right */
+  .b-grid { grid-template-columns: minmax(270px, 1fr) minmax(0, 1fr) minmax(200px, 0.7fr); gap: 10px; }
   .b-preview { min-height: 440px; }
+  .b-stats { padding: 12px 10px; }
+  .stat { grid-template-columns: 70px 1fr 44px; gap: 6px; font-size: 12.5px; }
+  .btn-go { font-size: 24px; }
+  .actions { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 720px) {
   .b-grid { grid-template-columns: minmax(0, 1fr); }
@@ -193,7 +201,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   .b-preview { min-height: 360px; order: -1; }
   .weights { gap: 6px; }
   .wcol h3 { font-size: 19px; }
-  .wcol .weffect { font-size: 11.5px; min-height: 4em; }
+  .wcol .weffect { font-size: 11.5px; }
   .part { padding: 7px 7px; }
   .part .pn { font-size: 19px; }
   .part .pp { font-size: 12px; }
@@ -320,7 +328,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     </div>
     <div class="card b-preview" id="previewBox">
       <canvas id="previewCanvas" aria-label="3D preview of your fighter"></canvas>
-      <div class="pv-hint" id="pvHint">Click a part to change it · drag to turn</div>
+      <div class="pv-hint" id="pvHint">Click a part to change it</div>
       <button type="button" class="pv-spin" id="spinBtn" aria-pressed="false"></button>
       <div class="pv-label">
         <div class="pv-name" id="pvName"></div>
@@ -2123,10 +2131,10 @@ function renderWeapons() {
   const W = $('weights'); W.innerHTML = '';
   for (const grp of WEAPON_GROUPS) {
     const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', grp.color);
-    col.innerHTML = `<h3>${grp.label}</h3><div class="weffect">${grp.effect}</div>`;
+    col.innerHTML = `<div class="whead"><h3>${grp.label}</h3><div class="weffect">${grp.effect}</div></div>`;
     for (const wpn of WEAPONS.filter(w => w.slot === grp.slot)) {
       const on = build.weapons.includes(wpn.id), b = document.createElement('button');
-      b.type = 'button'; b.className = 'part'; b.id = `weapon-${wpn.id}`; b.setAttribute('aria-pressed', String(on));
+      b.type = 'button'; b.className = 'part wrap'; b.id = `weapon-${wpn.id}`; b.setAttribute('aria-pressed', String(on));
       const swaps = ARM_SWAP.includes(wpn.id) && build.weapons.some(id => ARM_SWAP.includes(id));
       if (!on && full && !swaps) b.classList.add('dim');
       const key = on ? `<span class="wkey">${build.weapons.indexOf(wpn.id) + 1}</span>` : '';
@@ -2147,7 +2155,7 @@ function renderHeads() {
   const W = $('weights'); W.innerHTML = '';
   HEAD_SIZES.forEach((label, sz) => {
     const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', '#c9d3e6');
-    col.innerHTML = `<h3>${label}</h3><div class="weffect">Style only</div>`;
+    col.innerHTML = `<div class="whead"><h3>${label}</h3><div class="weffect">Style only</div></div>`;
     for (const h of HEADS.filter(h => h.size === sz)) {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'part'; b.id = `head-${h.id}`;
       b.setAttribute('aria-pressed', String(build.head === h.id));
@@ -2189,13 +2197,13 @@ function renderParts() {
   renderPaint();
   $('weights').classList.toggle('list', !curSec);
   if (!curSec) return renderSecList();
-  if (curSec === 'weapons') return renderWeapons();
-  if (curSec === 'head') return renderHeads();
+  if (curSec === 'weapons') { renderWeapons(); return tidyTable(); }
+  if (curSec === 'head') { renderHeads(); return tidyTable(); }
   $('secDesc').textContent = SECTIONS[curSec].desc;
   const W = $('weights'); W.innerHTML = '';
   for (const w of WEIGHTS) {
     const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', WCOLOR[w]);
-    col.innerHTML = `<h3>${WLABEL[w]}</h3><div class="weffect">${SECTIONS[curSec].effect[w]}</div>`;
+    col.innerHTML = `<div class="whead"><h3>${WLABEL[w]}</h3><div class="weffect">${SECTIONS[curSec].effect[w]}</div></div>`;
     for (const p of PARTS[curSec].filter(p => p.w === w)) {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'part'; b.id = `part-${curSec}-${p.id}`;
       b.setAttribute('aria-pressed', String(build[curSec] === p.id));
@@ -2208,7 +2216,25 @@ function renderParts() {
     }
     W.appendChild(col);
   }
+  tidyTable();
 }
+// keep the options table neat: column headers line up, every name uses one font size that fits the longest name,
+// and every unchosen box is the same height (the chosen ones grow to show their perk)
+function tidyTable() {
+  const W = $('weights'); if (!curSec || !W.offsetWidth) return;
+  const heads = [...W.querySelectorAll('.whead')], names = [...W.querySelectorAll('.pn')], parts = [...W.querySelectorAll('.part')];
+  heads.forEach(h => h.style.minHeight = ''); names.forEach(n => n.style.fontSize = ''); parts.forEach(p => p.style.minHeight = '');
+  const hh = Math.max(...heads.map(h => h.offsetHeight)); heads.forEach(h => h.style.minHeight = hh + 'px');
+  const base = parseFloat(getComputedStyle(names[0]).fontSize);
+  // shrink until no name is cut off (measured with a little slack, since widths round to whole pixels)
+  const rg = document.createRange(), textW = n => { rg.selectNodeContents(n); return rg.getBoundingClientRect().width; };
+  const over = () => names.some(n => textW(n) > n.clientWidth - 1);
+  for (let fs = base, k = 0; over() && fs > 13 && k < 20; k++) { fs = Math.max(13, fs - 0.75); names.forEach(n => n.style.fontSize = fs + 'px'); }
+  const closed = parts.filter(p => p.getAttribute('aria-pressed') !== 'true');
+  const ph = Math.max(...(closed.length ? closed : parts).map(p => p.offsetHeight)); parts.forEach(p => p.style.minHeight = ph + 'px');
+}
+if (document.fonts) document.fonts.ready.then(() => tidyTable());
+{ let lastW = 0; new ResizeObserver(() => { const w = $('weights').offsetWidth; if (w !== lastW) { lastW = w; tidyTable(); } }).observe($('weights')); }
 function wchips(b) {
   return ['top', 'middle', 'bottom'].map(s => { const w = partById(s, b[s]).w; return `<span class="wchip" style="--wc:${WCOLOR[w]}" title="${SECTIONS[s].label}: ${WLABEL[w]}">${w[0].toUpperCase()}</span>`; }).join('');
 }
@@ -2317,7 +2343,7 @@ const Preview = (() => {
       else if (want && o.userData.sec === want && !o.userData.m0) { o.userData.m0 = o.material; o.material = hl(o.material); }
     });
     hint.classList.toggle('on', !!hoverSec);
-    hint.textContent = hoverSec ? `${secName(hoverSec)}: click to change` : 'Click a part to change it · drag to turn';
+    hint.textContent = hoverSec ? `${secName(hoverSec)}: click to change` : 'Click a part to change it';
   }
   const hint = $('pvHint');
   function hover(sec) { if (sec === hoverSec) return; hoverSec = sec; paintHL(); canvas.style.cursor = sec ? 'pointer' : ''; }
@@ -2351,7 +2377,7 @@ const Preview = (() => {
     // frame the whole fighter (a little wider than its body height so crowns and the bubble fit)
     const h = rig.height;
     const narrow = cam.aspect < 0.9;
-    let dist = (h * 1.95 + 1.0) * (narrow ? 1.25 : 1) * 1.1;
+    let dist = (h * 1.95 + 1.0) * (narrow ? clamp(0.85 / cam.aspect, 1.25, 1.6) : 1) * 1.1;
     if (rig.bubble.visible) dist = Math.max(dist, rig.bubbleR * 1.08 / (Math.tan(16 * Math.PI / 180) * Math.min(1, cam.aspect)));
     cam.position.set(0, h * 0.62, dist);
     cam.lookAt(0, h * 0.42, 0);
