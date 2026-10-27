@@ -979,7 +979,7 @@ function makeFighterModel(build, accent) {
     const mwB = wi[M.w], R = [0.38, 0.42, 0.48][mwB]; hipY = R * 2 + 0.2; rig.ballR = R;
     const segsB = M.segs === 4 ? 4 : Math.max(10, M.segs), phiB = M.segs === 4 ? Math.PI / 4 : 0;
     const waist = Math.max(0.12, TORSO_PROFILES[mwB](M.taper)[1][0] * [0.5, 0.7, 0.95][mwB]);
-    const ball = new THREE.Group(); ball.position.y = R; root.add(ball); rig.ball = ball;
+    const ball = new THREE.Group(); ball.position.y = R; root.add(ball); rig.ball = ball; rig.swayY = R;
     mesh(new THREE.SphereGeometry(R, 36, 26), botM, ball);
     for (const sx of [-1, 1]) {
       mesh(new THREE.CylinderGeometry(R * 0.56, R * 0.56, 0.03, 30), dark, ball, sx * R * 0.83, 0, 0).rotation.z = Math.PI / 2;
@@ -1132,7 +1132,7 @@ function makeFighterModel(build, accent) {
     hipY = 1.05; rig.hover = true;
     const skirt = [[0, -0.78], [0.1, -0.74], [0.24, -0.5], [0.34, -0.22], [0.37, -0.06], [0.3, 0.06], [0, 0.06]];
     // the skirt, rings and beam hang from a pivot under the hips so they can swing like a pendulum as the fighter moves
-    const hg = new THREE.Group(); hg.position.y = hipY; body.add(hg); rig.hoverG = hg; rig.hoverY = hipY;
+    const hg = new THREE.Group(); hg.position.y = hipY; body.add(hg); rig.hoverG = hg; rig.swayY = hipY;
     mesh(new THREE.LatheGeometry(skirt.map(([r, y]) => new THREE.Vector2(r, y)), 14), botM, hg, 0, 0, 0);
     const ring = mesh(new THREE.TorusGeometry(0.33, 0.035, 8, 32), gB, hg, 0, -0.16, 0); ring.rotation.x = Math.PI / 2;
     const ring2 = mesh(new THREE.TorusGeometry(0.19, 0.03, 8, 24), joint, hg, 0, -0.52, 0); ring2.rotation.x = Math.PI / 2;
@@ -1714,23 +1714,27 @@ function disposeObj(o) { o.traverse(c => { if (c.geometry) c.geometry.dispose();
 function sawPlace(sw, run) {
   for (const l of sw.links) { const [y, rx, z] = sw.at(l.d + run); l.g.position.set(0, y, z === undefined ? (rx > 0 ? sw.h : -sw.h) : z); l.g.rotation.x = rx; }
 }
-// Phantom sway: the body leans into every change of speed on springs that overshoot a little, pivoting at the hips,
-// and the hover skirt and beam swing the other way like a pendulum to keep it balanced, so quick reversals rock it
-function hoverSway(rig, f, st, dt, time) {
+// balance sway for Phantom and Strider: the body leans into every change of speed on springs that overshoot a little,
+// pivoting at the hips (Phantom) or the top of the ball (Strider). Phantom's skirt and beam also swing the other way
+// like a pendulum to keep it balanced. Once the fighter stops, the springs are damped hard so it settles quickly
+function balanceSway(rig, f, st, dt, time) {
   const S = rig.sway || (rig.sway = { svx: 0, svz: 0, lx: 0, lz: 0, lvx: 0, lvz: 0, qx: 0, qz: 0, qvx: 0, qvz: 0 });
   let vx = 0, vz = 0;
   if (f && st !== 'ko') { const wx = f.moveVel.x + f.knock.x, wz = f.moveVel.z + f.knock.z, yaw = rig.root.rotation.y, c = Math.cos(yaw), sn = Math.sin(yaw); vx = wx * c - wz * sn; vz = wx * sn + wz * c; }
-  const h = Math.min(dt, 1 / 30), ks = 1 - Math.exp(-5 * h);
+  const still = Math.hypot(vx, vz) < 0.5, h = Math.min(dt, 1 / 30), ks = 1 - Math.exp(-(still ? 9 : 5) * h);
   S.svx += (vx - S.svx) * ks; S.svz += (vz - S.svz) * ks;
   // the gap between the real and the lagging velocity stands in for acceleration
   const tx = clamp((vz - S.svz) * 0.04, -0.28, 0.28), tz = clamp(-(vx - S.svx) * 0.04, -0.28, 0.28);
   const spring = (x, v, t, w, z) => { S[v] += (w * w * (t - S[x]) - 2 * z * w * S[v]) * h; S[x] += S[v] * h; };
-  spring('lx', 'lvx', tx, 9, 0.45); spring('lz', 'lvz', tz, 9, 0.45);
-  spring('qx', 'qvx', -S.lx * 1.1 + Math.sin(time * 1.3) * 0.025, 7, 0.3); spring('qz', 'qvz', -S.lz * 1.1 + Math.sin(time * 1.1 + 1) * 0.025, 7, 0.3);
-  const H = rig.hoverY, b = rig.body;
+  const zl = still ? 0.9 : 0.5, zq = still ? 0.85 : 0.35;
+  spring('lx', 'lvx', tx, still ? 11 : 9, zl); spring('lz', 'lvz', tz, still ? 11 : 9, zl);
+  const H = rig.swayY, b = rig.body;
+  if (rig.hoverG) {
+    spring('qx', 'qvx', -S.lx * 1.1 + Math.sin(time * 1.3) * 0.015, still ? 10 : 7, zq); spring('qz', 'qvz', -S.lz * 1.1 + Math.sin(time * 1.1 + 1) * 0.015, still ? 10 : 7, zq);
+    rig.hoverG.rotation.set(S.qx, 0, S.qz);
+  }
   b.rotation.x += S.lx; b.rotation.z += S.lz;
   b.position.z = -H * Math.sin(S.lx); b.position.x = H * Math.sin(S.lz); b.position.y += H * (1 - Math.cos(S.lx) * Math.cos(S.lz));
-  rig.hoverG.rotation.set(S.qx, 0, S.qz);
 }
 function animateRig(rig, f, dt, time) {
   const P = newPose();
@@ -1835,7 +1839,7 @@ function animateRig(rig, f, dt, time) {
   }
   rig.body.rotation.set(cur.bx, cur.tw, cur.bz);
   rig.body.position.y = cur.by;
-  if (rig.hoverG) hoverSway(rig, f, st, dt, time);
+  if (rig.swayY) balanceSway(rig, f, st, dt, time);
   if (rig.flame) { rig.flame.scale.y = 0.8 + Math.random() * 0.4 + sp * 0.5; }
   if (rig.pods) { const open = f && f.state === 'weapon' && f.wpn.id === 'rockets' ? 1 : 0; rig.podOpen = lerp(rig.podOpen || 0, open, 1 - Math.exp(-14 * dt)); for (const p of rig.pods) { p.g.position.y = p.y0 + (p.y1 - p.y0) * rig.podOpen; p.g.visible = rig.podOpen > 0.03; } }
   if (rig.saws && rig.saws.length) { const rev = f && f.state === 'weapon' && f.wpn.id === 'saws'; rig.sawT = (rig.sawT || 0) + dt * (rev ? 3.5 : 0.25); for (const sw of rig.saws) sawPlace(sw, rig.sawT * sw.step); }
