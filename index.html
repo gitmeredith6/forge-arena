@@ -278,7 +278,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 .tbtns button.big { background: #ffb54755; }
 .tbtns button.sp { background: #ffffff22; }
 .tbtns button.jp { grid-column: 2; border-radius: 31px; }
-.wbtns { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(18px + 62px * 2 + 8px + 12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; pointer-events: auto; }
+.wbtns { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(18px + 62px * 3 + 8px * 2 + 12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; pointer-events: auto; }
 .wbtns button { position: relative; overflow: hidden; width: 62px; height: 40px; border-radius: 10px; border: 1px solid #ffffff40; background: #0b0f18aa; font-weight: 700; font-size: 10.5px; line-height: 1.05; touch-action: none; padding: 2px 4px; }
 .wbtns button i, .ws i { position: absolute; left: 0; right: 0; bottom: 0; background: #ffffff2e; pointer-events: none; }
 .wslots { display: flex; gap: 6px; margin-top: 6px; }
@@ -355,8 +355,9 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   </div>
   <div class="controls">
     <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span>
-    <span><kbd>J</kbd> or left click: light attack</span>
-    <span><kbd>K</kbd> or right click: heavy attack</span>
+    <span><kbd>J</kbd> or left click: left arm punch</span>
+    <span><kbd>K</kbd> or right click: right arm punch</span>
+    <span><kbd>J</kbd>+<kbd>K</kbd> together: double-arm smash</span>
     <span><kbd>L</kbd> or <kbd>Shift</kbd> hold: block</span>
     <span><kbd>Q</kbd> kick (its style comes from your bottom)</span>
     <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> fire your weapons</span>
@@ -408,14 +409,14 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <div class="tbtns">
       <button type="button" data-a="special" class="sp">SPECIAL</button>
       <button type="button" data-a="block">BLOCK</button>
-      <button type="button" data-a="heavy" class="big">HEAVY</button>
       <button type="button" data-a="dodge">DODGE</button>
+      <button type="button" data-a="left" class="big">L ARM</button>
       <button type="button" data-a="kick">KICK</button>
-      <button type="button" data-a="light" class="big">LIGHT</button>
+      <button type="button" data-a="right" class="big">R ARM</button>
       <button type="button" data-a="jump" class="jp">JUMP</button>
     </div>
   </div>
-  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click light</span><span><kbd>K</kbd>/right-click heavy</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>F</kbd> jump</span><span><kbd>E</kbd> special</span></div>
+  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click left arm</span><span><kbd>K</kbd>/right-click right arm</span><span><kbd>J</kbd>+<kbd>K</kbd> smash</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>F</kbd> jump</span><span><kbd>E</kbd> special</span></div>
   <div class="vs" id="vs" hidden>
     <div class="side"><div class="who" style="color: var(--p1)">You</div><div class="nm" id="vsP1"></div><div class="vsw" id="vsP1w"></div></div>
     <div class="mid">VS<small id="vsArena"></small></div>
@@ -482,7 +483,7 @@ const PARTS = {
     { id: 'ronin',    w: 'middle', name: 'Ronin',    perk: '+10% power',               mod: { powerMul: 0.10 }, color: 0xa8483e },
     { id: 'warden',   w: 'middle', name: 'Warden',   perk: '+10% guard, +12 health', mod: { blockRed: 0.10, hp: 12 }, color: 0x3f8c8a },
     { id: 'bastion',  w: 'heavy',  name: 'Bastion',  perk: '+16 health',               mod: { hp: 16 }, color: 0x5a6272 },
-    { id: 'titan',    w: 'heavy',  name: 'Titan',    perk: '+25% heavy attack damage (huge fists)', mod: { heavyMul: 0.25 }, color: 0xb07a3c },
+    { id: 'titan',    w: 'heavy',  name: 'Titan',    perk: '+25% double-arm smash damage (huge fists)', mod: { heavyMul: 0.25 }, color: 0xb07a3c },
     { id: 'golem',    w: 'heavy',  name: 'Golem',    perk: '+5% defense',              mod: { def: 0.05 }, color: 0x6f7a55 },
   ],
   middle: [
@@ -2737,7 +2738,7 @@ class Fighter {
   }
   timing(kind) { if (kind === 'kick') return this.kick; const s = (this.slowT > 0 ? 1.3 : 1) / this.stats.atkSpd; return kind === 'light' ? { w: 0.15 * s, a: 0.08 * s, r: 0.22 * s } : { w: 0.48 * s, a: 0.1 * s, r: 0.42 * s }; }
   inWindup() { if (this.state === 'weapon') return this.t < this.wpn.w + 0.05; return (this.state === 'light' || this.state === 'heavy' || this.state === 'kick') && this.t < this.timing(this.state).w; }
-  startAttack(kind) { this.state = kind; this.t = 0; this.hitDone = false; this.attackId++; if (kind === 'light') this.punchSide ^= 1; }
+  startAttack(kind, side) { this.state = kind; this.t = 0; this.hitDone = false; this.attackId++; if (kind === 'light') this.punchSide = side === undefined ? this.punchSide ^ 1 : side; }
   tryAction(a, wish, fwd, right, game) {
     // inside the bubble shield you can move, block, dodge and jump, but not attack, so it's a safe breather rather than a free 10 seconds of hits
     if (this.wShieldT > 0 && a !== 'dodge') return false;
@@ -2749,6 +2750,8 @@ class Fighter {
       game.sfx('whoosh'); return true;
     }
     if (a === 'light' || a === 'heavy' || a === 'kick') { this.startAttack(a); return true; }
+    // punchSide 1 throws with the left arm, 0 with the right
+    if (a === 'left' || a === 'right') { this.startAttack('light', a === 'left' ? 1 : 0); return true; }
     if (a[0] === 'w') {
       const i = +a[1] - 1, W = this.weapons[i];
       if (!W || this.wcd[i] > 0) return false;
@@ -2771,10 +2774,15 @@ class Fighter {
     this.wShieldT = Math.max(0, this.wShieldT - dt); this.slowT = Math.max(0, this.slowT - dt);
     if (this.burnT > 0) { this.burnT -= dt; game.dot(this, this.burnDps * dt); }
     if (inp) {
-      for (const a of ['dodge', 'special', 'w1', 'w2', 'w3', 'heavy', 'kick', 'light']) if (inp[a]) { this.buffer = { a, t: 0.25 }; break; }
+      for (const a of ['dodge', 'special', 'w1', 'w2', 'w3', 'heavy', 'kick', 'light', 'left', 'right']) if (inp[a]) { this.buffer = { a, t: 0.25 }; break; }
       this.blockHeld = !!inp.block;
+      // arm presses this close together count as pressing both buttons at once
+      const armP = inp.left || inp.right; this.chordOk = armP && this.armT > 0; if (armP) this.armT = 0.12;
     }
-    if (this.buffer) { this.buffer.t -= dt; if (this.buffer.t <= 0) this.buffer = null; }
+    this.armT = Math.max(0, (this.armT || 0) - dt);
+    // a punch queued during a punch waits for that punch's follow-through rather than expiring, so quick one-two combos never drop a press
+    const queued = this.state === 'light' && this.buffer && (this.buffer.a === 'light' || this.buffer.a === 'left' || this.buffer.a === 'right');
+    if (this.buffer && !queued) { this.buffer.t -= dt; if (this.buffer.t <= 0) this.buffer = null; }
     // jump from the ground while free to move; the world's gravity brings it back down
     this.jumpT = Math.max(0, (this.jumpT || 0) - dt);
     if (inp && inp.jump && !this.air && (this.state === 'idle' || this.state === 'block')) {
@@ -2802,7 +2810,10 @@ class Fighter {
         speedMul = this.state === 'light' ? 0.3 : this.state === 'kick' ? (this.t < tm.w ? 0.2 : 0.05) : (this.t < tm.w ? 0.12 : 0);
         turnRate = this.t < tm.w ? 9 : 2;
         if (!this.hitDone && this.t >= tm.w) { this.hitDone = true; game.melee(this, opp, this.state); }
-        if (this.state === 'light' && this.hitDone && this.t >= tm.w + tm.a + tm.r * 0.35 && this.buffer && this.buffer.a === 'light') { this.buffer = null; this.startAttack('light'); }
+        const arm = this.buffer && (this.buffer.a === 'left' ? 1 : this.buffer.a === 'right' ? 0 : -1);
+        // the other arm's button during a punch's wind-up turns it into the double-arm smash, so pressing both a few frames apart still counts
+        if (this.state === 'light' && !this.hitDone && this.buffer && (this.buffer.a === 'heavy' || (arm >= 0 && arm !== this.punchSide && this.chordOk))) { this.buffer = null; this.startAttack('heavy'); }
+        else if (this.state === 'light' && this.hitDone && this.t >= tm.w + tm.a + tm.r * 0.35 && this.buffer && (this.buffer.a === 'light' || arm >= 0)) { this.buffer = null; this.startAttack('light', arm >= 0 ? arm : undefined); }
         else if (this.t >= tm.w + tm.a + tm.r) this.state = 'idle';
         break;
       }
@@ -2993,11 +3004,14 @@ const Input = {
     let mx = (h.has('KeyD') || h.has('ArrowRight') ? 1 : 0) - (h.has('KeyA') || h.has('ArrowLeft') ? 1 : 0);
     let mz = (h.has('KeyW') || h.has('ArrowUp') ? 1 : 0) - (h.has('KeyS') || h.has('ArrowDown') ? 1 : 0);
     if (this.touchMove.x || this.touchMove.y) { mx = this.touchMove.x; mz = this.touchMove.y; }
-    const p = this.pressed;
+    const p = this.pressed, t = this.touchHeld;
+    // each arm has its own button; pressing one while the other is held (or both at once) is the double-arm smash
+    const pl = p.has('KeyJ') || p.has('mouse0') || p.has('t-left'), pr = p.has('KeyK') || p.has('mouse2') || p.has('t-right');
+    const hl = h.has('KeyJ') || h.has('mouse0') || t.has('left'), hr = h.has('KeyK') || h.has('mouse2') || t.has('right');
+    const both = (pl && (pr || hr)) || (pr && hl);
     return {
       mx, mz,
-      light: p.has('KeyJ') || p.has('mouse0') || p.has('t-light'),
-      heavy: p.has('KeyK') || p.has('mouse2') || p.has('t-heavy'),
+      heavy: both, left: pl && !both, right: pr && !both,
       kick: p.has('KeyQ') || p.has('t-kick'),
       w1: p.has('Digit1') || p.has('Numpad1') || p.has('t-w1'), w2: p.has('Digit2') || p.has('Numpad2') || p.has('t-w2'), w3: p.has('Digit3') || p.has('Numpad3') || p.has('t-w3'),
       dodge: p.has('Space') || p.has('t-dodge'),
@@ -3033,8 +3047,8 @@ bCanvas.addEventListener('contextmenu', e => e.preventDefault());
   stick.addEventListener('pointerup', end); stick.addEventListener('pointercancel', end);
   for (const b of document.querySelectorAll('.tbtns button')) {
     const a = b.dataset.a;
-    b.addEventListener('pointerdown', e => { e.preventDefault(); if (a === 'block') Input.touchHeld.add('block'); else Input.pressed.add('t-' + a); });
-    const up = () => { if (a === 'block') Input.touchHeld.delete('block'); };
+    b.addEventListener('pointerdown', e => { e.preventDefault(); if (a === 'block' || a === 'left' || a === 'right') Input.touchHeld.add(a); if (a !== 'block') Input.pressed.add('t-' + a); });
+    const up = () => { if (a === 'block' || a === 'left' || a === 'right') Input.touchHeld.delete(a); };
     b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
   }
 })();
