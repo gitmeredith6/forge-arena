@@ -591,8 +591,10 @@ const PAINTS = [
 const PAINT_SECS = ['head', 'top', 'middle', 'bottom'];
 const partColor = (b, sec) => { const c = b.colors && b.colors[sec]; if (Number.isInteger(c) && c >= 0 && c <= 0xffffff) return c; return partById(sec === 'head' ? 'top' : sec, b[sec === 'head' ? 'top' : sec]).color; };
 const LIGHTS = [
-  ['Red', 0xff1010], ['Blue', 0x1050ff], ['Green', 0x10ff40], ['Orange', 0xff6000], ['Purple', 0x9420ff], ['White', 0xffffff], ['Yellow', 0xffdc00],
+  ['Red', 0xe80008], ['Blue', 0x0a2ad8], ['Green', 0x00e02a], ['Orange', 0xc84600], ['Purple', 0x9420ff], ['White', 0xffffff], ['Yellow', 0xffc000],
 ];
+// earlier light colours, so a saved fighter picks up the richer versions
+const OLD_LIGHTS = { 0xff1010: 0xe80008, 0x1050ff: 0x0a2ad8, 0x10ff40: 0x00e02a, 0xff6000: 0xc84600, 0xffdc00: 0xffc000 };
 const cleanColors = c => { const o = {}; if (c && typeof c === 'object') for (const k of PAINT_SECS) if (Number.isInteger(c[k]) && c[k] >= 0 && c[k] <= 0xffffff) o[k] = c[k]; return o; };
 const randomBuild = () => ({ head: pick(HEADS).id, top: pick(PARTS.top).id, middle: pick(PARTS.middle).id, bottom: pick(PARTS.bottom).id, weapons: randomWeapons() });
 const buildName = b => `${partById('top', b.top).name} · ${partById('middle', b.middle).name} · ${partById('bottom', b.bottom).name}`;
@@ -839,7 +841,11 @@ function makeFighterModel(build, accent) {
   const ac = new THREE.Color(accent).convertSRGBToLinear();
   // each section's lights can be recoloured; otherwise they glow in the fighter's team colour
   const lit = sec => { const c = (build.lights || {})[sec]; return Number.isInteger(c) && c >= 0 && c <= 0xffffff ? c : accent; };
-  const [gH, gT, gM, gB] = ['head', 'top', 'middle', 'bottom'].map(s => { if (lit(s) === accent) return g; const m = glowMat(lit(s)); m.emissiveIntensity = lit(s) === 0xffffff ? 2.6 : 1.15; return m; });
+  const [gH, gT, gM, gB] = ['head', 'top', 'middle', 'bottom'].map(s => { if (lit(s) === accent) return g; const m = glowMat(lit(s));
+    if (lit(s) === 0xffffff) return m;
+    if (lit(s) === 0x9420ff) { m.emissiveIntensity = 1.15; return m; }   // purple already reads true through tone mapping
+    // coloured lights skip tone mapping so they keep their true hue (filmic tone mapping washes bright red toward orange)
+    m.color.setHex(0); m.emissive.setHex(lit(s)).convertSRGBToLinear(); m.emissiveIntensity = 1; m.toneMapped = false; return m; });
   const [acH, acT, acM, acB] = ['head', 'top', 'middle', 'bottom'].map(s => new THREE.Color(lit(s)).convertSRGBToLinear());
   const col = sec => partColor(build, sec), bc = col('bottom');
   const topM = armorMat(col('top'), 2.4), midM = armorMat(col('middle'), 2.4), botM = armorMat(bc, 2.4), headM = armorMat(col('head'), 2.4);
@@ -2151,7 +2157,7 @@ let curSec = null;
 let difficulty = 'normal';
 let arenaId = 'guerrilla';
 try { const a = localStorage.getItem('forge-arena-map'); if (['classic', 'guerrilla', 'citadel'].includes(a)) arenaId = a; } catch (e) {}
-try { const s = JSON.parse(localStorage.getItem('forge-arena-build') || 'null'); if (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) build = Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons, head: headById(s.head) ? s.head : s.top, colors: cleanColors(s.colors), lights: cleanColors(s.lights) }); } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem('forge-arena-build') || 'null'); if (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) build = Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons, head: headById(s.head) ? s.head : s.top, colors: cleanColors(s.colors), lights: Object.fromEntries(Object.entries(cleanColors(s.lights)).map(([k, c]) => [k, OLD_LIGHTS[c] || c])) }); } catch (e) {}
 try { const d = localStorage.getItem('forge-arena-diff'); if (['easy', 'normal', 'hard'].includes(d)) difficulty = d; } catch (e) {}
 const save = () => { try { localStorage.setItem('forge-arena-build', JSON.stringify(build)); localStorage.setItem('forge-arena-diff', difficulty); } catch (e) {} };
 
