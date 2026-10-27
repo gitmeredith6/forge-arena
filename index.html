@@ -2221,6 +2221,8 @@ const Preview = (() => {
   function setBuild(b) {
     if (rig) { scene.remove(rig.root); disposeObj(rig.root); }
     rig = makeFighterModel(b, ACCENT.p1); scene.add(rig.root); pop = 1;
+    // show the bubble shield around the preview when it's one of the chosen weapons
+    rig.bubble.visible = (cleanWeapons(b.weapons) || []).includes('bubble');
   }
   canvas.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; canvas.setPointerCapture(e.pointerId); });
   canvas.addEventListener('pointermove', e => { if (!dragging) return; yaw += (e.clientX - lastX) * 0.012; lastX = e.clientX; spin = 0; });
@@ -2238,9 +2240,13 @@ const Preview = (() => {
     pop = Math.max(0, pop - dt * 4);
     const s = 1 + Math.sin(pop * Math.PI) * 0.06; rig.root.scale.setScalar(s);
     animateRig(rig, null, dt, time);
+    if (rig.bubble.visible) { const k = 1 + Math.sin(time * 3) * 0.02; rig.bubble.scale.set(k, k, k); }
+    // frame the whole fighter (a little wider than its body height so crowns and the bubble fit)
     const h = rig.height;
     const narrow = cam.aspect < 0.9;
-    cam.position.set(0, h * 0.62, (h * 1.95 + 1.0) * (narrow ? 1.25 : 1));
+    let dist = (h * 1.95 + 1.0) * (narrow ? 1.25 : 1) * 1.1;
+    if (rig.bubble.visible) dist = Math.max(dist, rig.bubbleR * 1.08 / (Math.tan(16 * Math.PI / 180) * Math.min(1, cam.aspect)));
+    cam.position.set(0, h * 0.62, dist);
     cam.lookAt(0, h * 0.42, 0);
     renderer.render(scene, cam);
   }
