@@ -455,17 +455,18 @@ const SECTIONS = {
   bottom: { label: 'Bottom', sub: 'Legs', desc: 'Your Bottom trades movement speed for defense and stability.',
             effect: { light: 'Quick movement and dodges, less defense', middle: 'Balanced', heavy: 'High defense, hard to knock back or stagger, slow' } },
 };
-// heads are cosmetic: any head fits any build. Size only changes the look
+// any head fits any build. Each gives a small perk: sleek heads trade a little health for speed or finesse,
+// helmets are a plain small bonus, armored heads add protection but slow you slightly
 const HEADS = [
-  { id: 'hawk',     name: 'Hawk',     size: 0, desc: 'Round dome with a beak and fin' },
-  { id: 'wisp',     name: 'Wisp',     size: 0, desc: 'Tall egg pod with a single round eye' },
-  { id: 'viper',    name: 'Viper',    size: 0, desc: 'Angular faceted head with swept fins' },
-  { id: 'sentinel', name: 'Sentinel', size: 1, desc: 'Boxy helmet with ear sensors' },
-  { id: 'ronin',    name: 'Ronin',    size: 1, desc: 'Samurai helmet with a crest' },
-  { id: 'warden',   name: 'Warden',   size: 1, desc: 'Gem-cut head with twin antennae' },
-  { id: 'bastion',  name: 'Bastion',  size: 2, desc: 'Wide armored block with a visor' },
-  { id: 'titan',    name: 'Titan',    size: 2, desc: 'Dome sunk into an armored collar' },
-  { id: 'golem',    name: 'Golem',    size: 2, desc: 'Low, heavy slab with round eyes' },
+  { id: 'hawk',     name: 'Hawk',     size: 0, desc: 'Round dome with a beak and fin',        perk: '+4% critical hit chance, -4 health', mod: { crit: 0.04, hp: -4 } },
+  { id: 'wisp',     name: 'Wisp',     size: 0, desc: 'Tall egg pod with a single round eye',  perk: '+5% dodge speed, -4 health',         mod: { dodgeSpeedMul: 0.05, hp: -4 } },
+  { id: 'viper',    name: 'Viper',    size: 0, desc: 'Angular faceted head with swept fins',  perk: '+4% attack speed, -4 health',        mod: { atkSpdMul: 0.04, hp: -4 } },
+  { id: 'sentinel', name: 'Sentinel', size: 1, desc: 'Boxy helmet with ear sensors',          perk: '+6% energy gain',                    mod: { energyRegen: 0.06 } },
+  { id: 'ronin',    name: 'Ronin',    size: 1, desc: 'Samurai helmet with a crest',           perk: '+4% power',                          mod: { powerMul: 0.04 } },
+  { id: 'warden',   name: 'Warden',   size: 1, desc: 'Gem-cut head with twin antennae',       perk: '+4% guard',                          mod: { blockRed: 0.04 } },
+  { id: 'bastion',  name: 'Bastion',  size: 2, desc: 'Wide armored block with a visor',       perk: '+8 health, -3% move speed',          mod: { hp: 8, moveMul: -0.03 } },
+  { id: 'titan',    name: 'Titan',    size: 2, desc: 'Dome sunk into an armored collar',      perk: '+10% knockback resistance, -3% move speed', mod: { kbRes: 0.1, moveMul: -0.03 } },
+  { id: 'golem',    name: 'Golem',    size: 2, desc: 'Low, heavy slab with round eyes',       perk: '+4% defense, -3% move speed',        mod: { def: 0.04, moveMul: -0.03 } },
 ];
 const HEAD_SIZES = ['Sleek', 'Helmet', 'Armored'];
 const headById = id => HEADS.find(h => h.id === id);
@@ -529,6 +530,7 @@ function computeStats(build) {
     const p = partById(sec, build[sec]);
     for (const src of [WEIGHT_MODS[sec][p.w], p.mod]) for (const k in src) m[k] = (m[k] || 0) + src[k];
   }
+  const H = headById(build.head); if (H) for (const k in H.mod) m[k] = (m[k] || 0) + H.mod[k];
   const g = k => m[k] || 0;
   const wv = { light: 0, middle: 1, heavy: 2 };
   const bulk = wv[partById('top', build.top).w] + wv[partById('middle', build.middle).w] + wv[partById('bottom', build.bottom).w];
@@ -2249,7 +2251,7 @@ const save = () => { try { localStorage.setItem('forge-arena-build', JSON.string
 
 // the left panel: a list of the fighter's sections, or, once one is picked (here or by clicking the model), that section's options
 const secName = sec => sec === 'head' ? 'Head' : sec === 'weapons' ? 'Weapons' : SECTIONS[sec].label;
-const secSub = sec => sec === 'head' ? 'Style' : sec === 'weapons' ? `Pick ${MAX_WEAPONS}` : SECTIONS[sec].sub;
+const secSub = sec => sec === 'head' ? 'Small perks' : sec === 'weapons' ? `Pick ${MAX_WEAPONS}` : SECTIONS[sec].sub;
 function secPick(sec) {
   if (sec === 'head') return `<span class="t-pick">${headById(build.head).name}</span>`;
   if (sec === 'weapons') return `<span class="t-pick">${build.weapons.length} of ${MAX_WEAPONS}</span>`;
@@ -2299,16 +2301,18 @@ function renderWeapons() {
   }
 }
 function renderHeads() {
-  $('secDesc').textContent = 'Heads are just for looks. Pick any style; it has no effect on stats.';
+  $('secDesc').textContent = 'Any head fits any build. Each one adds a small perk: sleek heads are quicker but a little frailer, armored heads are tougher but a little slower.';
   const W = $('weights'); W.innerHTML = '';
   HEAD_SIZES.forEach((label, sz) => {
     const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', '#c9d3e6');
-    col.innerHTML = `<div class="whead"><h3>${label}</h3><div class="weffect">Style only</div></div>`;
+    col.innerHTML = `<div class="whead"><h3>${label}</h3><div class="weffect">${['Quick, a little less health', 'A small bonus, no drawback', 'Tougher, a little slower'][sz]}</div></div>`;
     for (const h of HEADS.filter(h => h.size === sz)) {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'part'; b.id = `head-${h.id}`;
       b.setAttribute('aria-pressed', String(build.head === h.id));
-      b.innerHTML = `<span class="pn">${h.name}</span><span class="pp">${h.desc}</span>`;
+      b.innerHTML = `<span class="pn">${h.name}</span><span class="pp">${h.perk}</span>`;
       b.onclick = () => { build = Object.assign({}, build, { head: h.id }); save(); renderAll(); };
+      b.onpointerenter = () => renderStats(Object.assign({}, build, { head: h.id }));
+      b.onpointerleave = () => renderStats();
       col.appendChild(b);
     }
     $('weights').appendChild(col);
