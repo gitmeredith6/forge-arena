@@ -807,9 +807,29 @@ function fighterExtent(rig) {
 function fitToPose(rig, grow) {
   const F = fighterExtent(rig), R = Math.max(0.95, F.r * 1.06, grow ? rig.bubbleR : 0);
   if (grow && R === rig.bubbleR) return;
-  rig.fit = F; rig.bubbleY = F.cy; rig.bubble.position.y = F.cy;
-  for (const c of rig.bubble.children) c.scale.setScalar(R / rig.bubbleR0);
-  rig.bubbleR = R;
+  rig.fit = F; rig.bubbleY = F.cy; rig.bubbleR = R;
+  shapeBubble(rig);
+}
+// the bubble shield is a snow-globe dome: a ball round the fighter's middle, cut flat where it meets the floor, with a
+// glowing ring where it touches down. A faint magenta fill plus a fresnel rim that glows brightest at the edges
+const BUBBLE_FILL = new THREE.MeshBasicMaterial({ color: 0xff3dd8, transparent: true, opacity: 0.07, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+const BUBBLE_RIM = new THREE.ShaderMaterial({
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { col: { value: new THREE.Color(0xff3dd8) } },
+  vertexShader: 'varying vec3 vN; varying vec3 vV; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
+  fragmentShader: 'uniform vec3 col; varying vec3 vN; varying vec3 vV; void main() { float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.2); gl_FragColor = vec4(col * (0.25 + 1.6 * f) + vec3(1.0) * pow(f, 6.0) * 0.6, 0.12 + 0.75 * f); }',
+});
+const BUBBLE_BASE = new THREE.MeshBasicMaterial({ color: 0xff3dd8, transparent: true, opacity: 0.12, depthWrite: false, blending: THREE.AdditiveBlending });
+function shapeBubble(rig) {
+  const bub = rig.bubble, R = rig.bubbleR, cy = rig.bubbleY;
+  for (const c of bub.children.slice()) { bub.remove(c); c.geometry.dispose(); if (![BUBBLE_FILL, BUBBLE_RIM, BUBBLE_BASE].includes(c.material)) c.material.dispose(); }
+  const theta = Math.acos(clamp(-cy / R, -1, 1)), rb = Math.sqrt(Math.max(0, R * R - cy * cy));
+  rig.bubbleBase = rb;
+  const dome = r => { const g = new THREE.SphereGeometry(r, 40, 24, 0, Math.PI * 2, 0, theta); g.translate(0, cy, 0); return g; };
+  bub.add(new THREE.Mesh(dome(R), BUBBLE_FILL), new THREE.Mesh(dome(R * 1.005), BUBBLE_RIM));
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(rb, 48), BUBBLE_BASE); floor.rotation.x = -Math.PI / 2; floor.position.y = 0.012;
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(rb, 0.025, 8, 64), glowMat(0xff3dd8)); ring.rotation.x = Math.PI / 2; ring.position.y = 0.015;
+  bub.add(floor, ring);
+  for (const c of bub.children) { c.castShadow = false; c.receiveShadow = false; }
 }
 function makeFighterModel(build, accent) {
   const T = partById('top', build.top), M = partById('middle', build.middle), B = partById('bottom', build.bottom);
@@ -1762,15 +1782,8 @@ function makeFighterModel(build, accent) {
   const shield = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending }));
   shield.scale.set(0.9 + bw * 0.1, rig.height * 0.6, 0.9 + bw * 0.1); shield.position.y = rig.height * 0.5; shield.visible = false; root.add(shield); rig.shield = shield;
   // bubble shield: a magenta ball around the whole fighter, a soft fill plus a brighter rim seen from inside
-  const bub = new THREE.Group(); bub.position.y = rig.bubbleY; bub.visible = false; root.add(bub); rig.bubble = bub;
-  const br = rig.bubbleR; rig.bubbleR0 = br;
-  // a faint fill plus a fresnel rim that glows brightest at the edges, like a soap bubble
-  bub.add(new THREE.Mesh(new THREE.SphereGeometry(br, 32, 20), new THREE.MeshBasicMaterial({ color: 0xff3dd8, transparent: true, opacity: 0.07, depthWrite: false, blending: THREE.AdditiveBlending })));
-  bub.add(new THREE.Mesh(new THREE.SphereGeometry(br * 1.005, 40, 24), new THREE.ShaderMaterial({
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { col: { value: new THREE.Color(0xff3dd8) } },
-    vertexShader: 'varying vec3 vN; varying vec3 vV; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
-    fragmentShader: 'uniform vec3 col; varying vec3 vN; varying vec3 vV; void main() { float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.2); gl_FragColor = vec4(col * (0.25 + 1.6 * f) + vec3(1.0) * pow(f, 6.0) * 0.6, 0.12 + 0.75 * f); }',
-  })));
+  const bub = new THREE.Group(); bub.visible = false; root.add(bub); rig.bubble = bub;
+  shapeBubble(rig);
   MESH_SEC = null;
   root.traverse(o => { if (o.isSprite) o.castShadow = false; else if (o.isGroup) mergeGroup(o); });
   rig.pose = newPose();
@@ -2363,7 +2376,7 @@ const Preview = (() => {
     ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
     ray.setFromCamera(ndc, cam);
     for (const h of ray.intersectObject(rig.root, true)) {
-      if (!h.object.isMesh || !shown(h.object)) continue;
+      if (!h.object.isMesh || !shown(h.object) || h.object.parent === rig.bubble) continue;
       if (h.object.userData.sec) return h.object.userData.sec;
       // untagged pieces (tread links, the snake body) belong to whatever section sits at that height
       const y = rig.root.worldToLocal(h.point.clone()).y;
@@ -2418,10 +2431,13 @@ const Preview = (() => {
     animateRig(rig, null, dt, time);
     if (fitT > 0 && (fitT -= dt) <= 0) fitToPose(rig);   // once the idle stance has settled, fit the bubble and framing to it
     if (rig.bubble.visible) { const k = 1 + Math.sin(time * 3) * 0.02; rig.bubble.scale.set(k, k, k); }
+    // with the bubble on, the stand widens so the globe sits right on it, like a snow globe on its base
+    const st = rig.bubble.visible ? Math.max(1, (rig.bubbleBase + 0.06) / 1.05) : 1;
+    ped.scale.x = ped.scale.z = lerp(ped.scale.x, st, 1 - Math.exp(-8 * dt)); ring.scale.x = ring.scale.y = ped.scale.x;
     // zoom to fit this fighter: its full height (pedestal included) and its widest reach as it turns, or the bubble when shown
     const F = rig.fit, tv = Math.tan(16 * Math.PI / 180), th = tv * cam.aspect;
     let y0 = F.y0 - 0.1, y1 = F.y1 + 0.05, rx = F.rxz;
-    if (rig.bubble.visible) { y0 = Math.min(y0, rig.bubbleY - rig.bubbleR); y1 = Math.max(y1, rig.bubbleY + rig.bubbleR); rx = Math.max(rx, rig.bubbleR); }
+    if (rig.bubble.visible) { y0 = Math.min(y0, -0.1); y1 = Math.max(y1, rig.bubbleY + rig.bubbleR); rx = Math.max(rx, rig.bubbleR); }
     y0 -= (y1 - y0) * 0.12;   // room at the bottom for the name label
     const cy = (y0 + y1) / 2, dist = Math.max((y1 - y0) / 2 / tv + rx * 0.5, rx / th + rx * 0.5) * 1.1;
     pvDist = pvDist ? lerp(pvDist, dist, 1 - Math.exp(-6 * dt)) : dist; pvY = pvY ? lerp(pvY, cy, 1 - Math.exp(-6 * dt)) : cy;
