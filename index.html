@@ -1907,7 +1907,7 @@ function animateRig(rig, f, dt, time) {
     const mv = Math.hypot(mvx, mvz);
     // backing up keeps the tail coiled rather than pushing it out in front
     let want = 0;
-    if (mv > 0.5) { const ta = Math.atan2(-mvx, -mvz); want = clamp(mv / 2.5, 0, 1) * smooth01((0.3 - Math.cos(ta)) / 0.6); if (want > 0.05) S.tdir = (S.tdir || 0) + Math.atan2(Math.sin(ta - (S.tdir || 0)), Math.cos(ta - (S.tdir || 0))) * (1 - Math.exp(-4 * dt)); }
+    if (mv > 0.5) { const ta = Math.atan2(-mvx, -mvz); want = clamp(mv / 2.5, 0, 1) * smooth01((0.6 - Math.cos(ta)) / 0.4); if (want > 0.05) S.tdir = (S.tdir || 0) + Math.atan2(Math.sin(ta - (S.tdir || 0)), Math.cos(ta - (S.tdir || 0))) * (1 - Math.exp(-4 * dt)); }
     S.trail = lerp(S.trail || 0, want, 1 - Math.exp(-(want > S.trail ? 4 : 1.6) * dt));
     if (S.g0 === undefined) S.g0 = Math.max(0, S.base.findIndex(b => b.ground));
     const anchor = S.base[S.g0].p, s0g = S.base[S.g0].u * S.len, tdx = Math.sin(S.tdir || 0), tdz = Math.cos(S.tdir || 0);
@@ -1935,6 +1935,10 @@ function animateRig(rig, f, dt, time) {
       const wk = smooth01((b.u - 0.3) / 0.7); p.y += wk * S.lift; p.z += wk * S.fwd; p.x += wk * S.sweep;
       pos.push(p);
     }
+    // the chain hangs off the body, but the part lying on the floor must stay on the floor when the body recoils or tilts
+    // from a hit: carry those segments back through the body's own tilt so they stay put in the fighter's ground space
+    rig.body.updateMatrix(); const inv = rig.body.matrix.clone().invert();
+    for (let i = 0; i < nS; i++) { const gw = smooth01((0.5 - S.base[i].p.y) / 0.3); if (gw > 0) pos[i].lerp(pos[i].clone().applyMatrix4(inv), gw); }
     const m = new THREE.Matrix4();
     for (let i = 0; i < nS; i++) {
       const t = pos[Math.min(nS - 1, i + 1)].clone().sub(pos[Math.max(0, i - 1)]).normalize();
