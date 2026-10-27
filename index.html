@@ -582,7 +582,7 @@ const WEAPONS = [
   { id: 'tesla',   slot: 'head',  name: 'Tesla Coil',      desc: 'Fires an electric pulse that blasts a blue dome out around you (about 10 feet). Anything it catches takes damage and is knocked out by the EMP for a few seconds.', cd: 12, w: 0.35, a: 0.1, r: 0.35, move: 0.2, kind: 'emp', radius: 3.05, mult: 1.2, kb: 2, emp: 2.5, color: 0x3fa9ff },
   { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 0.7, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
   { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 0.68, kb: 4, homing: 2.4, color: 0xffb547 },
-  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Forearm cannons. J or K fires that arm; both together fire a heavy double blast.', cd: 6, w: 0.3, a: 0.15, r: 0.35, move: 0.3, kind: 'proj', proj: 'shell', count: 2, speed: 20, mult: 0.65, kb: 9, stun: 0.3, color: 0xffd27a },
+  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Forearm cannons. J or K fires that arm as fast as you can press; both together charge up a powerful double blast.', cd: 6, w: 0.45, a: 0.04, r: 0.35, move: 1, kind: 'proj', proj: 'shell', count: 2, speed: 22, mult: 1.15, kb: 13, stun: 0.45, color: 0xffd27a },
   { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Forearm chainsaws. J or K jabs with that arm; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
 ];
 const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
@@ -614,7 +614,7 @@ const armLoadout = ws => { const a = (ws || []).filter(id => ARM_SWAP.includes(i
 // arm weapons are not on a numbered button: they replace your punches. One arm's button uses that arm's lighter version
 // (side 1 = left, 0 = right, matching punchSide); both buttons use the full double-arm version
 const ARM_SINGLE = {
-  cannon: { count: 1, w: 0.12, a: 0.05, r: 0.3, mult: 0.5, kb: 4, stun: 0, move: 0.4 },
+  cannon: { count: 1, w: 0.03, a: 0.02, r: 0.12, mult: 0.45, kb: 3, stun: 0 },
   saws:   { w: 0.1, a: 0.32, r: 0.2, mult: 0.2, stun: 0.08 },
 };
 const armVariant = (W, side) => side < 0 ? W : Object.assign({}, W, ARM_SINGLE[W.id], { side });
@@ -2908,7 +2908,7 @@ class Fighter {
       for (const a of ['dodge', 'special', 'ability', 'w1', 'w2', 'w3', 'heavy', 'kick', 'light', 'left', 'right']) if (inp[a]) { this.buffer = { a, t: 0.25 }; break; }
       this.blockHeld = !!inp.block;
       // arm presses this close together count as pressing both buttons at once
-      const armP = inp.left || inp.right; this.chordOk = armP && this.armT > 0; if (armP) this.armT = 0.12;
+      const armP = inp.left || inp.right; this.chordOk = armP && this.armT > 0; if (armP) this.armT = this.armWpn && this.armW[0].kind === 'proj' && this.armW[1].kind === 'proj' ? 0.06 : 0.12; // twin cannons need a tight window so fast alternating stays single shots
     }
     this.armT = Math.max(0, (this.armT || 0) - dt);
     // a punch queued during a punch waits for that punch's follow-through rather than expiring, so quick one-two combos never drop a press
@@ -2938,7 +2938,8 @@ class Fighter {
         break;
       case 'light': case 'heavy': case 'kick': {
         const tm = this.timing(this.state);
-        speedMul = this.state === 'light' ? 0.3 : this.state === 'kick' ? (this.t < tm.w ? 0.2 : 0.05) : (this.t < tm.w ? 0.12 : 0);
+        // arm attacks never slow you down; only a kick (the bottom's attack) plants your feet
+        speedMul = this.state === 'kick' ? (this.t < tm.w ? 0.2 : 0.05) : 1;
         turnRate = this.t < tm.w ? 9 : 2;
         if (!this.hitDone && this.t >= tm.w) { this.hitDone = true; game.melee(this, opp, this.state); }
         const arm = this.buffer && (this.buffer.a === 'left' ? 1 : this.buffer.a === 'right' ? 0 : -1);
@@ -2950,13 +2951,15 @@ class Fighter {
       }
       case 'weapon': {
         const W = this.wpn;
-        speedMul = W.move; turnRate = W.kind === 'beam' || W.kind === 'cone' ? 3.5 : 8;
+        speedMul = 1; turnRate = W.kind === 'beam' || W.kind === 'cone' ? 3.5 : 8;
         game.weaponStep(this, opp, dt);
         if (W.side !== undefined && !W.both && this.state === 'weapon' && this.buffer) {
           // one arm's weapon works like a punch: the other button in the wind-up upgrades to both arms, a press during the follow-through chains the next
           const arm = this.buffer.a === 'left' ? 1 : this.buffer.a === 'right' ? 0 : -1;
-          if (this.t < W.w && (this.buffer.a === 'heavy' || (arm >= 0 && arm !== W.side && this.chordOk))) { this.buffer = null; this.useArm(-1); break; }
-          if (this.t >= W.w + W.a + W.r * 0.35 && (arm >= 0 || this.buffer.a === 'light')) { this.buffer = null; this.useArm(arm >= 0 ? arm : W.side ^ 1); break; }
+          // cannon shots are so quick that the both-buttons window runs a little past the shot, and the next shot can follow as soon as this one is out
+          const proj = W.kind === 'proj';
+          if (this.t < (proj ? 0.07 : W.w) && (this.buffer.a === 'heavy' || (arm >= 0 && arm !== W.side && this.chordOk))) { this.buffer = null; this.useArm(-1); break; }
+          if (this.t >= (proj ? W.w + W.a : W.w + W.a + W.r * 0.35) && (arm >= 0 || this.buffer.a === 'light')) { this.buffer = null; this.useArm(arm >= 0 ? arm : W.side ^ 1); break; }
         }
         if (this.state === 'weapon' && this.t >= Math.max(W.w + W.a + W.r, this.wpn2 ? this.wpn2.w + this.wpn2.a + this.wpn2.r : 0)) this.state = 'idle';
         break;
