@@ -563,13 +563,14 @@ const STAT_VIEW = [
 ];
 /* weapons: pick up to three, each on its own button and cooldown. Grouped by where they mount */
 const WEAPON_GROUPS = [
-  { slot: 'head',  label: 'Head',     effect: 'Eyes and crown', color: '#ff6b6b' },
+  { slot: 'head',  label: 'Head',     effect: 'Eyes, crown and brow', color: '#ff6b6b' },
   { slot: 'chest', label: 'Chest & shoulders', effect: 'Reactor, rockets and bubble', color: '#7fd8ff' },
   { slot: 'arms',  label: 'Arms',     effect: 'Cannons, swords or saws', color: '#ffb547' },
 ];
 const WEAPONS = [
   { id: 'laser',   slot: 'head',  name: 'Laser Eyes',      desc: 'Beams fire straight from the eyes and burn the target at long range.', cd: 7,  w: 0.25, a: 0.6,  r: 0.25, move: 0.5,  kind: 'beam',  from: 'eyes',  tick: 0.1,  mult: 0.46, kb: 0.4, range: 14, color: 0xff3b3b },
   { id: 'tesla',   slot: 'head',  name: 'Tesla Crown',     desc: 'Lightning leaps to a nearby target and stuns it.', cd: 10, w: 0.3, a: 0.1, r: 0.35, move: 0.3, kind: 'zap', range: 5.5, mult: 1.2, kb: 3, stun: 0.9, color: 0x8fd8ff },
+  { id: 'tractor', slot: 'head',  name: 'Tractor Beam',    desc: 'A green beam from an emitter on the brow locks on and drags the opponent right up to you.', cd: 9, w: 0.2, a: 0.9, r: 0.3, move: 0.2, kind: 'beam', from: 'brow', tick: 0.1, mult: 0.08, kb: 0, pull: 9, stun: 0.15, range: 10, color: 0x4dff88, beamR: 0.05 },
   { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 0.7, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
   { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 0.68, kb: 4, homing: 2.4, color: 0xffb547 },
   { id: 'bubble',  slot: 'chest', name: 'Bubble Shield',   desc: 'A magenta bubble surrounds you for 10 seconds. Nothing can hurt you and it bounces away anyone who bumps into it, but you cannot attack until it pops.', cd: 30, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 10, color: 0xff3dd8 },
@@ -1487,7 +1488,7 @@ function makeFighterModel(build, accent) {
   rig.armSplay = [0.1, 0.14, 0.2][tw2];
   for (const side of [-1, 1]) {
     if (tw2 === 0) { const gy = mesh(new THREE.TorusGeometry(armR * 0.9, armR * 0.3, 10, 24), dark, body, side * (shX - armR * 0.4), shoulderY - 0.06, 0); gy.rotation.y = Math.PI / 2;     }
-    else if (tw2 === 1) { mesh(new THREE.SphereGeometry(armR * 1.65, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), topM, body, side * shX, shoulderY - 0.04, 0); const rr = mesh(new THREE.TorusGeometry(armR * 1.65, 0.016, 6, 24), gT, body, side * shX, shoulderY - 0.04, 0); rr.rotation.x = Math.PI / 2; }
+    else if (tw2 === 1 && !has('rockets')) { mesh(new THREE.SphereGeometry(armR * 1.65, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), topM, body, side * shX, shoulderY - 0.04, 0); const rr = mesh(new THREE.TorusGeometry(armR * 1.65, 0.016, 6, 24), gT, body, side * shX, shoulderY - 0.04, 0); rr.rotation.x = Math.PI / 2; }
     else { mesh(rbox(armR * 3.4, armR * 2.1, armR * 3.2, armR * 0.6), topM, body, side * shX, shoulderY + 0.04, 0); mesh(rbox(armR * 3.0, armR * 0.9, armR * 2.9, armR * 0.35), topM, body, side * (shX + armR * 0.2), shoulderY - armR * 1.2, 0); mesh(rbox(0.025, armR * 0.5, armR * 1.5, 0.01), gT, body, side * (shX + armR * 1.72), shoulderY + 0.04, 0); }
     const pivot = new THREE.Group(); pivot.position.set(side * shX, shoulderY - 0.06, 0); body.add(pivot);
     mesh(new THREE.CylinderGeometry(armR, armR * 0.85, armLen * 0.5, 12), joint, pivot, 0, -armLen * 0.25, 0);
@@ -1565,6 +1566,20 @@ function makeFighterModel(build, accent) {
     mesh(new THREE.SphereGeometry(0.045, 14, 10), tm, head, 0, ty0 + 0.2, -0.04); halo(head, new THREE.Color(0x8fd8ff), 0, ty0 + 0.2, -0.04, 0.35, 0.8);
     rig.mount.crown = mark(head, 0, ty0 + 0.2, -0.04);
   }
+  // tractor beam: a small dish emitter with a glowing green lens on the brow, just above the eyes
+  if (has('tractor')) {
+    // sit flush on the front of the head whatever its shape: cast a ray back at the brow to find the surface
+    const by = eyeY + 0.085, tm = wmat(0x4dff88);
+    root.updateMatrixWorld(true);
+    const o = head.localToWorld(new V3(0, by, 2)), hitR = new THREE.Raycaster(o, new V3(0, 0, -1)).intersectObjects((() => { const ms = []; head.traverse(c => { if (c.isMesh) ms.push(c); }); return ms; })(), false)[0];
+    const bz = (hitR ? head.worldToLocal(hitR.point.clone()).z : face) - 0.004;
+    const dish = mesh(new THREE.CylinderGeometry(0.05, 0.035, 0.03, 18), joint, head, 0, by, bz); dish.rotation.x = Math.PI / 2;
+    const rr = mesh(new THREE.TorusGeometry(0.046, 0.008, 6, 20), dark, head, 0, by, bz + 0.016);
+    mesh(new THREE.SphereGeometry(0.03, 14, 10), tm, head, 0, by, bz + 0.014).scale.z = 0.5;
+    for (const sx of [-1, 1]) mesh(rbox(0.012, 0.03, 0.03, 0.004), joint, head, sx * 0.058, by, bz);
+    halo(head, new THREE.Color(0x4dff88), 0, by, bz + 0.03, 0.22, 0.7);
+    rig.mount.tractor = mark(head, 0, by, bz + 0.03);
+  }
   if (has('reactor')) {
     const rm = wmat(0x7fe6ff), rz = chestZ + 0.03;
     const ring = mesh(new THREE.TorusGeometry(0.1, 0.025, 10, 28), joint, body, 0, chestY + 0.02, rz); 
@@ -1594,28 +1609,27 @@ function makeFighterModel(build, accent) {
         heavyMarks.push(marks);
         continue;
       }
-      let host, x, top, rw;
-      if (tw2 === 2) { host = body; x = s * shX; top = shoulderY + 0.04 + armR * 1.05; rw = armR * 2.0; }
-      else if (tw2 === 1) { host = body; x = s * shX; top = shoulderY - 0.04 + armR * 1.65; rw = armR * 1.5; }
-      else { host = arm.pivot; x = s * armR * 0.56; top = armR * 2.7; rw = armR * 2.0; }
-      const rh = rw * 0.66, rd = rw, sink = tw2 === 2 ? 0.012 : tw2 === 1 ? 0.06 : 0.045;
-      const rack = new THREE.Group(); host.add(rack);
-      mesh(rbox(rw, rh, rd, rw * 0.12), dark, rack);
-      mesh(rbox(rw * 1.04, rh * 0.18, rd * 1.04, rw * 0.05), topM, rack, 0, rh * 0.45, 0);
-      for (const [tx, ty] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
-        const tr = rw * 0.17, t = mesh(new THREE.CylinderGeometry(tr, tr, rd * 0.22, 10), joint, rack, tx * rw * 0.24, ty * rh * 0.2, rd * 0.5); t.rotation.x = Math.PI / 2;
-        const nose = mesh(new THREE.ConeGeometry(tr * 0.7, tr * 1.4, 10), rm, rack, tx * rw * 0.24, ty * rh * 0.2, rd * 0.52 + tr * 0.4); nose.rotation.x = Math.PI / 2;
+      // light and middle arms: a small launcher box on top of the shoulder (in place of the middle arms' dome), a mini version
+      // of the heavy block with six rockets facing forward out of its front
+      const host = tw2 === 1 ? body : arm.pivot;
+      const bw = tw2 === 1 ? armR * 3.6 : armR * 4.4, bh = bw * 0.6, bd = bw * 0.95;
+      const x = tw2 === 1 ? s * shX : s * armR * 0.56, cy = tw2 === 1 ? shoulderY - 0.04 + bh * 0.5 : armR * 2.6 - bh * 0.05, fz = bd * 0.5;
+      mesh(rbox(bw, bh, bd, bw * 0.1), topM, host, x, cy, 0);
+      mesh(rbox(bw * 1.03, bh * 0.16, bd * 1.03, bw * 0.04), dark, host, x, cy - bh * 0.42, 0);
+      mesh(rbox(0.012, bh * 0.5, bd * 0.7, 0.004), gT, host, x + s * bw * 0.505, cy + bh * 0.05, 0);
+      mesh(rbox(bw * 0.9, bh * 0.82, 0.02, 0.008), dark, host, x, cy + bh * 0.02, fz - 0.004);
+      const sx = bw * 0.27, sy = bh * 0.36, tr = Math.min(sx, sy) * 0.4, marks = [];
+      for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) {
+        const rx = x + (c - 1) * sx, ry = cy + bh * 0.02 + (r - 0.5) * sy;
+        const tube = mesh(new THREE.CylinderGeometry(tr * 1.18, tr * 1.18, 0.03, 12), joint, host, rx, ry, fz + 0.008); tube.rotation.x = Math.PI / 2;
+        const rb = mesh(new THREE.CylinderGeometry(tr, tr, 0.03, 12), topM, host, rx, ry, fz + 0.02); rb.rotation.x = Math.PI / 2;
+        const nose = mesh(new THREE.ConeGeometry(tr, tr * 1.9, 12), rm, host, rx, ry, fz + 0.035 + tr * 0.95); nose.rotation.x = Math.PI / 2;
+        marks.push(mark(host, rx, ry, fz + 0.07 + tr * 1.9));
       }
-      mesh(rbox(rw * 0.9, 0.012, 0.012, 0.004), gT, rack, 0, -rh * 0.12, rd * 0.5 + 0.006);
-      // hatch seam on top of the pad
-      if (tw2 === 2) mesh(rbox(rw * 1.08, 0.008, rd * 1.08, 0.003), dark, host, x, top + 0.002, 0);
-      else { const hs = mesh(new THREE.TorusGeometry(rw * 0.5, 0.007, 6, 20), dark, host, x, top - (tw2 === 1 ? 0.012 : 0.006), 0); hs.rotation.x = Math.PI / 2; }
-      const y0 = top - rh * 0.5 - sink, y1 = top + rh * 0.55;
-      rack.position.set(x, y0, 0); rack.visible = false;
-      rig.pods.push({ g: rack, y0, y1 }); rig.mount.rockets.push(mark(rack, 0, 0, rd * 0.6));
+      heavyMarks.push(marks);
     }
     // alternate sides so a volley leaves from both shoulders
-    if (heavyMarks.length) for (let i = 0; i < 10; i++) for (const m of heavyMarks) rig.mount.rockets.push(m[i]);
+    if (heavyMarks.length) for (let i = 0; i < heavyMarks[0].length; i++) for (const m of heavyMarks) rig.mount.rockets.push(m[i]);
   }
   // forearm weapons: cannons, swords or chainsaws take the place of both forearms and fists.
   // The empty fist group moves to the weapon tip so swing trails and punches still follow it
@@ -3200,7 +3214,7 @@ const Battle = {
   },
   mountPoints(f, W) {
     const m = f.rig.mount, a = m.arms || {};
-    return { laser: m.eyes, reactor: m.chest && [m.chest], tesla: m.crown && [m.crown], rockets: m.rockets, cannon: a.cannon }[W.id] || null;
+    return { laser: m.eyes, tractor: m.tractor && [m.tractor], reactor: m.chest && [m.chest], tesla: m.crown && [m.crown], rockets: m.rockets, cannon: a.cannon }[W.id] || null;
   },
   originOf(f, W, i) {
     f.rig.root.updateMatrixWorld();
@@ -3222,7 +3236,12 @@ const Battle = {
       const face = this.facing(f, opp);
       const ok = W.kind === 'beam' ? d <= W.range + opp.radius && face > 0.94 : W.kind === 'cone' ? d <= W.range + opp.radius && face > 0.72 : d <= f.stats.reach + W.reach + opp.radius && face > 0.3;
       if (!ok || opp.invuln || (W.kind !== 'grind' && World.losHit(this.originOf(f, W, 0), aimPt(opp))) || this.shielded(opp)) return;
-      this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.kb || 0.3, stun: W.stun || 0, quiet: true, energy: 0.25, color: W.color });
+      this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.pull ? 0 : W.kb || 0.3, stun: W.stun || 0, quiet: true, energy: 0.25, color: W.color });
+      // tractor beam: haul the target in, stopping just short of you (heavier, sturdier bottoms resist a little)
+      if (W.pull) {
+        const gap = d - (f.radius + opp.radius + 0.45);
+        if (gap > 0) { const v = Math.min(W.pull * (1 - opp.stats.kbRes * 0.6), gap * 7); opp.knock.set((f.pos.x - opp.pos.x) / d * v, 0, (f.pos.z - opp.pos.z) / d * v); }
+      }
       if (W.burn) { opp.burnT = W.burn; opp.burnDps = 2.4; opp.burnBy = f; }
       return;
     }
@@ -3330,7 +3349,7 @@ const Battle = {
         for (let i = 0; i < n; i++) {
           const a = this.originOf(f, W, i); let end = onT ? tgt.clone().add(new V3(0, rand(-0.05, 0.05), 0)) : a.clone().addScaledVector(fwd, W.range);
           const blk = World.losHit(a, end); if (blk) { end = blk; if (Math.random() < 0.5) this.burst(blk, W.color, 1, 3); }
-          const b = fx.beams[i], r = (W.wide ? 0.1 : 0.022) * rand(0.8, 1.25);
+          const b = fx.beams[i], r = (W.wide ? 0.1 : W.beamR || 0.022) * rand(0.8, 1.25);
           b.visible = true; b.material.color.setHex(W.color); b.position.copy(a); b.lookAt(end); b.scale.set(r, r, a.distanceTo(end));
           if (W.wide) { const c = fx.beams[2]; c.visible = true; c.material.color.setHex(0xffffff); c.position.copy(a); c.lookAt(end); c.scale.set(r * 0.4, r * 0.4, a.distanceTo(end)); }
           if (onT && Math.random() < 0.4) this.burst(end, W.color, 1, 3);
