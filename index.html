@@ -448,7 +448,7 @@ const WEIGHTS = ['light', 'middle', 'heavy'];
 const WLABEL = { light: 'Light', middle: 'Middle', heavy: 'Heavy' };
 const WCOLOR = { light: 'var(--w-light)', middle: 'var(--w-middle)', heavy: 'var(--w-heavy)' };
 const SECTIONS = {
-  top:    { label: 'Arms', sub: 'Perks & special', desc: 'Your Arms set health, guard strength and how fast your special charges. Their weight class also decides your special move.',
+  top:    { label: 'Arms', desc: 'Your Arms set health, guard strength and how fast your special charges. Their weight class also decides your special move.',
             effect: { light: 'Faster energy, less health, weaker guard', middle: 'Balanced, with a little extra health and energy', heavy: 'More health and a stronger guard, slower energy' } },
   middle: { label: 'Middle', sub: 'Torso', desc: 'Your Middle trades attack power for attack speed.',
             effect: { light: 'Fast attacks, less power', middle: 'Balanced', heavy: 'Big power, slower attacks' } },
@@ -2251,7 +2251,8 @@ const save = () => { try { localStorage.setItem('forge-arena-build', JSON.string
 
 // the left panel: a list of the fighter's sections, or, once one is picked (here or by clicking the model), that section's options
 const secName = sec => sec === 'head' ? 'Head' : sec === 'weapons' ? 'Weapons' : SECTIONS[sec].label;
-const secSub = sec => sec === 'head' ? 'Small perks' : sec === 'weapons' ? `Pick ${MAX_WEAPONS}` : SECTIONS[sec].sub;
+// a short tag after the section name, only where the name alone doesn't say what the part is
+const secSub = sec => sec === 'weapons' ? ` · Pick ${MAX_WEAPONS}` : sec === 'middle' || sec === 'bottom' ? ` · ${SECTIONS[sec].sub}` : '';
 function secPick(sec) {
   if (sec === 'head') return `<span class="t-pick">${headById(build.head).name}</span>`;
   if (sec === 'weapons') return `<span class="t-pick">${build.weapons.length} of ${MAX_WEAPONS}</span>`;
@@ -2261,7 +2262,7 @@ function openSec(sec) { curSec = sec; renderTabs(); renderParts(); Preview.selec
 function renderTabs() {
   const H = $('tabs');
   if (!curSec) { H.innerHTML = '<h2>Your parts</h2>'; return; }
-  H.innerHTML = `<button type="button" class="sec-back" id="secBack">‹ All parts</button><div class="sec-title"><span class="t-sec">${secName(curSec)} · ${secSub(curSec)}</span>${secPick(curSec)}</div>`;
+  H.innerHTML = `<button type="button" class="sec-back" id="secBack">‹ All parts</button><div class="sec-title"><span class="t-sec">${secName(curSec)}${secSub(curSec)}</span>${secPick(curSec)}</div>`;
   $('secBack').onclick = () => openSec(null);
 }
 function renderSecList() {
@@ -2269,7 +2270,7 @@ function renderSecList() {
   const W = $('weights'); W.innerHTML = '';
   for (const sec of ['head', 'top', 'middle', 'bottom', 'weapons']) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'secpick'; b.id = 'tab-' + sec;
-    b.innerHTML = `<span class="t-sec">${secName(sec)} · ${secSub(sec)}</span>${secPick(sec)}<span class="go" aria-hidden="true">›</span>`;
+    b.innerHTML = `<span class="t-sec">${secName(sec)}${secSub(sec)}</span>${secPick(sec)}<span class="go" aria-hidden="true">›</span>`;
     b.onclick = () => openSec(sec);
     b.onpointerenter = () => Preview.hover(sec); b.onpointerleave = () => Preview.hover(null);
     W.appendChild(b);
