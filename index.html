@@ -1544,7 +1544,7 @@ function makeFighterModel(build, accent, shOff = 0) {
   }
   else if (M.id === 'lancer') { mesh(rbox(0.05, th * 0.9, 0.24, 0.02), dark, body, 0, torsoBase + th / 2, -td * 0.44); mesh(rbox(0.09, 0.09, 0.03, 0.02), gM, body, 0, chestY, chestZ); halo(body, acM, 0, chestY, chestZ + 0.04, 0.28); }
   else if (M.id === 'brute') { mesh(new THREE.SphereGeometry(tw * 0.42, 18, 12), midM, body, 0, chestY + 0.04, td * 0.1); mesh(rbox(0.18, 0.05, 0.03, 0.015), gM, body, 0, chestY, chestZ + tw * 0.13); halo(body, acM, 0, chestY, chestZ + tw * 0.16, 0.35); }
-  else if (M.id === 'anvil') { for (const s of [-1, 1]) mesh(rbox(tw * 0.34, th * 0.26, 0.08, 0.03), midM, body, s * tw * 0.19, chestY + 0.04, chestZ + 0.01); if (!(cleanWeapons(build.weapons) || []).includes('reactor')) mesh(rbox(0.1, 0.05, 0.03, 0.015), gM, body, 0, chestY - 0.12, chestZ); }
+  else if (M.id === 'anvil') { for (const s of [-1, 1]) mesh(rbox(tw * 0.34, th * 0.26, 0.08, 0.03), midM, body, s * tw * 0.19, chestY + 0.04, chestZ + 0.01); mesh(rbox(0.1, 0.05, 0.03, 0.015), gM, body, 0, chestY - 0.12, chestZ); }
   else { mesh(rbox(0.13, 0.05, 0.03, 0.015), gM, body, 0, chestY, chestZ); halo(body, acM, 0, chestY, chestZ + 0.04, 0.26); if (M.id === 'striker') mesh(rbox(0.05, th * 0.7, 0.03, 0.015), joint, body, tw * 0.12, chestY - 0.05, chestZ - 0.01).rotation.z = 0.5; }
   chestDetail(mw, tw, th, td, torsoBase, faceScale, torsoProf(M, mw));
   if (M.id === 'furnace') {
@@ -1686,9 +1686,9 @@ function makeFighterModel(build, accent, shOff = 0) {
   }
   if (has('reactor')) {
     // it sits mid-chest, except where a torso has its own feature there: on Brute's big chest dome it moves out onto the
-    // dome's surface, and on Anvil and Furnace it drops below the vent slats
-    const rm = wmat(0x7fe6ff), ry = chestY + ({ anvil: -0.15, furnace: -0.2 }[M.id] ?? 0.02);
-    const rz = M.id === 'brute' ? td * 0.1 + tw * 0.42 - 0.012 : chestZ + 0.03;
+    // dome's surface, on Anvil it sits proud between the two chest plates, and on Furnace it goes above the vent bars
+    const rm = wmat(0x7fe6ff), ry = chestY + ({ anvil: 0.04, furnace: 0.24 }[M.id] ?? 0.02);
+    const rz = M.id === 'brute' ? td * 0.1 + tw * 0.42 - 0.012 : M.id === 'anvil' ? chestZ + 0.06 : chestZ + 0.03;
     const ring = mesh(new THREE.TorusGeometry(0.1, 0.025, 10, 28), joint, body, 0, ry, rz);
     mesh(new THREE.CircleGeometry(0.085, 24), rm, body, 0, ry, rz + 0.012);
     for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; mesh(rbox(0.012, 0.03, 0.012, 0.004), dark, body, Math.cos(a) * 0.1, ry + Math.sin(a) * 0.1, rz + 0.02).rotation.z = a; }
