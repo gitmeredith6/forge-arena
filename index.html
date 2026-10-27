@@ -783,6 +783,34 @@ function mergeGroup(group) {
     const merged = new THREE.Mesh(geo, mat); if (sec) merged.userData.sec = sec; merged.castShadow = true; merged.receiveShadow = true; group.add(merged);
   }
 }
+// measure a fighter as it stands now, in its own space: the height range, the widest reach round its vertical axis (for
+// framing the preview) and the radius of a ball about its middle that holds every part, weapons included
+function fighterExtent(rig) {
+  const root = rig.root; root.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(root.matrixWorld).invert(), M = new THREE.Matrix4(), v = new V3(), pts = [];
+  const skip = o => { for (let q = o; q; q = q.parent) { if (!q.visible || q === rig.bubble || q === rig.shield) return true; if (q === root) return false; } return false; };
+  let y0 = Infinity, y1 = -Infinity, rxz = 0;
+  root.traverse(o => {
+    if (!o.isMesh || !o.geometry.attributes.position || skip(o)) return;
+    const P = o.geometry.attributes.position, step = Math.max(1, Math.floor(P.count / 400));
+    M.multiplyMatrices(inv, o.matrixWorld);
+    for (let i = 0; i < P.count; i += step) {
+      v.fromBufferAttribute(P, i).applyMatrix4(M); pts.push(v.x, v.y, v.z);
+      y0 = Math.min(y0, v.y); y1 = Math.max(y1, v.y); rxz = Math.max(rxz, Math.hypot(v.x, v.z));
+    }
+  });
+  const cy = (y0 + y1) / 2; let r = 0;
+  for (let i = 0; i < pts.length; i += 3) r = Math.max(r, Math.hypot(pts[i], pts[i + 1] - cy, pts[i + 2]));
+  return { y0: Math.min(0, y0), y1, rxz, cy, r };
+}
+// re-fit the bubble (and the preview framing) to the fighter's current stance, e.g. once its arms are up in guard
+function fitToPose(rig, grow) {
+  const F = fighterExtent(rig), R = Math.max(0.95, F.r * 1.06, grow ? rig.bubbleR : 0);
+  if (grow && R === rig.bubbleR) return;
+  rig.fit = F; rig.bubbleY = F.cy; rig.bubble.position.y = F.cy;
+  for (const c of rig.bubble.children) c.scale.setScalar(R / rig.bubbleR0);
+  rig.bubbleR = R;
+}
 function makeFighterModel(build, accent) {
   const T = partById('top', build.top), M = partById('middle', build.middle), B = partById('bottom', build.bottom);
   const wi = { light: 0, middle: 1, heavy: 2 };
@@ -1730,11 +1758,12 @@ function makeFighterModel(build, accent) {
   rig.height = head.position.y + hh * headScale;
   rig.chestY = chestY;
   rig.hipY = hipY;
+  rig.fit = fighterExtent(rig); rig.bubbleY = rig.fit.cy; rig.bubbleR = Math.max(0.95, rig.fit.r * 1.06);
   const shield = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending }));
   shield.scale.set(0.9 + bw * 0.1, rig.height * 0.6, 0.9 + bw * 0.1); shield.position.y = rig.height * 0.5; shield.visible = false; root.add(shield); rig.shield = shield;
   // bubble shield: a magenta ball around the whole fighter, a soft fill plus a brighter rim seen from inside
-  const bub = new THREE.Group(); bub.position.y = rig.height * 0.5; bub.visible = false; root.add(bub); rig.bubble = bub;
-  const br = Math.max(rig.height * 0.62, 0.95 + bw * 0.1); rig.bubbleR = br;
+  const bub = new THREE.Group(); bub.position.y = rig.bubbleY; bub.visible = false; root.add(bub); rig.bubble = bub;
+  const br = rig.bubbleR; rig.bubbleR0 = br;
   // a faint fill plus a fresnel rim that glows brightest at the edges, like a soap bubble
   bub.add(new THREE.Mesh(new THREE.SphereGeometry(br, 32, 20), new THREE.MeshBasicMaterial({ color: 0xff3dd8, transparent: true, opacity: 0.07, depthWrite: false, blending: THREE.AdditiveBlending })));
   bub.add(new THREE.Mesh(new THREE.SphereGeometry(br * 1.005, 40, 24), new THREE.ShaderMaterial({
@@ -2309,7 +2338,7 @@ const Preview = (() => {
   const ped = mesh(new THREE.CylinderGeometry(1.05, 1.15, 0.14, 48), stdMat(0x1d2638, { metalness: 0.7, roughness: 0.35 }), scene, 0, -0.07, 0);
   ped.castShadow = false;
   const ring = new THREE.Mesh(new THREE.TorusGeometry(1.08, 0.015, 6, 64), glowMat(0xffb547)); ring.rotation.x = Math.PI / 2; ring.position.y = 0.0; scene.add(ring);
-  let rig = null, yaw = 0.5, dragging = false, lastX = 0, pop = 0, still = false;
+  let fitT = 0, pvDist = 0, pvY = 0, rig = null, yaw = 0.5, dragging = false, lastX = 0, pop = 0, still = false;
   try { still = localStorage.getItem('forge-arena-still') === '1'; } catch (e) {}
   let spin = still ? 0 : 0.35;
   const spinBtn = $('spinBtn');
@@ -2319,7 +2348,7 @@ const Preview = (() => {
   function setBuild(b) {
     if (rig) { rig.root.traverse(o => { if (o.userData.m0) { o.material = o.userData.m0; o.userData.m0 = null; } }); scene.remove(rig.root); disposeObj(rig.root); }
     for (const m of hlCache.values()) m.dispose(); hlCache.clear();
-    rig = makeFighterModel(b, ACCENT.p1); scene.add(rig.root); pop = 1;
+    rig = makeFighterModel(b, ACCENT.p1); scene.add(rig.root); pop = 1; fitT = 0.35;
     // show the bubble shield around the preview when it's one of the chosen weapons
     rig.bubble.visible = (cleanWeapons(b.weapons) || []).includes('bubble');
     if (hoverSec) { const h = hoverSec; hoverSec = null; hover(h); }
@@ -2387,14 +2416,17 @@ const Preview = (() => {
     pop = Math.max(0, pop - dt * 4);
     const s = 1 + Math.sin(pop * Math.PI) * 0.06; rig.root.scale.setScalar(s);
     animateRig(rig, null, dt, time);
+    if (fitT > 0 && (fitT -= dt) <= 0) fitToPose(rig);   // once the idle stance has settled, fit the bubble and framing to it
     if (rig.bubble.visible) { const k = 1 + Math.sin(time * 3) * 0.02; rig.bubble.scale.set(k, k, k); }
-    // frame the whole fighter (a little wider than its body height so crowns and the bubble fit)
-    const h = rig.height;
-    const narrow = cam.aspect < 0.9;
-    let dist = (h * 1.95 + 1.0) * (narrow ? clamp(0.85 / cam.aspect, 1.25, 1.6) : 1) * 1.1;
-    if (rig.bubble.visible) dist = Math.max(dist, rig.bubbleR * 1.08 / (Math.tan(16 * Math.PI / 180) * Math.min(1, cam.aspect)));
-    cam.position.set(0, h * 0.62, dist);
-    cam.lookAt(0, h * 0.42, 0);
+    // zoom to fit this fighter: its full height (pedestal included) and its widest reach as it turns, or the bubble when shown
+    const F = rig.fit, tv = Math.tan(16 * Math.PI / 180), th = tv * cam.aspect;
+    let y0 = F.y0 - 0.1, y1 = F.y1 + 0.05, rx = F.rxz;
+    if (rig.bubble.visible) { y0 = Math.min(y0, rig.bubbleY - rig.bubbleR); y1 = Math.max(y1, rig.bubbleY + rig.bubbleR); rx = Math.max(rx, rig.bubbleR); }
+    y0 -= (y1 - y0) * 0.12;   // room at the bottom for the name label
+    const cy = (y0 + y1) / 2, dist = Math.max((y1 - y0) / 2 / tv + rx * 0.5, rx / th + rx * 0.5) * 1.1;
+    pvDist = pvDist ? lerp(pvDist, dist, 1 - Math.exp(-6 * dt)) : dist; pvY = pvY ? lerp(pvY, cy, 1 - Math.exp(-6 * dt)) : cy;
+    cam.position.set(0, pvY + pvDist * 0.12, pvDist);
+    cam.lookAt(0, pvY, 0);
     renderer.render(scene, cam);
   }
   return { setBuild, frame, resize, hover, select };
@@ -2735,6 +2767,8 @@ class Fighter {
     // the bubble pulses gently and blinks in its last 1.5 seconds
     r.bubble.visible = this.wShieldT > 0 && !(this.wShieldT < 1.5 && Math.sin(time * 28) < -0.2);
     if (r.bubble.visible) { const k = 1 + Math.sin(time * 3) * 0.02; r.bubble.scale.set(k, k, k); r.bubble.rotation.y += 0.01; }
+    // while shielded, keep the bubble big enough for whatever stance the fighter is in (it only grows during one shield)
+    if (this.wShieldT > 0 && (this.bubFitT = (this.bubFitT || 0) - dt) <= 0) { this.bubFitT = 0.25; fitToPose(r, true); }
     if (r.shield.visible) r.shield.material.opacity = 0.12 + Math.sin(time * 10) * 0.05 + (this.fortifyT < 1 ? Math.sin(time * 40) * 0.06 : 0);
   }
 }
@@ -3258,7 +3292,7 @@ const Battle = {
     } else if (W.kind === 'melee') {
       if (d <= f.stats.reach + W.reach + opp.radius && this.facing(f, opp) >= W.arc) this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.kb, stun: W.stun, stop: 0.09, heavy: true });
       else this.sfx('whoosh');
-    } else if (W.kind === 'shield') { f.wShieldT = W.dur; this.sfx('special'); }
+    } else if (W.kind === 'shield') { f.wShieldT = W.dur; fitToPose(f.rig); f.bubFitT = 0.25; this.sfx('special'); }
   },
   projGeo() {
     if (this._pg) return this._pg;
