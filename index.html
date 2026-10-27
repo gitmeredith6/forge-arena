@@ -1682,7 +1682,12 @@ function makeFighterModel(build, accent, shOff = 0) {
     rig.mount.eyes = eyes.map(([x, y, z]) => mark(head, x, y, z));
   }
   if (has('tesla')) {
-    const tm = wmat(0x8fd8ff), ty0 = hh * 0.92;
+    // sit on the real top of the head whatever its shape: cast a ray straight down onto the head meshes to find the crown
+    root.updateMatrixWorld(true);
+    const hms = []; head.traverse(c => { if (c.isMesh) hms.push(c); });
+    const hitT = new THREE.Raycaster(head.localToWorld(new V3(0, hh * 3, -0.04)), new V3(0, -1, 0)).intersectObjects(hms, false)[0];
+    const tm = wmat(0x8fd8ff), ty0 = (hitT ? head.worldToLocal(hitT.point.clone()).y : hh * 0.92) - 0.035;
+    mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.05, 14), dark, head, 0, ty0 + 0.02, -0.04);   // mounting socket sunk into the head
     mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.16, 8), joint, head, 0, ty0 + 0.06, -0.04);
     for (let i = 0; i < 3; i++) { const c = mesh(new THREE.TorusGeometry(0.05 - i * 0.008, 0.009, 6, 18), joint, head, 0, ty0 + 0.04 + i * 0.045, -0.04); c.rotation.x = Math.PI / 2; }
     mesh(new THREE.SphereGeometry(0.045, 14, 10), tm, head, 0, ty0 + 0.2, -0.04); const glow = halo(head, new THREE.Color(0x8fd8ff), 0, ty0 + 0.2, -0.04, 0.35, 0.8);
