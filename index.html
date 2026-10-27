@@ -1494,9 +1494,11 @@ function makeFighterModel(build, accent) {
     case 'golem': mesh(rbox(0.5, 0.26, 0.42, 0.08), headM, head, 0, 0.08, 0); face = 0.215; hh = 0.24; break;
   }
   const eyeY = { hawk: 0.2, wisp: 0.19, viper: 0.19, sentinel: 0.18, ronin: 0.18, warden: 0.19, bastion: 0.18, titan: 0.13, golem: 0.1 }[HD];
-  if (HD === 'golem' || HD === 'hawk') { const ex = HD === 'golem' ? 0.12 : 0.07; for (const s of [-1, 1]) { mesh(new THREE.SphereGeometry(0.035, 10, 8), gH, head, s * ex, eyeY, face); halo(head, acH, s * ex, eyeY, face + 0.03, 0.18, 0.9); } }
-  else if (HD === 'wisp') { mesh(new THREE.SphereGeometry(0.042, 16, 12), gH, head, 0, eyeY, face - 0.005).scale.set(1, 1, 0.6); const er = mesh(new THREE.TorusGeometry(0.05, 0.009, 8, 24), joint, head, 0, eyeY, face + 0.004); halo(head, acH, 0, eyeY, face + 0.03, 0.26, 0.9); }
-  else { mesh(rbox(HD === 'bastion' ? 0.3 : 0.2, 0.045, 0.03, 0.012), gH, head, 0, eyeY, face); halo(head, acH, 0, eyeY, face + 0.03, HD === 'bastion' ? 0.42 : 0.32, 0.8); }
+  // laser eyes turn the eyes or visor red
+  const eyeM = has('laser') ? glowMat(0xff2a2a) : gH, eyeC = has('laser') ? new THREE.Color(0xff2a2a).convertSRGBToLinear() : acH;
+  if (HD === 'golem' || HD === 'hawk') { const ex = HD === 'golem' ? 0.12 : 0.07; for (const s of [-1, 1]) { mesh(new THREE.SphereGeometry(0.035, 10, 8), eyeM, head, s * ex, eyeY, face); halo(head, eyeC, s * ex, eyeY, face + 0.03, 0.18, 0.9); } }
+  else if (HD === 'wisp') { mesh(new THREE.SphereGeometry(0.042, 16, 12), eyeM, head, 0, eyeY, face - 0.005).scale.set(1, 1, 0.6); const er = mesh(new THREE.TorusGeometry(0.05, 0.009, 8, 24), joint, head, 0, eyeY, face + 0.004); halo(head, eyeC, 0, eyeY, face + 0.03, 0.26, 0.9); }
+  else { mesh(rbox(HD === 'bastion' ? 0.3 : 0.2, 0.045, 0.03, 0.012), eyeM, head, 0, eyeY, face); halo(head, eyeC, 0, eyeY, face + 0.03, HD === 'bastion' ? 0.42 : 0.32, 0.8); }
 
   // ---- weapons: each adds hardware to the model plus mount points the battle fires from
   const wmat = hex => { const m = glowMat(hex); return m; };
@@ -1576,10 +1578,11 @@ function makeFighterModel(build, accent) {
     const wg = new THREE.Group(); el.add(wg); arm.fore = wg;
     mesh(new THREE.CylinderGeometry(vr * 0.7, vr * 0.8, Lw * 0.12, 16), joint, wg, 0, -Lw * 0.06, 0);
     if (FW === 'cannon') {
-      const br = vr * 0.68, L = Lw * [1.4, 1.32, 1.15][tw2];
-      mesh(rbox(vr * 2.1, L * 0.3, vr * 2.1, vr * 0.42), topM, wg, 0, -L * 0.2, 0);
-      for (const sx of [-1, 1]) mesh(rbox(0.012, L * 0.22, vr * 0.9, 0.004), gT, wg, sx * vr * 1.06, -L * 0.2, 0);
-      mesh(rbox(vr * 1.2, L * 0.1, vr * 0.5, vr * 0.15), dark, wg, 0, -L * 0.2, vr * 1.04);
+      // barrel size grows with the arm weight: light arms carry the smallest cannon, heavy arms a huge one
+      const br = 0.068 * [1, 1.6, 2.5][tw2] * (T.id === 'titan' ? 1.1 : 1), L = Lw * [1.4, 1.4, 1.3][tw2], hv = Math.max(vr, br * 1.5);
+      mesh(rbox(hv * 2.1, L * 0.3, hv * 2.1, hv * 0.42), topM, wg, 0, -L * 0.2, 0);
+      for (const sx of [-1, 1]) mesh(rbox(0.012, L * 0.22, hv * 0.9, 0.004), gT, wg, sx * hv * 1.06, -L * 0.2, 0);
+      mesh(rbox(hv * 1.2, L * 0.1, hv * 0.5, hv * 0.15), dark, wg, 0, -L * 0.2, hv * 1.04);
       // thick breech, long tapered barrel, recoil cylinders down both sides and a glowing sight line on the front
       mesh(new THREE.CylinderGeometry(br * 1.12, br * 1.2, L * 0.2, 22), joint, wg, 0, -L * 0.5, 0);
       mesh(new THREE.CylinderGeometry(br * 0.86, br * 1.0, L * 0.42, 22), steelW, wg, 0, -L * 0.76, 0);
@@ -1606,26 +1609,37 @@ function makeFighterModel(build, accent) {
       mesh(rbox(t * 2.0, BL * 0.56, bw * 0.05, 0.003), gT, wg, 0, y0 - BL * 0.34, -bw * 0.18);
       arm.fist.position.set(0, y0 - BL * 0.9, 0);
     } else {
-      const BL = Lw * [1.3, 1.2, 0.95][tw2], bw = vr * 1.45, t = Math.max(0.018, vr * 0.2), y0 = -Lw * 0.42;
-      mesh(rbox(vr * 2.2, Lw * 0.42, vr * 2.4, vr * 0.4), topM, wg, 0, -Lw * 0.24, 0);
-      for (let i = 0; i < 3; i++) mesh(rbox(vr * 2.26, 0.012, vr * 0.9, 0.004), gT, wg, 0, -Lw * (0.13 + i * 0.07), vr * 0.5);
-      const ex = mesh(new THREE.CylinderGeometry(vr * 0.2, vr * 0.24, Lw * 0.3, 10), joint, wg, s * vr * 1.25, -Lw * 0.22, -vr * 0.6);
-      mesh(new THREE.TorusGeometry(vr * 0.3, vr * 0.07, 6, 14), dark, wg, -s * vr * 1.15, -Lw * 0.2, -vr * 0.4).rotation.y = Math.PI / 2;
-      mesh(rbox(t, BL, bw, bw * 0.45), steelW, wg, 0, y0 - BL / 2, 0);
-      mesh(rbox(t * 1.15, BL * 0.8, bw * 0.12, 0.003), gT, wg, 0, y0 - BL * 0.48, 0);
-      for (let i = 0; i < 3; i++) bolt(wg, 0, y0 - BL * (0.15 + i * 0.3), 0, bw * 0.08).rotation.z = Math.PI / 2;
-      // the chain: a row of teeth up each edge, the front row running down and the back row running up
+      const BL = Lw * [1.3, 1.2, 0.95][tw2], bw = vr * 1.45, t = Math.max(0.018, vr * 0.2), y0 = -Lw * 0.42, h = bw / 2;
+      // rounded engine housing with glowing rings, an exhaust and a pull handle
+      const hs = mesh(new THREE.CylinderGeometry(vr * 1.12, vr * 1.0, Lw * 0.4, 24), topM, wg, 0, -Lw * 0.24, 0); hs.scale.z = 1.12;
+      mesh(new THREE.SphereGeometry(vr * 1.0, 20, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), topM, wg, 0, -Lw * 0.44, 0).scale.z = 1.12;
+      for (let i = 0; i < 2; i++) { const rg = mesh(new THREE.TorusGeometry(vr * 1.12, 0.008, 6, 28), gT, wg, 0, -Lw * (0.14 + i * 0.12), 0); rg.rotation.x = Math.PI / 2; rg.scale.y = 1.12; }
+      mesh(new THREE.CylinderGeometry(vr * 0.2, vr * 0.24, Lw * 0.3, 10), joint, wg, s * vr * 1.2, -Lw * 0.22, -vr * 0.6);
+      mesh(new THREE.TorusGeometry(vr * 0.3, vr * 0.07, 6, 14), dark, wg, -s * vr * 1.1, -Lw * 0.2, -vr * 0.4).rotation.y = Math.PI / 2;
+      // guide bar: a long rounded stadium with a fully round nose, so the chain runs smoothly around it
+      const top = y0 - h * 0.2, bot = y0 - BL + h, S = top - bot;
+      const sh = new THREE.Shape(); sh.absarc(0, bot, h * 0.9, Math.PI, Math.PI * 2, false); sh.absarc(0, top, h * 0.9, 0, Math.PI, false); sh.closePath();
+      const bg = new THREE.ExtrudeGeometry(sh, { depth: t, bevelEnabled: true, bevelThickness: t * 0.2, bevelSize: h * 0.06, bevelSegments: 2, curveSegments: 16 }); bg.translate(0, 0, -t / 2); bg.rotateY(-Math.PI / 2);
+      mesh(bg, steelW, wg);
+      const rail = mesh(new THREE.TorusGeometry(h * 0.45, 0.007, 6, 20), gT, wg, 0, bot, 0); rail.rotation.y = Math.PI / 2; rail.scale.set(1, 1, 1);
+      mesh(rbox(t * 1.5, S * 0.85, 0.012, 0.004), gT, wg, 0, (top + bot) / 2, 0);
+      mesh(new THREE.CylinderGeometry(h * 0.28, h * 0.28, t * 1.6, 14), joint, wg, 0, bot, 0).rotation.z = Math.PI / 2;
+      // the chain: teeth spaced evenly round the whole loop, driven along it in animateRig
       const tm = stdMat(0x3a3f47, { metalness: 0.8, roughness: 0.35 }); rig.mats.push(tm);
-      const N = 10, run = BL - bw * 0.5, step = run / N;
-      for (const dz of [1, -1]) {
-        const teeth = new THREE.Group(); teeth.position.set(0, y0 - BL / 2 + bw * 0.25 * 0, 0); wg.add(teeth);
-        for (let i = 0; i < N; i++) {
-          const yy = -run / 2 + (i + 0.5) * step;
-          mesh(rbox(t * 1.5, step * 0.7, bw * 0.12, 0.003), tm, teeth, 0, yy, dz * bw * 0.5);
-          const c = mesh(new THREE.ConeGeometry(step * 0.28, bw * 0.16, 4), edge, teeth, 0, yy, dz * bw * 0.6); c.rotation.x = dz * Math.PI / 2;
-        }
-        rig.saws.push({ teeth, step, y0: teeth.position.y, dir: dz > 0 ? -1 : 1 });
+      const P = 2 * S + 2 * Math.PI * h, N = Math.max(14, Math.round(P / (h * 0.55))), step = P / N, links = [];
+      for (let i = 0; i < N; i++) {
+        const tg = new THREE.Group(); wg.add(tg);
+        mesh(rbox(t * 1.5, h * 0.18, step * 0.7, 0.003), tm, tg);
+        mesh(new THREE.ConeGeometry(step * 0.26, h * 0.2, 4), edge, tg, 0, h * 0.14, 0);
+        links.push({ g: tg, d: i * step });
       }
+      // point d along the loop: down the front, round the nose, up the back, round the top (hidden in the housing)
+      const at = d => { d = ((d % P) + P) % P;
+        if (d < S) return [top - d, Math.PI / 2];
+        d -= S; if (d < Math.PI * h) { const a = d / h; return [bot - Math.sin(a) * h, Math.PI / 2 + a, Math.cos(a) * h]; }
+        d -= Math.PI * h; if (d < S) return [bot + d, -Math.PI / 2];
+        d -= S; const a = d / h; return [top + Math.sin(a) * h, -Math.PI / 2 + a, -Math.cos(a) * h]; };
+      const sw = { links, step, at, h }; rig.saws.push(sw); sawPlace(sw, 0);
       arm.fist.position.set(0, y0 - BL * 0.9, 0);
     }
   }
@@ -1678,6 +1692,10 @@ function newPose() { return { aR: { x: 0, z: 0, e: 0, r: 1 }, aL: { x: 0, z: 0, 
 function disposeObj(o) { o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) { for (const k of ['map', 'bumpMap']) { const t = c.material[k]; if (t && t !== HALO_TEX && (!DETAIL || (t !== DETAIL.map && t !== DETAIL.bump))) t.dispose(); } c.material.dispose(); } }); }
 
 /* procedural animation — computes a target pose from fighter state, eases toward it */
+// moves every chainsaw tooth to its spot on the loop, offset by the distance the chain has run
+function sawPlace(sw, run) {
+  for (const l of sw.links) { const [y, rx, z] = sw.at(l.d + run); l.g.position.set(0, y, z === undefined ? (rx > 0 ? sw.h : -sw.h) : z); l.g.rotation.x = rx; }
+}
 function animateRig(rig, f, dt, time) {
   const P = newPose();
   const st = f ? f.state : 'idle';
@@ -1783,7 +1801,7 @@ function animateRig(rig, f, dt, time) {
   rig.body.position.y = cur.by;
   if (rig.flame) { rig.flame.scale.y = 0.8 + Math.random() * 0.4 + sp * 0.5; }
   if (rig.pods) { const open = f && f.state === 'weapon' && f.wpn.id === 'rockets' ? 1 : 0; rig.podOpen = lerp(rig.podOpen || 0, open, 1 - Math.exp(-14 * dt)); for (const p of rig.pods) { p.g.position.y = p.y0 + (p.y1 - p.y0) * rig.podOpen; p.g.visible = rig.podOpen > 0.03; } }
-  if (rig.saws && rig.saws.length) { const rev = f && f.state === 'weapon' && f.wpn.id === 'saws'; rig.sawT = (rig.sawT || 0) + dt * (rev ? 3.5 : 0.25); for (const sw of rig.saws) sw.teeth.position.y = sw.y0 + sw.dir * (rig.sawT % 1) * sw.step; }
+  if (rig.saws && rig.saws.length) { const rev = f && f.state === 'weapon' && f.wpn.id === 'saws'; rig.sawT = (rig.sawT || 0) + dt * (rev ? 3.5 : 0.25); for (const sw of rig.saws) sawPlace(sw, rig.sawT * sw.step); }
   if (rig.jets) { const boost = st === 'dodge' ? 1.4 : st === 'special' ? 0.8 : 0; for (const j of rig.jets) { const k = 0.55 + Math.random() * 0.3 + sp * 0.6 + boost; j.scale.set(0.85 + boost * 0.15, k, 0.85 + boost * 0.15); } }
   if (rig.ball) {
     // roll the ball by the distance travelled: axis = up x velocity, in the fighter's local frame
