@@ -315,7 +315,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 <section id="builder" aria-label="Fighter builder" hidden>
   <div class="top-bar">
     <h1 class="logo">FORGE <span>ARENA</span></h1>
-    <p class="tagline">Click any part of your fighter to change it. Arms, Middle and Bottom each come in Light, Middle or Heavy, and you can add three weapons.</p>
+    <p class="tagline">Click any part of your fighter to change it. Arms, Middle and Bottom each come in Light, Middle or Heavy, and you can add two weapons.</p>
   </div>
   <div class="b-grid">
     <div class="card b-parts">
@@ -360,7 +360,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <span><kbd>J</kbd>+<kbd>K</kbd> together: double-arm smash</span>
     <span><kbd>L</kbd> or <kbd>Shift</kbd> hold: block</span>
     <span><kbd>Q</kbd> kick (its style comes from your bottom)</span>
-    <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> fire your head and chest weapons (arm weapons fire with <kbd>J</kbd> and <kbd>K</kbd>)</span>
+    <span><kbd>1</kbd> <kbd>2</kbd> fire your head and chest weapons (arm weapons fire with <kbd>J</kbd> and <kbd>K</kbd>)</span>
     <span><kbd>Space</kbd> dodge</span>
     <span><kbd>F</kbd> jump (legs jump highest, other bottoms hop)</span>
     <span><kbd>E</kbd> special (when energy is full)</span>
@@ -416,7 +416,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       <button type="button" data-a="jump" class="jp">JUMP</button>
     </div>
   </div>
-  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click left arm</span><span><kbd>K</kbd>/right-click right arm</span><span><kbd>J</kbd>+<kbd>K</kbd> smash</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>F</kbd> jump</span><span><kbd>E</kbd> special</span></div>
+  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click left arm</span><span><kbd>K</kbd>/right-click right arm</span><span><kbd>J</kbd>+<kbd>K</kbd> smash</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>F</kbd> jump</span><span><kbd>E</kbd> special</span></div>
   <div class="vs" id="vs" hidden>
     <div class="side"><div class="who" style="color: var(--p1)">You</div><div class="nm" id="vsP1"></div><div class="vsw" id="vsP1w"></div></div>
     <div class="mid">VS<small id="vsArena"></small></div>
@@ -563,7 +563,7 @@ const STAT_VIEW = [
   { k: 'energyRegen', label: 'Energy',  min: 0.7, max: 1.8,  fmt: v => '×' + v.toFixed(2) },
   { k: 'jump',   label: 'Jump',         min: 0.15, max: 1.2, fmt: v => v.toFixed(2) + 'm' },
 ];
-/* weapons: pick up to three. Head and chest weapons each get a numbered button and cooldown; an arm weapon replaces your punches. Grouped by where they mount */
+/* weapons: pick up to two. Head and chest weapons each get a numbered button and cooldown; an arm weapon replaces your punches. Grouped by where they mount */
 const WEAPON_GROUPS = [
   { slot: 'head',  label: 'Head',     effect: 'Eyes, coil and brow', color: '#ff6b6b' },
   { slot: 'chest', label: 'Chest & shoulders', effect: 'Reactor, rockets and bubble', color: '#7fd8ff' },
@@ -581,7 +581,7 @@ const WEAPONS = [
   { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Both forearms become chainsaws. J and K jab with a revving saw instead of punching; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
 ];
 const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
-const MAX_WEAPONS = 3;
+const MAX_WEAPONS = 2;
 // cannons, swords and saws all replace the forearms, so a build carries at most one of them
 const ARM_SWAP = ['cannon', 'blades', 'saws'];
 const cleanWeapons = ws => { if (!Array.isArray(ws)) return null; let sw = false; return [...new Set(ws.filter(id => WEAPON[id]))].filter(id => !ARM_SWAP.includes(id) || (!sw && (sw = true))).slice(0, MAX_WEAPONS); };
@@ -2296,7 +2296,7 @@ function renderSecList() {
 }
 function renderWeapons() {
   const full = build.weapons.length >= MAX_WEAPONS;
-  $('secDesc').textContent = `Add up to ${MAX_WEAPONS} weapons to your fighter. In a fight, fire them with 1, 2 and 3. Each has its own cooldown.` + ' Cannons, swords and saws each replace your forearms, so you can carry one of them.' + (full ? ' To swap one, tap a chosen weapon to remove it first.' : '');
+  $('secDesc').textContent = `Add up to ${MAX_WEAPONS} weapons to your fighter. Head and chest weapons fire with 1 and 2 and each has its own cooldown.` + ' Cannons, swords and saws replace your forearms and your punches, so you can carry one of them and attack with it on J and K.' + (full ? ' To swap one, tap a chosen weapon to remove it first.' : '');
   const W = $('weights'); W.innerHTML = '';
   for (const grp of WEAPON_GROUPS) {
     const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', grp.color);
