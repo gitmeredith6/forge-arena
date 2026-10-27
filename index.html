@@ -952,13 +952,35 @@ function makeFighterModel(build, accent, shOff = 0) {
     const blk = stdMat(0x121418, { metalness: 0.6, roughness: 0.24 }), blk2 = stdMat(0x22252c, { metalness: 0.55, roughness: 0.3, side: THREE.DoubleSide });
     const steel = stdMat(0x9097a2, { metalness: 0.95, roughness: 0.22 }); rig.mats.push(blk, blk2, steel);
     const OUT = side > 0 ? Math.PI / 2 : -Math.PI / 2, IN = -OUT;   // lathe angle facing out of / into the body
-    // tall shield over the shoulder, with deep vertical slots and a trim lip
-    const pg = new THREE.Group(); pg.position.set(side * r * 1.0, -r * 0.9, 0); pg.rotation.z = side * 0.12; pg.scale.set(0.9, 1.55, 1.12); pivot.add(pg);
+    // each light arm has its own shoulder: Hawk a tall slotted shield, Wisp a smooth glowing orb, Viper a faceted shell with swept fins
     const R = r * 2.35;
-    mesh(new THREE.SphereGeometry(R, 30, 18, 0, Math.PI * 2, 0, 2.05), topM, pg);
-    mesh(new THREE.CircleGeometry(R * 0.9, 24), blk, pg, 0, -R * 0.45, 0).rotation.x = Math.PI / 2;
-    for (const k of [-1.5, -0.5, 0.5, 1.5]) { const sl = mesh(new THREE.TorusGeometry(R + 0.001, 0.012, 6, 18, 1.45), blk, pg); sl.rotation.order = 'YXZ'; sl.rotation.set(0, (side > 0 ? 0 : Math.PI) + k * 0.3, -0.25); }
-    const lip = mesh(new THREE.TorusGeometry(R * 0.97, 0.01, 6, 30), steel, pg, 0, -R * 0.42, 0); lip.rotation.x = Math.PI / 2;
+    if (T.id === 'wisp') {
+      const og = new THREE.Group(); og.position.set(side * r * 1.1, -r * 0.6, 0); og.scale.set(1, 1.05, 1); pivot.add(og);
+      mesh(new THREE.SphereGeometry(R * 0.92, 32, 20), topM, og);
+      const eq = mesh(new THREE.TorusGeometry(R * 0.93, 0.012, 8, 40), gT, og); eq.rotation.x = Math.PI / 2;
+      // a thin ring floats around the orb, tilted outward
+      const fl = mesh(new THREE.TorusGeometry(R * 1.22, 0.008, 6, 48), steel, og, 0, R * 0.1, 0); fl.rotation.set(Math.PI / 2 - 0.35, 0, side * 0.5);
+      mesh(new THREE.SphereGeometry(R * 0.28, 16, 10), gT, og, side * R * 0.78, R * 0.2, 0).scale.set(0.5, 1, 1);
+    } else if (T.id === 'viper') {
+      const vg = new THREE.Group(); vg.position.set(side * r * 1.0, -r * 0.7, 0); vg.rotation.z = side * 0.18; vg.scale.set(0.95, 1.25, 1.15); pivot.add(vg);
+      const fac = new THREE.SphereGeometry(R, 7, 4, 0, Math.PI * 2, 0, 2.0).toNonIndexed(); fac.computeVertexNormals();
+      mesh(fac, topM, vg);
+      mesh(new THREE.CircleGeometry(R * 0.86, 7), blk, vg, 0, -R * 0.38, 0).rotation.x = Math.PI / 2;
+      // two swept fins rake back off the top of the shell, like the Viper head's
+      for (const [z, h, k] of [[0.25, 1.0, 0], [-0.35, 0.8, 1]]) {
+        const fs = new THREE.Shape(); fs.moveTo(0, 0); fs.lineTo(-R * 1.5 * h, R * 0.95 * h); fs.lineTo(-R * 0.7 * h, R * 0.15); fs.lineTo(0, 0);
+        const fg = new THREE.ExtrudeGeometry(fs, { depth: 0.012, bevelEnabled: false }); fg.translate(0, 0, -0.006); fg.rotateY(Math.PI / 2);
+        mesh(fg, k ? blk : topM, vg, side * R * 0.25, R * 0.55, z * R);
+      }
+      mesh(rbox(0.012, R * 0.5, R * 0.9, 0.004), gT, vg, side * R * 0.93, -R * 0.1, 0).rotation.z = side * -0.35;
+    } else {
+      // tall shield over the shoulder, with deep vertical slots and a trim lip
+      const pg = new THREE.Group(); pg.position.set(side * r * 1.0, -r * 0.9, 0); pg.rotation.z = side * 0.12; pg.scale.set(0.9, 1.55, 1.12); pivot.add(pg);
+      mesh(new THREE.SphereGeometry(R, 30, 18, 0, Math.PI * 2, 0, 2.05), topM, pg);
+      mesh(new THREE.CircleGeometry(R * 0.9, 24), blk, pg, 0, -R * 0.45, 0).rotation.x = Math.PI / 2;
+      for (const k of [-1.5, -0.5, 0.5, 1.5]) { const sl = mesh(new THREE.TorusGeometry(R + 0.001, 0.012, 6, 18, 1.45), blk, pg); sl.rotation.order = 'YXZ'; sl.rotation.set(0, (side > 0 ? 0 : Math.PI) + k * 0.3, -0.25); }
+      const lip = mesh(new THREE.TorusGeometry(R * 0.97, 0.01, 6, 30), steel, pg, 0, -R * 0.42, 0); lip.rotation.x = Math.PI / 2;
+    }
     // upper arm: thick black sleeve with a layered outer plate, steel trim and an arm-colour bracket above the elbow
     const UP = [[r * 1.25, -L * 0.95], [r * 1.6, -L * 0.75], [r * 1.9, -L * 0.45], [r * 1.85, -L * 0.15], [r * 1.5, 0.02]];
     mesh(lathe([[0, -L * 0.97]].concat(UP, [[0, 0.04]])), blk, pivot).scale.set(1, 1, 1.08);
@@ -971,9 +993,22 @@ function makeFighterModel(build, accent, shOff = 0) {
     for (const sx of [-1, 1]) { const hd = mesh(new THREE.CylinderGeometry(r * 1.0, r * 1.0, 0.024, 20), steel, elbow, sx * r * 1.25, 0, 0); hd.rotation.z = Math.PI / 2; const hr = mesh(new THREE.TorusGeometry(r * 0.75, r * 0.12, 6, 20), topM, elbow, sx * r * 1.28, 0, 0); hr.rotation.y = Math.PI / 2; }
     for (const a of [-0.5, 0.5]) { const st = mesh(rbox(r * 0.25, L * 0.5, r * 0.25, r * 0.08), steel, fore, -side * r * 1.25, -L * 0.18, a * r); st.rotation.x = a * 0.6; }
     // big teardrop fore pad with ribs
-    const pad = new THREE.Group(); pad.position.set(side * r * 1.15, -L * 0.22, -r * 0.15); pad.scale.set(0.72, 2.1, 1.12); fore.add(pad);
-    mesh(new THREE.SphereGeometry(r * 1.55, 24, 16), topM, pad);
-    for (const k of [-1, 0, 1]) { const rb = mesh(new THREE.TorusGeometry(r * 1.55 + 0.001, 0.009, 6, 16, 1.6), blk, pad); rb.rotation.order = 'YXZ'; rb.rotation.set(0, (side > 0 ? 0 : Math.PI) + k * 0.38, -0.8); }
+    if (T.id === 'wisp') {
+      // a long smooth pod down the outside of the forearm with two glowing seams
+      const pod = new THREE.Group(); pod.position.set(side * r * 1.25, -L * 0.42, 0); pod.scale.set(0.6, 2.6, 0.9); fore.add(pod);
+      mesh(new THREE.SphereGeometry(r * 1.3, 24, 16), topM, pod);
+      for (const z of [-1, 1]) mesh(rbox(0.008, L * 0.55, 0.008, 0.002), gT, fore, side * r * 1.98, -L * 0.42, z * r * 0.55);
+    } else if (T.id === 'viper') {
+      // a raked blade fin along the outside of the forearm, ending in a spur past the elbow
+      const bs = new THREE.Shape(); bs.moveTo(0, 0); bs.lineTo(r * 1.6, L * 0.25); bs.lineTo(r * 0.6, -L * 0.2); bs.lineTo(r * 0.5, -L * 0.75); bs.lineTo(0, -L * 0.85); bs.lineTo(0, 0);
+      const bg2 = new THREE.ExtrudeGeometry(bs, { depth: 0.014, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 1 }); bg2.translate(0, 0, -0.007);
+      const bm = mesh(bg2, topM, fore, side * r * 1.55, -L * 0.1, 0); bm.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2; bm.rotation.order = 'YXZ'; bm.rotation.x = 0;
+      mesh(rbox(0.01, L * 0.5, 0.01, 0.003), gT, fore, side * r * 1.66, -L * 0.45, 0);
+    } else {
+      const pad = new THREE.Group(); pad.position.set(side * r * 1.15, -L * 0.22, -r * 0.15); pad.scale.set(0.72, 2.1, 1.12); fore.add(pad);
+      mesh(new THREE.SphereGeometry(r * 1.55, 24, 16), topM, pad);
+      for (const k of [-1, 0, 1]) { const rb = mesh(new THREE.TorusGeometry(r * 1.55 + 0.001, 0.009, 6, 16, 1.6), blk, pad); rb.rotation.order = 'YXZ'; rb.rotation.set(0, (side > 0 ? 0 : Math.PI) + k * 0.38, -0.8); }
+    }
     // forearm: thick sleeve, a layered outer plate with a glowing triangle, steel trim, and an exposed inner panel with pistons
     const FA = [[r * 1.1, -L * 0.96], [r * 1.35, -L * 0.75], [r * 1.7, -L * 0.45], [r * 1.75, -L * 0.18], [r * 1.45, 0.0]];
     mesh(lathe([[0, -L * 0.98]].concat(FA, [[0, 0.02]])), blk, fore).scale.set(1, 1, 1.1);
@@ -1559,9 +1594,11 @@ function makeFighterModel(build, accent, shOff = 0) {
   } else {
     mesh(rbox(tw * 0.7, 0.16, td * 0.8, 0.05), dark, body, 0, hipY + 0.12, 0);
     for (const s of [-1, 1]) mesh(rbox(0.06, th * 0.36, td * 0.6, 0.02), dark, body, s * tw * 0.47, torsoBase + th * 0.36, 0);
-    if (M.id !== 'furnace') {
-      mesh(rbox(tw * 0.62, th * 0.5, 0.24, 0.07), dark, body, 0, chestY - 0.04, -td * 0.5 - 0.06);
-      for (const s of [-1, 1]) { mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.2, 10), joint, body, s * tw * 0.18, chestY + th * 0.22, -td * 0.5 - 0.1); halo(body, acM, s * tw * 0.18, chestY + th * 0.34, -td * 0.5 - 0.1, 0.22, 0.6); }
+    {
+      // heavy back pack with twin exhaust stacks (Furnace's sits a little further out, its back bulges more)
+      const bk = M.id === 'furnace' ? 0.035 : 0;
+      mesh(rbox(tw * 0.62, th * 0.5, 0.24, 0.07), dark, body, 0, chestY - 0.04, -td * 0.5 - 0.06 - bk);
+      for (const s of [-1, 1]) { mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.2, 10), joint, body, s * tw * 0.18, chestY + th * 0.22, -td * 0.5 - 0.1 - bk); halo(body, acM, s * tw * 0.18, chestY + th * 0.34, -td * 0.5 - 0.1 - bk, 0.22, 0.6); }
     }
   }
   if (M.id === 'core') { mesh(new THREE.SphereGeometry(0.1, 16, 12), gM, body, 0, chestY, chestZ - 0.02); mesh(new THREE.TorusGeometry(0.12, 0.022, 8, 24), joint, body, 0, chestY, chestZ - 0.02); halo(body, acM, 0, chestY, chestZ + 0.05, 0.6, 0.85); }
@@ -1638,6 +1675,18 @@ function makeFighterModel(build, accent, shOff = 0) {
   rig.armSplay = [0.1, 0.14, 0.2][tw2];
   for (const side of [-1, 1]) {
     if (tw2 === 0) { const gy = mesh(new THREE.TorusGeometry(armR * 0.9, armR * 0.3, 10, 24), dark, body, side * (shX - armR * 0.4), shoulderY - 0.06, 0); gy.rotation.y = Math.PI / 2;     }
+    // middle shoulders: Sentinel a round dome, Ronin layered samurai plates, Warden a cut gem
+    else if (tw2 === 1 && !has('rockets') && T.id === 'ronin') {
+      // sode: three curved lames stepping out and down over the shoulder, gold-lit edge on the last
+      for (let k = 0; k < 3; k++) { const l = mesh(rbox(armR * (2.2 + k * 0.3), armR * 0.55, armR * (2.9 + k * 0.15), armR * 0.18), topM, body, side * (shX + armR * (0.25 + k * 0.32)), shoulderY + armR * (0.35 - k * 0.62), 0); l.rotation.z = side * (-0.35 - k * 0.12); }
+      const tr2 = mesh(rbox(armR * 2.85, 0.016, armR * 3.25, 0.004), gT, body, side * (shX + armR * 0.95), shoulderY - armR * 1.2, 0); tr2.rotation.z = side * -0.59;
+      mesh(new THREE.SphereGeometry(armR * 0.9, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), joint, body, side * shX, shoulderY - 0.02, 0);
+    } else if (tw2 === 1 && !has('rockets') && T.id === 'warden') {
+      const gm = new THREE.OctahedronGeometry(armR * 1.75, 0).toNonIndexed(); gm.computeVertexNormals();
+      const gem = mesh(gm, topM, body, side * shX, shoulderY + 0.0, 0); gem.scale.set(1, 0.85, 1); gem.rotation.y = Math.PI / 4;
+      const core = mesh(new THREE.OctahedronGeometry(armR * 0.5, 0), gT, body, side * (shX + armR * 1.05), shoulderY, 0); core.scale.set(0.3, 1, 1);
+      const rr = mesh(new THREE.TorusGeometry(armR * 1.3, 0.012, 4, 4), joint, body, side * shX, shoulderY - armR * 0.2, 0); rr.rotation.set(Math.PI / 2, 0, Math.PI / 4);
+    }
     else if (tw2 === 1 && !has('rockets')) { mesh(new THREE.SphereGeometry(armR * 1.65, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), topM, body, side * shX, shoulderY - 0.04, 0); const rr = mesh(new THREE.TorusGeometry(armR * 1.65, 0.016, 6, 24), gT, body, side * shX, shoulderY - 0.04, 0); rr.rotation.x = Math.PI / 2; }
     else { mesh(rbox(armR * 3.4, armR * 2.1, armR * 3.2, armR * 0.6), topM, body, side * shX, shoulderY + 0.04, 0); mesh(rbox(armR * 3.0, armR * 0.9, armR * 2.9, armR * 0.35), topM, body, side * (shX + armR * 0.2), shoulderY - armR * 1.2, 0); mesh(rbox(0.025, armR * 0.5, armR * 1.5, 0.01), gT, body, side * (shX + armR * 1.72), shoulderY + 0.04, 0); }
     const pivot = new THREE.Group(); pivot.position.set(side * shX, shoulderY - 0.06, 0); body.add(pivot);
@@ -1648,7 +1697,18 @@ function makeFighterModel(build, accent, shOff = 0) {
     const fore = new THREE.Group(); elbow.add(fore);
     mesh(new THREE.CylinderGeometry(armR * 0.85, armR * 0.75, armLen * 0.5, 12), joint, fore, 0, -armLen * 0.25, 0);
     if (tw2 === 0) lightArm(pivot, elbow, fore, armR, armLen, side);
-    else if (tw2 === 1) {
+    else if (tw2 === 1 && T.id === 'ronin') {
+      // kote: a slim upper sleeve, and a forearm of overlapping bands under a long plate on the outside
+      mesh(new THREE.CylinderGeometry(armR * 1.05, armR * 0.95, armLen * 0.3, 14), topM, pivot, 0, -armLen * 0.2, 0);
+      for (let k = 0; k < 4; k++) { const b2 = mesh(new THREE.CylinderGeometry(armR * (1.2 - k * 0.04), armR * (1.12 - k * 0.04), armLen * 0.075, 14), topM, fore, 0, -armLen * (0.14 + k * 0.085), 0); }
+      mesh(rbox(armR * 0.45, armLen * 0.38, armR * 1.6, armR * 0.15), dark, fore, side * armR * 1.15, -armLen * 0.27, 0);
+      mesh(rbox(0.012, armLen * 0.3, armR * 0.25, 0.003), gT, fore, side * armR * 1.4, -armLen * 0.27, 0);
+    } else if (tw2 === 1 && T.id === 'warden') {
+      // hex-prism gauntlet with a gem stud on the back of the forearm
+      const up = mesh(new THREE.CylinderGeometry(armR * 1.15, armR * 1.05, armLen * 0.3, 6), topM, pivot, 0, -armLen * 0.2, 0); up.rotation.y = Math.PI / 6;
+      const fa = mesh(new THREE.CylinderGeometry(armR * 1.45, armR * 1.15, armLen * 0.38, 6), topM, fore, 0, -armLen * 0.3, 0); fa.rotation.y = Math.PI / 6;
+      const st = mesh(new THREE.OctahedronGeometry(armR * 0.35, 0), gT, fore, 0, -armLen * 0.28, armR * 1.35); st.scale.set(0.8, 1.2, 0.5);
+    } else if (tw2 === 1) {
       mesh(rbox(armR * 2.1, armLen * 0.3, armR * 2.1, armR * 0.5), topM, pivot, 0, -armLen * 0.2, 0);
       mesh(rbox(armR * 2.4, armLen * 0.36, armR * 2.4, armR * 0.6), topM, fore, 0, -armLen * 0.3, 0);
     } else {
