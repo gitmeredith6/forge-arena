@@ -576,15 +576,17 @@ const WEAPONS = [
   { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 0.7, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
   { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 0.68, kb: 4, homing: 2.4, color: 0xffb547 },
   { id: 'bubble',  slot: 'chest', name: 'Bubble Shield',   desc: 'A magenta bubble surrounds you for 10 seconds. Nothing can hurt you and it bounces away anyone who bumps into it, but you cannot attack until it pops.', cd: 30, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 10, color: 0xff3dd8 },
-  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Both forearms become cannons. J and K fire a shell from that arm instead of punching; both together fire a heavy double blast.', cd: 6, w: 0.3, a: 0.15, r: 0.35, move: 0.3, kind: 'proj', proj: 'shell', count: 2, speed: 20, mult: 0.65, kb: 9, stun: 0.3, color: 0xffd27a },
-  { id: 'blades',  slot: 'arms',  name: 'Arm Blades',      desc: 'Both forearms become long swords. J and K slash with that arm instead of punching; both together make a wide, hard double slash.', cd: 5, w: 0.18, a: 0.12, r: 0.32, move: 0.4, kind: 'melee', reach: 0.7, arc: 0.0, mult: 1.4, kb: 7, stun: 0.4, color: 0xd8f0ff },
-  { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Both forearms become chainsaws. J and K jab with a revving saw instead of punching; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
+  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Forearm cannons. J or K fires that arm; both together fire a heavy double blast.', cd: 6, w: 0.3, a: 0.15, r: 0.35, move: 0.3, kind: 'proj', proj: 'shell', count: 2, speed: 20, mult: 0.65, kb: 9, stun: 0.3, color: 0xffd27a },
+  { id: 'blades',  slot: 'arms',  name: 'Arm Blades',      desc: 'Long forearm swords. J or K slashes with that arm; both together make a hard double slash.', cd: 5, w: 0.18, a: 0.12, r: 0.32, move: 0.4, kind: 'melee', reach: 0.7, arc: 0.0, mult: 1.4, kb: 7, stun: 0.4, color: 0xd8f0ff },
+  { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Forearm chainsaws. J or K jabs with that arm; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
 ];
 const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
 const MAX_WEAPONS = 2;
-// cannons, swords and saws all replace the forearms, so a build carries at most one of them
+// cannons, swords and saws replace a forearm. One of them goes on both arms; two different ones go one per arm
 const ARM_SWAP = ['cannon', 'blades', 'saws'];
-const cleanWeapons = ws => { if (!Array.isArray(ws)) return null; let sw = false; return [...new Set(ws.filter(id => WEAPON[id]))].filter(id => !ARM_SWAP.includes(id) || (!sw && (sw = true))).slice(0, MAX_WEAPONS); };
+const cleanWeapons = ws => { if (!Array.isArray(ws)) return null; return [...new Set(ws.filter(id => WEAPON[id]))].slice(0, MAX_WEAPONS); };
+// which arm weapon sits on each arm, as [right, left] (the order of rig.arms); the first one picked goes on the left arm (J)
+const armLoadout = ws => { const a = (ws || []).filter(id => ARM_SWAP.includes(id)); return !a.length ? null : a.length === 1 ? [a[0], a[0]] : [a[1], a[0]]; };
 // arm weapons are not on a numbered button: they replace your punches. One arm's button uses that arm's lighter version
 // (side 1 = left, 0 = right, matching punchSide); both buttons use the full double-arm version
 const ARM_SINGLE = {
@@ -594,8 +596,8 @@ const ARM_SINGLE = {
 };
 const armVariant = (W, side) => side < 0 ? W : Object.assign({}, W, ARM_SINGLE[W.id], { side });
 // the key shown for a weapon: arm weapons use J and K, the rest are numbered in the order they were added
-const weaponKey = (ws, id) => ARM_SWAP.includes(id) ? 'J K' : String(ws.filter(x => !ARM_SWAP.includes(x)).indexOf(id) + 1);
-const randomWeapons = () => { let pool = WEAPONS.map(w => w.id); const out = []; while (out.length < MAX_WEAPONS) { const id = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; out.push(id); if (ARM_SWAP.includes(id)) pool = pool.filter(p => !ARM_SWAP.includes(p)); } return out; };
+const weaponKey = (ws, id) => { const L = armLoadout(ws); return ARM_SWAP.includes(id) ? (L && L[0] !== L[1] ? (L[1] === id ? 'J' : 'K') : 'J K') : String(ws.filter(x => !ARM_SWAP.includes(x)).indexOf(id) + 1); };
+const randomWeapons = () => { let pool = WEAPONS.map(w => w.id); const out = []; while (out.length < MAX_WEAPONS) { const id = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; out.push(id); } return out; };
 // paint: each section can be recoloured; with no choice it keeps its part's own colour (the head follows the arms)
 const PAINTS = [
   ['Red', 0xd41616], ['Blue', 0x1448e6], ['Green', 0x18a832], ['Orange', 0xf06408], ['Purple', 0x7418d8], ['White', 0xf2f4f7], ['Yellow', 0xf5c800], ['Black', 0x16171b],
@@ -1597,7 +1599,7 @@ function makeFighterModel(build, accent, shOff = 0) {
   MESH_SEC = 'top';
   // ---- top (head + arms): Light = sleek dark sleeves with ribbed pauldrons, Middle = gauntlets, Heavy = power fists
   const tw2 = wi[T.w];
-  const WP = cleanWeapons(build.weapons) || [], has = id => WP.includes(id), FW = ARM_SWAP.find(has);
+  const WP = cleanWeapons(build.weapons) || [], has = id => WP.includes(id), AW = armLoadout(WP);
   const shoulderY = torsoBase + th;
   const halfTop = 0.5 * M.taper * tw * faceScale * 0.92;
   const armR = [0.055, 0.1, 0.165][tw2];
@@ -1761,13 +1763,13 @@ function makeFighterModel(build, accent, shOff = 0) {
     // alternate sides so a volley leaves from both shoulders
     if (heavyMarks.length) for (let i = 0; i < heavyMarks[0].length; i++) for (const m of heavyMarks) rig.mount.rockets.push(m[i]);
   }
-  // forearm weapons: cannons, swords or chainsaws take the place of both forearms and fists.
+  // forearm weapons: cannons, swords or chainsaws take the place of the forearms and fists (one kind on both, or one each).
   // The empty fist group moves to the weapon tip so swing trails and punches still follow it
   rig.mount.arms = {}; rig.saws = [];
   const vr = [0.1, 0.13, 0.21][tw2] * (T.id === 'titan' ? 1.15 : 1), Lw = armLen * 0.5 + fistR * 1.5;
   const steelW = stdMat(0x8a919c, { metalness: 0.95, roughness: 0.25 }), edge = stdMat(0xdfe6ee, { metalness: 1, roughness: 0.1 }); rig.mats.push(steelW, edge);
-  for (const arm of (FW ? rig.arms : [])) {
-    const el = arm.elbow, s = arm.side;
+  for (const arm of (AW ? rig.arms : [])) {
+    const el = arm.elbow, s = arm.side, ai = rig.arms.indexOf(arm), FW = AW[ai];
     arm.elbow.remove(arm.fore); while (arm.fist.children.length) arm.fist.remove(arm.fist.children[0]);
     const wg = new THREE.Group(); el.add(wg); arm.fore = wg;
     mesh(new THREE.CylinderGeometry(vr * 0.7, vr * 0.8, Lw * 0.12, 16), joint, wg, 0, -Lw * 0.06, 0);
@@ -1787,7 +1789,7 @@ function makeFighterModel(build, accent, shOff = 0) {
       for (const a of [0, Math.PI / 2]) { const v = mesh(rbox(br * 2.7, L * 0.04, br * 0.35, 0.004), steelW, wg, 0, -L * 0.98, 0); v.rotation.y = a; }
       mesh(new THREE.CircleGeometry(br * 0.72, 20), stdMat(0x050506, { roughness: 0.9 }), wg, 0, -L * 1.046, 0).rotation.x = Math.PI / 2;
       const ring = mesh(new THREE.TorusGeometry(br * 0.82, br * 0.1, 8, 24), gT, wg, 0, -L * 1.045, 0); ring.rotation.x = Math.PI / 2;
-      (rig.mount.arms.cannon = rig.mount.arms.cannon || []).push(mark(wg, 0, -L * 1.1, 0));
+      (rig.mount.arms.cannon = rig.mount.arms.cannon || [])[ai] = mark(wg, 0, -L * 1.1, 0);
       arm.fist.position.set(0, -L * 1.0, 0);
     } else if (FW === 'blades') {
       // long sword blade after Sam's mech reference: an armoured forearm housing, a collar, then a long, narrow, straight blade
@@ -1987,14 +1989,18 @@ function animateRig(rig, f, dt, time) {
       const W = f.wpn, live = t >= W.w && t < W.w + W.a + W.r * 0.4;
       rate = 20;
       if (W.side !== undefined) {
-        // one arm: that arm aims, slashes or jabs while the other stays up on guard
-        const A = W.side ? 'aL' : 'aR', O = W.side ? 'aR' : 'aL', zs = W.side ? 1 : -1;
-        P[O].x = -0.8; P[O].e = -1.7; rate = 30;
-        if (W.kind === 'proj') { if (t < W.w + W.a + W.r * 0.5) { P[A].x = -1.5; P[A].e = -0.1; P[A].r = 0; P.tw = 0.15 * zs; } }
-        else if (W.kind === 'melee') {
-          if (t < W.w) { P[A].x = -2.3; P[A].z = -0.7 * zs; P[A].e = -1.0; P.tw = -0.3 * zs; }
-          else if (live) { P[A].x = -1.3; P[A].z = 0.55 * zs; P[A].e = -0.15; P.tw = 0.35 * zs; P.bx = 0.15; rate = 40; }
-        } else { const j = Math.sin(t * 28); P[A].x = -1.4 + j * 0.1; P[A].e = -0.2; P[A].r = 0; P.tw = 0.2 * zs; P.bx = 0.1; }
+        // one arm: that arm aims, slashes or jabs while the other stays up on guard (or, with two different arm weapons, does its own)
+        const one = (W, solo) => {
+          const A = W.side ? 'aL' : 'aR', zs = W.side ? 1 : -1, tw = solo ? 1 : 0, live = t >= W.w && t < W.w + W.a + W.r * 0.4;
+          if (W.kind === 'proj') { if (t < W.w + W.a + W.r * 0.5) { P[A].x = -1.5; P[A].e = -0.1; P[A].r = 0; P.tw = 0.15 * zs * tw; } }
+          else if (W.kind === 'melee') {
+            if (t < W.w) { P[A].x = -2.3; P[A].z = -0.7 * zs; P[A].e = -1.0; P.tw = -0.3 * zs * tw; }
+            else if (live) { P[A].x = -1.3; P[A].z = 0.55 * zs; P[A].e = -0.15; P.tw = 0.35 * zs * tw; P.bx = 0.15; rate = 40; }
+          } else { const j = Math.sin(t * 28); P[A].x = -1.4 + j * 0.1; P[A].e = -0.2; P[A].r = 0; P.tw = 0.2 * zs * tw; P.bx = 0.1; }
+        };
+        rate = 30;
+        if (f.wpn2) { one(W, false); one(f.wpn2, false); }
+        else { const O = W.side ? 'aR' : 'aL'; P[O].x = -0.8; P[O].e = -1.7; one(W, true); }
       } else if (W.slot === 'arms' && W.kind !== 'melee' && W.kind !== 'grind') {
         const both = W.id !== 'grapple', aim = t < W.w + W.a + W.r * 0.5;
         if (aim) { if (both) { P.aR.x = P.aL.x = -1.5; P.aR.e = P.aL.e = -0.1; P.aR.r = P.aL.r = 0; } else { P.aL.x = -1.55; P.aL.e = -0.05; P.aL.r = 0; } }
@@ -2064,7 +2070,7 @@ function animateRig(rig, f, dt, time) {
   // Phantom's beam flares into a big burst for the jump
   if (rig.flame) { const jb = f && f.jumpT > 0 ? f.jumpT / 0.35 : 0; const sy = 0.8 + Math.random() * 0.4 + sp * 0.5 + jb * 2.6; rig.flame.scale.set(1 + jb * 0.9, sy, 1 + jb * 0.9); rig.flame.position.y = -0.75 - 0.25 * sy; }
   if (rig.pods) { const open = f && f.state === 'weapon' && f.wpn.id === 'rockets' ? 1 : 0; rig.podOpen = lerp(rig.podOpen || 0, open, 1 - Math.exp(-14 * dt)); for (const p of rig.pods) { p.g.position.y = p.y0 + (p.y1 - p.y0) * rig.podOpen; p.g.visible = rig.podOpen > 0.03; } }
-  if (rig.saws && rig.saws.length) { const rev = f && f.state === 'weapon' && f.wpn.id === 'saws'; rig.sawT = (rig.sawT || 0) + dt * (rev ? 3.5 : 0.25); for (const sw of rig.saws) sawPlace(sw, rig.sawT * sw.step); }
+  if (rig.saws && rig.saws.length) { const rev = f && f.state === 'weapon' && (f.wpn.id === 'saws' || (f.wpn2 && f.wpn2.id === 'saws')); rig.sawT = (rig.sawT || 0) + dt * (rev ? 3.5 : 0.25); for (const sw of rig.saws) sawPlace(sw, rig.sawT * sw.step); }
   if (rig.coil) {
     const c = rig.coil; c.t = (c.t + dt * 1.7) % 1;
     const sc = 1 - c.t * 0.4; c.pulse.position.y = lerp(c.y0, c.y1, c.t); c.pulse.scale.set(sc, sc, 1); c.pulse.material.opacity = 0.95 * (1 - c.t * 0.55);
@@ -2296,7 +2302,7 @@ function renderSecList() {
 }
 function renderWeapons() {
   const full = build.weapons.length >= MAX_WEAPONS;
-  $('secDesc').textContent = `Add up to ${MAX_WEAPONS} weapons to your fighter. Head and chest weapons fire with 1 and 2 and each has its own cooldown.` + ' Cannons, swords and saws replace your forearms and your punches, so you can carry one of them and attack with it on J and K.' + (full ? ' To swap one, tap a chosen weapon to remove it first.' : '');
+  $('secDesc').textContent = `Add up to ${MAX_WEAPONS} weapons to your fighter. Head and chest weapons fire with 1 and 2 and each has its own cooldown.` + ' Cannons, swords and saws replace your forearms and your punches. Pick one to fit it on both arms, or two to fit one on each: the first goes on your left arm (J), the second on your right (K).' + (full ? ' To swap one, tap a chosen weapon to remove it first.' : '');
   const W = $('weights'); W.innerHTML = '';
   for (const grp of WEAPON_GROUPS) {
     const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', grp.color);
@@ -2304,14 +2310,13 @@ function renderWeapons() {
     for (const wpn of WEAPONS.filter(w => w.slot === grp.slot)) {
       const on = build.weapons.includes(wpn.id), b = document.createElement('button');
       b.type = 'button'; b.className = 'part wrap'; b.id = `weapon-${wpn.id}`; b.setAttribute('aria-pressed', String(on));
-      const swaps = ARM_SWAP.includes(wpn.id) && build.weapons.some(id => ARM_SWAP.includes(id));
-      if (!on && full && !swaps) b.classList.add('dim');
+      if (!on && full) b.classList.add('dim');
       const key = on ? `<span class="wkey">${weaponKey(build.weapons, wpn.id)}</span>` : '';
-      b.innerHTML = `<span class="pn">${key}${wpn.name}</span><span class="pp">${wpn.desc} <i>${wpn.slot === 'arms' ? 'Replaces your punches, no cooldown' : wpn.cd + 's cooldown'}</i></span>`;
+      b.innerHTML = `<span class="pn">${key}${wpn.name}</span><span class="pp">${wpn.desc} <i>${wpn.slot === 'arms' ? 'Replaces punches' : wpn.cd + 's cooldown'}</i></span>`;
       b.onclick = () => {
         let ws = build.weapons.slice();
         if (on) ws = ws.filter(id => id !== wpn.id);
-        else { const i = ARM_SWAP.includes(wpn.id) ? ws.findIndex(id => ARM_SWAP.includes(id)) : -1; if (i >= 0) ws[i] = wpn.id; else if (ws.length < MAX_WEAPONS) ws.push(wpn.id); else return; }
+        else if (ws.length < MAX_WEAPONS) ws.push(wpn.id); else return;
         build = Object.assign({}, build, { weapons: ws }); save(); renderAll();
       };
       col.appendChild(b);
@@ -2746,7 +2751,7 @@ class Fighter {
     this.special = SPECIALS[partById('top', build.top).w];
     this.kick = kickFor(build);
     const ws = (cleanWeapons(build.weapons) || []).map(id => WEAPON[id]);
-    this.armWpn = ws.find(W => W.slot === 'arms') || null; this.weapons = ws.filter(W => W.slot !== 'arms');
+    const AW = armLoadout(ws.map(W => W.id)); this.armW = AW && AW.map(id => WEAPON[id]); this.armWpn = this.armW && this.armW[1]; this.weapons = ws.filter(W => W.slot !== 'arms');
     this.radius = this.stats.radius;
     this.pos = this.rig.root.position;
     this.knock = new V3(); this.moveVel = new V3();
@@ -2764,7 +2769,15 @@ class Fighter {
   inWindup() { if (this.state === 'weapon') return this.t < this.wpn.w + 0.05; return (this.state === 'light' || this.state === 'heavy' || this.state === 'kick') && this.t < this.timing(this.state).w; }
   startAttack(kind, side) { this.state = kind; this.t = 0; this.hitDone = false; this.attackId++; if (kind === 'light') this.punchSide = side === undefined ? this.punchSide ^ 1 : side; }
   // attack with the fitted arm weapon instead of a punch: side 1 = left arm, 0 = right, -1 = both
-  useArm(side) { if (side >= 0) this.punchSide = side; this.state = 'weapon'; this.wpn = armVariant(this.armWpn, side); this.t = 0; this.hitDone = false; this.tickT = 0; this.shots = 0; this.attackId++; }
+  // with two different arm weapons, both buttons fire each arm's own weapon at once, a bit harder than alone (the right arm's runs as wpn2)
+  useArm(side) {
+    if (side >= 0) this.punchSide = side;
+    const [Wr, Wl] = this.armW, mixed = Wr !== Wl;
+    this.state = 'weapon'; this.t = 0; this.hitDone = false; this.tickT = 0; this.shots = 0; this.attackId++; this.wpn2 = null;
+    if (side >= 0) this.wpn = armVariant(this.armW[side], side);
+    else if (!mixed) this.wpn = Wl;
+    else { const up = W => Object.assign(W, { mult: W.mult * 1.5, kb: W.kb * 1.5, both: true }); this.wpn = up(armVariant(Wl, 1)); this.wpn2 = up(armVariant(Wr, 0)); this.s2 = { hitDone: false, tickT: 0, shots: 0 }; }
+  }
   tryAction(a, wish, fwd, right, game) {
     // inside the bubble shield you can move, block, dodge and jump, but not attack, so it's a safe breather rather than a free 10 seconds of hits
     if (this.wShieldT > 0 && a !== 'dodge') return false;
@@ -2810,7 +2823,7 @@ class Fighter {
     }
     this.armT = Math.max(0, (this.armT || 0) - dt);
     // a punch queued during a punch waits for that punch's follow-through rather than expiring, so quick one-two combos never drop a press
-    const queued = (this.state === 'light' || (this.state === 'weapon' && this.wpn.side !== undefined)) && this.buffer && (this.buffer.a === 'light' || this.buffer.a === 'left' || this.buffer.a === 'right');
+    const queued = (this.state === 'light' || (this.state === 'weapon' && this.wpn.side !== undefined && !this.wpn.both)) && this.buffer && (this.buffer.a === 'light' || this.buffer.a === 'left' || this.buffer.a === 'right');
     if (this.buffer && !queued) { this.buffer.t -= dt; if (this.buffer.t <= 0) this.buffer = null; }
     // jump from the ground while free to move; the world's gravity brings it back down
     this.jumpT = Math.max(0, (this.jumpT || 0) - dt);
@@ -2850,13 +2863,13 @@ class Fighter {
         const W = this.wpn;
         speedMul = W.move; turnRate = W.kind === 'beam' || W.kind === 'cone' ? 3.5 : 8;
         game.weaponStep(this, opp, dt);
-        if (W.side !== undefined && this.state === 'weapon' && this.buffer) {
+        if (W.side !== undefined && !W.both && this.state === 'weapon' && this.buffer) {
           // one arm's weapon works like a punch: the other button in the wind-up upgrades to both arms, a press during the follow-through chains the next
           const arm = this.buffer.a === 'left' ? 1 : this.buffer.a === 'right' ? 0 : -1;
           if (this.t < W.w && (this.buffer.a === 'heavy' || (arm >= 0 && arm !== W.side && this.chordOk))) { this.buffer = null; this.useArm(-1); break; }
           if (this.t >= W.w + W.a + W.r * 0.35 && (arm >= 0 || this.buffer.a === 'light')) { this.buffer = null; this.useArm(arm >= 0 ? arm : W.side ^ 1); break; }
         }
-        if (this.state === 'weapon' && this.t >= W.w + W.a + W.r) this.state = 'idle';
+        if (this.state === 'weapon' && this.t >= Math.max(W.w + W.a + W.r, this.wpn2 ? this.wpn2.w + this.wpn2.a + this.wpn2.r : 0)) this.state = 'idle';
         break;
       }
       case 'dodge':
@@ -2992,7 +3005,7 @@ class AIController {
         if (ready.length) inp['w' + (pick(ready)[1] + 1)] = true;
       }
       // hand cannons shoot from range like punches that reach
-      if (me.armWpn && me.armWpn.kind === 'proj' && !inp.special && opp.state !== 'ko' && dist > range && dist < 14 && clear && Math.random() < L.aggro * 0.5) inp.light = true;
+      if (me.armW && me.armW.some(W => W.kind === 'proj') && !inp.special && opp.state !== 'ko' && dist > range && dist < 14 && clear && Math.random() < L.aggro * 0.5) inp.light = true;
       if (dist > range + 0.4) { this.mz = 1; this.mx = this.strafe * rand(0, 0.5); }
       else if (dist < range * 0.55) { this.mz = -0.7; this.mx = this.strafe * 0.5; }
       else {
@@ -3275,7 +3288,7 @@ const Battle = {
     this.ai = new AIController(difficulty);
     this.wins = [0, 0]; this.round = 0;
     $('p1Name').innerHTML = `${buildName(build)}<small>YOU</small>`;
-    $('p1W').innerHTML = this.p1.weapons.map((W, i) => `<div class="ws" id="ws${i}"><b>${i + 1}</b>${W.name}<i></i></div>`).join('') + (this.p1.armWpn ? `<div class="ws"><b>J K</b>${this.p1.armWpn.name}</div>` : '');
+    $('p1W').innerHTML = this.p1.weapons.map((W, i) => `<div class="ws" id="ws${i}"><b>${i + 1}</b>${W.name}<i></i></div>`).join('') + (this.p1.armW ? [...new Set([...this.p1.armW].reverse())].map(W => `<div class="ws"><b>${weaponKey(this.p1.build.weapons, W.id)}</b>${W.name}</div>`).join('') : '');
     $('wbtns').innerHTML = this.p1.weapons.map((W, i) => `<button type="button" data-w="${i + 1}">${W.name}<i></i></button>`).join('');
     for (const b of $('wbtns').children) b.addEventListener('pointerdown', e => { e.preventDefault(); Input.pressed.add('t-w' + b.dataset.w); });
     $('p2Name').innerHTML = `<small>CPU · ${difficulty.toUpperCase()}</small>${buildName(this.enemyBuild)}`;
@@ -3411,7 +3424,8 @@ const Battle = {
   originOf(f, W, i) {
     f.rig.root.updateMatrixWorld();
     const pts = this.mountPoints(f, W);
-    if (pts && pts.length) return pts[i % pts.length].getWorldPosition(new V3());
+    const pt = pts && (pts[i % Math.max(1, pts.length)] || pts.find(Boolean));
+    if (pt) return pt.getWorldPosition(new V3());
     const p = f.pos.clone(); p.y += f.rig.chestY; return p.add(new V3(Math.sin(f.yaw), 0, Math.cos(f.yaw)).multiplyScalar(f.radius + 0.1));
   },
   onWeaponStart(f, W) {
@@ -3419,6 +3433,15 @@ const Battle = {
     if (f === this.p1 || W.kind === 'shield') this.popAt(f, W.name.toUpperCase(), 'note', 0.8);
   },
   weaponStep(f, opp, dt) {
+    if (f.wpn2) {
+      // the second arm's weapon keeps its own shot, tick and hit counters
+      const W1 = f.wpn, keep = { hitDone: f.hitDone, tickT: f.tickT, shots: f.shots };
+      Object.assign(f, f.s2); f.wpn = f.wpn2; this.weaponStep1(f, opp, dt);
+      f.s2 = { hitDone: f.hitDone, tickT: f.tickT, shots: f.shots }; f.wpn = W1; Object.assign(f, keep);
+    }
+    this.weaponStep1(f, opp, dt);
+  },
+  weaponStep1(f, opp, dt) {
     const W = f.wpn, t = f.t, A0 = W.w, A1 = W.w + W.a;
     if (t < A0) return;
     const d = Math.hypot(opp.pos.x - f.pos.x, opp.pos.z - f.pos.z);
