@@ -82,10 +82,23 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 @keyframes ringSpin { to { transform: rotateX(72deg) rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .home-glow i, .home-begin { animation: none; } }
 .tagline { color: var(--muted); margin: 0; max-width: 60ch; }
-.b-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 0.9fr); gap: 14px; flex: 1; min-height: 0; }
+.b-grid { display: grid; grid-template-columns: minmax(340px, 1fr) minmax(0, 1.35fr) minmax(250px, 0.72fr); gap: 14px; flex: 1; min-height: 0; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
 .b-parts { display: flex; flex-direction: column; }
-.tabs { display: grid; grid-template-columns: repeat(5, 1fr); border-bottom: 1px solid var(--line); }
+.b-parts { overflow: auto; }
+.sec-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); min-height: 58px; }
+.sec-head h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 24px; line-height: 1; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.sec-back { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 13px; color: var(--fg); white-space: nowrap; }
+.sec-back:hover { border-color: var(--muted); }
+.sec-title { display: flex; flex-direction: column; min-width: 0; }
+.sec-title .t-sec { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--p1); }
+.sec-title .t-pick { font-family: var(--f-display); font-size: 26px; line-height: 1; font-weight: 600; }
+.weights.list { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.secpick { text-align: left; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; }
+.secpick:hover { border-color: var(--p1); }
+.secpick .t-sec { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.secpick .t-pick { font-family: var(--f-display); font-size: 24px; line-height: 1; font-weight: 600; grid-column: 1; }
+.secpick .go { grid-column: 2; grid-row: 1 / span 2; color: var(--muted); font-size: 20px; }
 .tab { background: none; border: 0; padding: 10px 8px 8px; text-align: left; border-bottom: 3px solid transparent; display: flex; flex-direction: column; gap: 0; }
 .tab .t-sec { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .tab .t-pick { font-family: var(--f-display); font-size: 24px; line-height: 1; font-weight: 600; }
@@ -127,7 +140,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .wlist { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 14px; }
 .wlist kbd { margin-right: 5px; }
 
-.b-preview { position: relative; overflow: hidden; min-height: 420px; background: radial-gradient(closest-side at 50% 62%, #233456 0%, #121926 100%); }
+.b-preview { position: relative; overflow: hidden; min-height: 520px; background: radial-gradient(closest-side at 50% 62%, #233456 0%, #121926 100%); }
 .b-preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: pan-y; }
 .pv-label { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; justify-content: space-between; align-items: end; gap: 8px; pointer-events: none; }
 .pv-name { font-family: var(--f-display); font-size: 30px; line-height: 0.9; font-weight: 600; }
@@ -137,7 +150,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .pv-spin { position: absolute; top: 8px; left: 10px; z-index: 2; background: #0b0f18cc; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: var(--fg); display: inline-flex; gap: 6px; align-items: center; }
 .pv-spin:hover { border-color: #ffffff40; }
 .pv-spin span { font-size: 10px; color: var(--p1); }
-.pv-hint { position: absolute; top: 10px; right: 12px; font-size: 12px; color: var(--muted); pointer-events: none; }
+.pv-hint { position: absolute; top: 10px; right: 12px; font-size: 12px; color: var(--muted); pointer-events: none; background: #0b0f18aa; border-radius: 6px; padding: 4px 8px; }
+.pv-hint.on { color: var(--fg); box-shadow: inset 0 0 0 1px var(--p1); }
 
 .b-stats { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
 .b-stats h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 24px; line-height: 1; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
@@ -171,20 +185,20 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   .b-preview { grid-column: 2; grid-row: 1; }
   .b-parts { grid-column: 1; grid-row: 1 / span 2; }
   .b-stats { grid-column: 2; grid-row: 2; }
+  .b-preview { min-height: 440px; }
 }
 @media (max-width: 720px) {
   .b-grid { grid-template-columns: minmax(0, 1fr); }
   .b-preview, .b-parts, .b-stats { grid-column: 1; grid-row: auto; }
-  .b-preview { min-height: 330px; order: -1; }
+  .b-preview { min-height: 360px; order: -1; }
   .weights { gap: 6px; }
   .wcol h3 { font-size: 19px; }
   .wcol .weffect { font-size: 11.5px; min-height: 4em; }
   .part { padding: 7px 7px; }
   .part .pn { font-size: 19px; }
   .part .pp { font-size: 12px; }
-  .tab .t-sec { font-size: 10.5px; letter-spacing: 0.08em; }
-  .tab .t-pick { font-size: 19px; }
-  .tabs { grid-template-columns: repeat(3, 1fr); }
+  .sec-title .t-pick, .secpick .t-pick { font-size: 21px; }
+  .b-parts { overflow: visible; }
   .pv-name { font-size: 22px; }
   .logo { font-size: 38px; }
 }
@@ -293,11 +307,11 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 <section id="builder" aria-label="Fighter builder" hidden>
   <div class="top-bar">
     <h1 class="logo">FORGE <span>ARENA</span></h1>
-    <p class="tagline">Pick a head, then build Arms, a Middle and a Bottom, each in Light, Middle or Heavy, and add three weapons.</p>
+    <p class="tagline">Click any part of your fighter to change it. Arms, Middle and Bottom each come in Light, Middle or Heavy, and you can add three weapons.</p>
   </div>
   <div class="b-grid">
     <div class="card b-parts">
-      <div class="tabs" role="tablist" id="tabs"></div>
+      <div class="sec-head" id="tabs"></div>
       <div class="sec-body">
         <p class="sec-desc" id="secDesc"></p>
         <div class="weights" id="weights"></div>
@@ -306,7 +320,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     </div>
     <div class="card b-preview" id="previewBox">
       <canvas id="previewCanvas" aria-label="3D preview of your fighter"></canvas>
-      <div class="pv-hint">Drag to turn</div>
+      <div class="pv-hint" id="pvHint">Click a part to change it · drag to turn</div>
       <button type="button" class="pv-spin" id="spinBtn" aria-pressed="false"></button>
       <div class="pv-label">
         <div class="pv-name" id="pvName"></div>
@@ -631,8 +645,10 @@ function armorMat(color, rep, o) {
 }
 function stdMat(color, o) { const m = new THREE.MeshStandardMaterial(Object.assign({ roughness: 0.36, metalness: 0.55 }, o || {})); m.color.setHex(color).convertSRGBToLinear(); return m; }
 function glowMat(color) { const m = new THREE.MeshStandardMaterial({ roughness: 0.3, metalness: 0, emissiveIntensity: 2.6 }); m.color.setHex(color).convertSRGBToLinear(); m.emissive.copy(m.color); return m; }
+// the fighter section being built; every mesh is tagged with it so the builder preview can tell which part was clicked
+let MESH_SEC = null;
 function mesh(geo, mat, parent, x = 0, y = 0, z = 0) {
-  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; if (parent) parent.add(m); return m;
+  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (MESH_SEC) m.userData.sec = MESH_SEC; m.castShadow = true; m.receiveShadow = true; if (parent) parent.add(m); return m;
 }
 /* rounded box: a rounded-rectangle extruded with a bevel, so every edge catches light */
 function rbox(w, h, d, r) {
@@ -734,9 +750,11 @@ function mergeGroup(group) {
   const byMat = new Map();
   for (const c of group.children.slice()) {
     if (!c.isMesh || c.isInstancedMesh || c.children.length) continue;
-    const list = byMat.get(c.material) || []; list.push(c); byMat.set(c.material, list);
+    // merge per material and per section, so merged meshes keep their section tag
+    let byS = byMat.get(c.material); if (!byS) byMat.set(c.material, byS = new Map());
+    const list = byS.get(c.userData.sec) || []; list.push(c); byS.set(c.userData.sec, list);
   }
-  for (const [mat, list] of byMat) {
+  for (const [mat, byS] of byMat) for (const [sec, list] of byS) {
     if (list.length < 2) continue;
     let total = 0;
     const parts = list.map(m => {
@@ -753,7 +771,7 @@ function mergeGroup(group) {
     geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
     geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
     for (const m of list) { group.remove(m); m.geometry.dispose(); }
-    const merged = new THREE.Mesh(geo, mat); merged.castShadow = true; merged.receiveShadow = true; group.add(merged);
+    const merged = new THREE.Mesh(geo, mat); if (sec) merged.userData.sec = sec; merged.castShadow = true; merged.receiveShadow = true; group.add(merged);
   }
 }
 function makeFighterModel(build, accent) {
@@ -985,6 +1003,7 @@ function makeFighterModel(build, accent) {
   }
 
   // ---- bottom
+  MESH_SEC = 'bottom';
   let hipY;
   const bw = wi[B.w];
   if (B.type === 'ball') {
@@ -1383,6 +1402,7 @@ function makeFighterModel(build, accent) {
     }
   }
 
+  MESH_SEC = 'middle';
   // ---- middle (torso): Light = wasp waist on an exposed spine, Middle = armored, Heavy = barrel chest with a backpack
   const mw = wi[M.w];
   const tw = [0.5, 0.7, 0.95][mw], th = [0.74, 0.84, 0.92][mw], td = [0.32, 0.42, 0.56][mw];
@@ -1445,6 +1465,7 @@ function makeFighterModel(build, accent) {
     for (const sx of [-1, 1]) pipe(body, [[0, ty + tl * 0.32, tz - 0.05], [sx * 0.07, ty + tl * 0.42, tz - 0.1], [sx * 0.17, ty + tl * 0.36, tz - tr - 0.005]], 0.014);
   }
 
+  MESH_SEC = 'top';
   // ---- top (head + arms): Light = sleek dark sleeves with ribbed pauldrons, Middle = gauntlets, Heavy = power fists
   const tw2 = wi[T.w];
   const WP = cleanWeapons(build.weapons) || [], has = id => WP.includes(id), FW = ARM_SWAP.find(has);
@@ -1483,6 +1504,7 @@ function makeFighterModel(build, accent) {
     armDetail(pivot, elbow, fore, fist, armR, armLen, fistR, side, tw2);
     rig.arms.push({ pivot, elbow, side, fist, fore });
   }
+  MESH_SEC = 'head';
   // neck + head
   // head: Light = small and sleek on a long neck, Middle = helmeted, Heavy = large and sunk into an armored gorget
   const HD = headById(build.head) ? build.head : T.id, hw = headById(HD).size;
@@ -1517,6 +1539,7 @@ function makeFighterModel(build, accent) {
   else if (HD === 'wisp') { mesh(new THREE.SphereGeometry(0.042, 16, 12), eyeM, head, 0, eyeY, face - 0.005).scale.set(1, 1, 0.6); const er = mesh(new THREE.TorusGeometry(0.05, 0.009, 8, 24), joint, head, 0, eyeY, face + 0.004); halo(head, eyeC, 0, eyeY, face + 0.03, 0.26, 0.9); }
   else { mesh(rbox(HD === 'bastion' ? 0.3 : 0.2, 0.045, 0.03, 0.012), eyeM, head, 0, eyeY, face); halo(head, eyeC, 0, eyeY, face + 0.03, HD === 'bastion' ? 0.42 : 0.32, 0.8); }
 
+  MESH_SEC = 'weapons';
   // ---- weapons: each adds hardware to the model plus mount points the battle fires from
   const wmat = hex => { const m = glowMat(hex); return m; };
   const mark = (parent, x, y, z) => { const o = new THREE.Object3D(); o.position.set(x, y, z); parent.add(o); return o; };
@@ -1697,6 +1720,7 @@ function makeFighterModel(build, accent) {
     vertexShader: 'varying vec3 vN; varying vec3 vV; void main() { vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
     fragmentShader: 'uniform vec3 col; varying vec3 vN; varying vec3 vV; void main() { float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.2); gl_FragColor = vec4(col * (0.25 + 1.6 * f) + vec3(1.0) * pow(f, 6.0) * 0.6, 0.12 + 0.75 * f); }',
   })));
+  MESH_SEC = null;
   root.traverse(o => { if (o.isSprite) o.castShadow = false; else if (o.isGroup) mergeGroup(o); });
   rig.pose = newPose();
   return rig;
@@ -2059,7 +2083,7 @@ const SFX = {
 
 /* ======================= BUILDER UI ======================= */
 let build = { head: 'sentinel', top: 'sentinel', middle: 'furnace', bottom: 'sprinter', weapons: ['laser', 'rockets', 'blades'] };
-let curSec = 'top';
+let curSec = null;
 let difficulty = 'normal';
 let arenaId = 'guerrilla';
 try { const a = localStorage.getItem('forge-arena-map'); if (['classic', 'guerrilla', 'citadel'].includes(a)) arenaId = a; } catch (e) {}
@@ -2067,26 +2091,31 @@ try { const s = JSON.parse(localStorage.getItem('forge-arena-build') || 'null');
 try { const d = localStorage.getItem('forge-arena-diff'); if (['easy', 'normal', 'hard'].includes(d)) difficulty = d; } catch (e) {}
 const save = () => { try { localStorage.setItem('forge-arena-build', JSON.stringify(build)); localStorage.setItem('forge-arena-diff', difficulty); } catch (e) {} };
 
+// the left panel: a list of the fighter's sections, or, once one is picked (here or by clicking the model), that section's options
+const secName = sec => sec === 'head' ? 'Head' : sec === 'weapons' ? 'Weapons' : SECTIONS[sec].label;
+const secSub = sec => sec === 'head' ? 'Style' : sec === 'weapons' ? `Pick ${MAX_WEAPONS}` : SECTIONS[sec].sub;
+function secPick(sec) {
+  if (sec === 'head') return `<span class="t-pick">${headById(build.head).name}</span>`;
+  if (sec === 'weapons') return `<span class="t-pick">${build.weapons.length} of ${MAX_WEAPONS}</span>`;
+  const p = partById(sec, build[sec]); return `<span class="t-pick" style="color:${WCOLOR[p.w]}">${p.name}</span>`;
+}
+function openSec(sec) { curSec = sec; renderTabs(); renderParts(); Preview.select(sec); if (sec && matchMedia('(max-width: 720px)').matches) $('tabs').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 function renderTabs() {
-  $('tabs').innerHTML = '';
-  const hb = document.createElement('button');
-  hb.type = 'button'; hb.className = 'tab'; hb.id = 'tab-head'; hb.setAttribute('role', 'tab'); hb.setAttribute('aria-selected', String(curSec === 'head'));
-  hb.innerHTML = `<span class="t-sec">Head · style</span><span class="t-pick">${headById(build.head).name}</span>`;
-  hb.onclick = () => { curSec = 'head'; renderTabs(); renderParts(); };
-  $('tabs').appendChild(hb);
-  for (const sec of ['top', 'middle', 'bottom']) {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'tab'; b.id = 'tab-' + sec; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(sec === curSec));
-    const p = partById(sec, build[sec]);
-    b.innerHTML = `<span class="t-sec">${SECTIONS[sec].label} · ${SECTIONS[sec].sub}</span><span class="t-pick" style="color:${WCOLOR[p.w]}">${p.name}</span>`;
-    b.onclick = () => { curSec = sec; renderTabs(); renderParts(); };
-    $('tabs').appendChild(b);
+  const H = $('tabs');
+  if (!curSec) { H.innerHTML = '<h2>Your parts</h2>'; return; }
+  H.innerHTML = `<button type="button" class="sec-back" id="secBack">‹ All parts</button><div class="sec-title"><span class="t-sec">${secName(curSec)} · ${secSub(curSec)}</span>${secPick(curSec)}</div>`;
+  $('secBack').onclick = () => openSec(null);
+}
+function renderSecList() {
+  $('secDesc').textContent = 'Click any part of your fighter in the preview to change it, or pick a section here.';
+  const W = $('weights'); W.innerHTML = '';
+  for (const sec of ['head', 'top', 'middle', 'bottom', 'weapons']) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'secpick'; b.id = 'tab-' + sec;
+    b.innerHTML = `<span class="t-sec">${secName(sec)} · ${secSub(sec)}</span>${secPick(sec)}<span class="go" aria-hidden="true">›</span>`;
+    b.onclick = () => openSec(sec);
+    b.onpointerenter = () => Preview.hover(sec); b.onpointerleave = () => Preview.hover(null);
+    W.appendChild(b);
   }
-  const wb = document.createElement('button');
-  wb.type = 'button'; wb.className = 'tab'; wb.id = 'tab-weapons'; wb.setAttribute('role', 'tab'); wb.setAttribute('aria-selected', String(curSec === 'weapons'));
-  wb.innerHTML = `<span class="t-sec">Weapons · pick ${MAX_WEAPONS}</span><span class="t-pick">${build.weapons.length} of ${MAX_WEAPONS}</span>`;
-  wb.onclick = () => { curSec = 'weapons'; renderTabs(); renderParts(); };
-  $('tabs').appendChild(wb);
 }
 function renderWeapons() {
   const full = build.weapons.length >= MAX_WEAPONS;
@@ -2158,6 +2187,8 @@ function renderPaint() {
 }
 function renderParts() {
   renderPaint();
+  $('weights').classList.toggle('list', !curSec);
+  if (!curSec) return renderSecList();
   if (curSec === 'weapons') return renderWeapons();
   if (curSec === 'head') return renderHeads();
   $('secDesc').textContent = SECTIONS[curSec].desc;
@@ -2195,7 +2226,7 @@ function renderStats(hoverBuild) {
   }).join('');
   const sp = SPECIALS[partById('top', (hoverBuild || build).top).w];
   $('special').innerHTML = `<div class="sk">Special move (from your Arms)</div><div class="sn">${sp.name}</div><p>${sp.desc}</p>`
-    + `<div class="sk" style="margin-top:8px">Weapons</div><div class="wlist">${build.weapons.length ? build.weapons.map((id, i) => `<span><kbd>${i + 1}</kbd>${WEAPON[id].name}</span>`).join('') : '<span>None yet. Open the Weapons tab to add some.</span>'}</div>`;
+    + `<div class="sk" style="margin-top:8px">Weapons</div><div class="wlist">${build.weapons.length ? build.weapons.map((id, i) => `<span><kbd>${i + 1}</kbd>${WEAPON[id].name}</span>`).join('') : '<span>None yet. Click Weapons to add some.</span>'}</div>`;
 }
 function renderAll() {
   renderTabs(); renderParts(); renderStats();
@@ -2246,14 +2277,63 @@ const Preview = (() => {
   spinBtn.onclick = () => { still = !still; spin = still ? 0 : 0.35; showSpin(); try { localStorage.setItem('forge-arena-still', still ? '1' : '0'); } catch (e) {} };
   showSpin();
   function setBuild(b) {
-    if (rig) { scene.remove(rig.root); disposeObj(rig.root); }
+    if (rig) { rig.root.traverse(o => { if (o.userData.m0) { o.material = o.userData.m0; o.userData.m0 = null; } }); scene.remove(rig.root); disposeObj(rig.root); }
+    for (const m of hlCache.values()) m.dispose(); hlCache.clear();
     rig = makeFighterModel(b, ACCENT.p1); scene.add(rig.root); pop = 1;
     // show the bubble shield around the preview when it's one of the chosen weapons
     rig.bubble.visible = (cleanWeapons(b.weapons) || []).includes('bubble');
+    if (hoverSec) { const h = hoverSec; hoverSec = null; hover(h); }
   }
-  canvas.addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; canvas.setPointerCapture(e.pointerId); });
-  canvas.addEventListener('pointermove', e => { if (!dragging) return; yaw += (e.clientX - lastX) * 0.012; lastX = e.clientX; spin = 0; });
-  canvas.addEventListener('pointerup', () => { dragging = false; spin = still ? 0 : 0.35; });
+  // clicking the model opens that section; hovering lights it up. A press that moves more than a few pixels is a drag to turn
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), hlCache = new Map();
+  let hoverSec = null, selSec = null, downX = 0, downY = 0, moved = false;
+  const shown = o => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+  function secAt(e) {
+    if (!rig) return null;
+    const r = canvas.getBoundingClientRect();
+    ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+    ray.setFromCamera(ndc, cam);
+    for (const h of ray.intersectObject(rig.root, true)) {
+      if (!h.object.isMesh || !shown(h.object)) continue;
+      if (h.object.userData.sec) return h.object.userData.sec;
+      // untagged pieces (tread links, the snake body) belong to whatever section sits at that height
+      const y = rig.root.worldToLocal(h.point.clone()).y;
+      if (y < rig.hipY) return 'bottom';
+    }
+    return null;
+  }
+  // a hovered section glows a little: its meshes swap to brighter copies of their materials until the pointer leaves
+  function hl(mat) {
+    let m = hlCache.get(mat);
+    if (!m) { m = mat.clone(); if (m.emissive) { m.emissive.add(new THREE.Color(0x14223a)); if (!m.emissiveIntensity) m.emissiveIntensity = 1; } hlCache.set(mat, m); }
+    return m;
+  }
+  function paintHL() {
+    if (!rig) return;
+    const want = hoverSec || null;
+    rig.root.traverse(o => {
+      if (!o.isMesh || o.material.isShaderMaterial) return;
+      if (o.userData.m0 && o.userData.sec !== want) { o.material = o.userData.m0; o.userData.m0 = null; }
+      else if (want && o.userData.sec === want && !o.userData.m0) { o.userData.m0 = o.material; o.material = hl(o.material); }
+    });
+    hint.classList.toggle('on', !!hoverSec);
+    hint.textContent = hoverSec ? `${secName(hoverSec)}: click to change` : 'Click a part to change it · drag to turn';
+  }
+  const hint = $('pvHint');
+  function hover(sec) { if (sec === hoverSec) return; hoverSec = sec; paintHL(); canvas.style.cursor = sec ? 'pointer' : ''; }
+  function select(sec) { selSec = sec; }
+  canvas.addEventListener('pointerdown', e => { dragging = true; moved = false; lastX = downX = e.clientX; downY = e.clientY; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', e => {
+    if (!dragging) { if (e.pointerType === 'mouse') hover(secAt(e)); return; }
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) moved = true;
+    if (!moved) return;
+    yaw += (e.clientX - lastX) * 0.012; lastX = e.clientX; spin = 0;
+  });
+  canvas.addEventListener('pointerup', e => {
+    dragging = false; spin = still ? 0 : 0.35;
+    if (!moved) { const sec = secAt(e); if (sec) { if (e.pointerType !== 'mouse') hover(null); openSec(sec); } }
+  });
+  canvas.addEventListener('pointerleave', () => { if (!dragging) hover(null); });
   function resize() {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     renderer.setSize(Math.max(1, w), Math.max(1, h), false);
@@ -2277,7 +2357,7 @@ const Preview = (() => {
     cam.lookAt(0, h * 0.42, 0);
     renderer.render(scene, cam);
   }
-  return { setBuild, frame, resize };
+  return { setBuild, frame, resize, hover, select };
 })();
 
 /* ======================= BATTLE ======================= */
