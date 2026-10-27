@@ -1731,8 +1731,9 @@ function balanceSway(rig, f, st, dt, time) {
     spring('qx', 'qvx', clamp(vz * 0.024, -0.2, 0.2), 8, 1); spring('qz', 'qvz', clamp(-vx * 0.024, -0.2, 0.2), 8, 1);
     rig.hoverG.rotation.set(S.qx, 0, S.qz);
   } else {
-    // Strider: the gap between the real and the lagging velocity stands in for acceleration, so it rocks on speed changes
-    const tx = clamp((vz - S.svz) * 0.04, -0.28, 0.28), tz = clamp(-(vx - S.svx) * 0.04, -0.28, 0.28), zl = still ? 0.9 : 0.5;
+    // Strider: leans into the direction of travel for as long as it moves, plus an extra rock on speed changes
+    // (the gap between the real and the lagging velocity stands in for acceleration). Upright again only once stopped
+    const tx = clamp(vz * 0.022 + (vz - S.svz) * 0.025, -0.3, 0.3), tz = clamp(-vx * 0.022 - (vx - S.svx) * 0.025, -0.3, 0.3), zl = still ? 0.9 : 0.6;
     spring('lx', 'lvx', tx, still ? 11 : 9, zl); spring('lz', 'lvz', tz, still ? 11 : 9, zl);
   }
   b.rotation.x += S.lx; b.rotation.z += S.lz;
