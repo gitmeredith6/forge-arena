@@ -526,28 +526,28 @@ const STAT_VIEW = [
 ];
 /* weapons: pick up to three, each on its own button and cooldown. Grouped by where they mount */
 const WEAPON_GROUPS = [
-  { slot: 'head',  label: 'Head',     effect: 'Eyes, mouth and crown', color: '#ff6b6b' },
+  { slot: 'head',  label: 'Head',     effect: 'Eyes and crown', color: '#ff6b6b' },
   { slot: 'chest', label: 'Chest & shoulders', effect: 'Reactor, pods and cannons', color: '#7fd8ff' },
-  { slot: 'arms',  label: 'Arms',     effect: 'Forearm guns and blades', color: '#ffb547' },
+  { slot: 'arms',  label: 'Arms',     effect: 'Forearm weapons and hook', color: '#ffb547' },
 ];
 const WEAPONS = [
-  { id: 'laser',   slot: 'head',  name: 'Laser Eyes',      desc: 'Twin eye beams that burn the target at long range.', cd: 7,  w: 0.25, a: 0.6,  r: 0.25, move: 0.5,  kind: 'beam',  from: 'eyes',  tick: 0.1,  mult: 0.46, kb: 0.4, range: 14, color: 0xff3b3b },
-  { id: 'fire',    slot: 'head',  name: 'Fire Breath',     desc: 'A cone of flame up close that leaves the target burning.', cd: 9, w: 0.2, a: 0.9, r: 0.3, move: 0.45, kind: 'cone', tick: 0.1, mult: 0.26, range: 4.2, burn: 3, color: 0xff7a1a },
+  { id: 'laser',   slot: 'head',  name: 'Laser Eyes',      desc: 'Beams fire straight from the eyes and burn the target at long range.', cd: 7,  w: 0.25, a: 0.6,  r: 0.25, move: 0.5,  kind: 'beam',  from: 'eyes',  tick: 0.1,  mult: 0.46, kb: 0.4, range: 14, color: 0xff3b3b },
   { id: 'tesla',   slot: 'head',  name: 'Tesla Crown',     desc: 'Lightning leaps to a nearby target and stuns it.', cd: 10, w: 0.3, a: 0.1, r: 0.35, move: 0.3, kind: 'zap', range: 5.5, mult: 1.2, kb: 3, stun: 0.9, color: 0x8fd8ff },
   { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 0.7, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
-  { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Pods pop up and launch four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 0.68, kb: 4, homing: 2.4, color: 0xffb547 },
+  { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 0.68, kb: 4, homing: 2.4, color: 0xffb547 },
   { id: 'frost',   slot: 'chest', name: 'Frost Cannon',    desc: 'A shoulder cannon fires an ice shell that slows the target for 3 seconds.', cd: 9, w: 0.3, a: 0.1, r: 0.35, move: 0.4, kind: 'proj', proj: 'frost', count: 1, speed: 17, mult: 1.45, kb: 3, slow: 3, color: 0x9fe8ff },
   { id: 'shield',  slot: 'chest', name: 'Energy Shield',   desc: 'A dome that stops shots and halves damage for 3 seconds.', cd: 15, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 2.5, color: 0x7fb6ff },
-  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Each forearm fires a heavy shell with big knockback.', cd: 6, w: 0.3, a: 0.15, r: 0.35, move: 0.3, kind: 'proj', proj: 'shell', count: 2, speed: 20, mult: 0.65, kb: 9, stun: 0.3, color: 0xffd27a },
-  { id: 'pistols', slot: 'arms',  name: 'Dual Pistols',    desc: 'Wrist pistols fire a rapid stream of bullets.', cd: 6, w: 0.12, a: 0.8, r: 0.2, move: 0.75, kind: 'proj', proj: 'bullet', count: 10, speed: 32, mult: 0.27, kb: 0.6, color: 0xfff1a8 },
-  { id: 'blades',  slot: 'arms',  name: 'Arm Blades',      desc: 'Forearm swords for a wide, hard double slash.', cd: 5, w: 0.18, a: 0.12, r: 0.32, move: 0.4, kind: 'melee', reach: 0.7, arc: 0.0, mult: 1.4, kb: 7, stun: 0.4, color: 0xd8f0ff },
-  { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Saws rev up and grind through anything close.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
+  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Both forearms become big cannons that fire heavy shells with big knockback.', cd: 6, w: 0.3, a: 0.15, r: 0.35, move: 0.3, kind: 'proj', proj: 'shell', count: 2, speed: 20, mult: 0.65, kb: 9, stun: 0.3, color: 0xffd27a },
+  { id: 'blades',  slot: 'arms',  name: 'Arm Blades',      desc: 'Both forearms become large swords for a wide, hard double slash.', cd: 5, w: 0.18, a: 0.12, r: 0.32, move: 0.4, kind: 'melee', reach: 0.7, arc: 0.0, mult: 1.4, kb: 7, stun: 0.4, color: 0xd8f0ff },
+  { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Both forearms become chainsaws that rev up and grind through anything close.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
   { id: 'grapple', slot: 'arms',  name: 'Grapple Hook',    desc: 'Fires a hook that drags the target in and stuns it.', cd: 9, w: 0.15, a: 0.1, r: 0.35, move: 0.3, kind: 'proj', proj: 'hook', count: 1, speed: 28, mult: 0.45, kb: 0, stun: 0.7, pull: true, range: 11, color: 0xc8ccd6 },
 ];
 const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
 const MAX_WEAPONS = 3;
-const cleanWeapons = ws => Array.isArray(ws) ? [...new Set(ws.filter(id => WEAPON[id]))].slice(0, MAX_WEAPONS) : null;
-const randomWeapons = () => { const pool = WEAPONS.map(w => w.id); const out = []; while (out.length < MAX_WEAPONS) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]); return out; };
+// cannons, swords and saws all replace the forearms, so a build carries at most one of them
+const ARM_SWAP = ['cannon', 'blades', 'saws'];
+const cleanWeapons = ws => { if (!Array.isArray(ws)) return null; let sw = false; return [...new Set(ws.filter(id => WEAPON[id]))].filter(id => !ARM_SWAP.includes(id) || (!sw && (sw = true))).slice(0, MAX_WEAPONS); };
+const randomWeapons = () => { let pool = WEAPONS.map(w => w.id); const out = []; while (out.length < MAX_WEAPONS) { const id = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; out.push(id); if (ARM_SWAP.includes(id)) pool = pool.filter(p => !ARM_SWAP.includes(p)); } return out; };
 // paint: each section can be recoloured; with no choice it keeps its part's own colour (the head follows the arms)
 const PAINTS = [
   ['Red', 0xd41616], ['Blue', 0x1448e6], ['Green', 0x18a832], ['Orange', 0xf06408], ['Purple', 0x7418d8], ['White', 0xf2f4f7], ['Yellow', 0xf5c800], ['Black', 0x16171b],
@@ -812,7 +812,7 @@ function makeFighterModel(build, accent) {
   }
   // Light arms: chunky black armour with a tall slotted shoulder shield, layered plates, a big ribbed elbow pad,
   // an exposed elbow frame and pistons, after a sleek sci-fi prosthetic. The shield, pad, brackets and knuckles take the arm colour
-  function lightArm(pivot, elbow, r, len, side) {
+  function lightArm(pivot, elbow, fore, r, len, side) {
     const L = len * 0.5, V2 = THREE.Vector2;
     const lathe = (pts, n = 22) => new THREE.LatheGeometry(pts.map(([rr, y]) => new V2(rr, y)), n);
     const plate = (prof, off, phi0, phiLen, t = 0.012) => { const a = prof.map(([rr, y]) => new V2(rr + off, y)); return new THREE.LatheGeometry(a.concat(prof.slice().reverse().map(([rr, y]) => new V2(rr + off - t, y)), [a[0].clone()]), 16, phi0, phiLen); };
@@ -836,35 +836,35 @@ function makeFighterModel(build, accent) {
     for (const y of [0.35, 0.6]) bolt(pivot, side * r * 1.98, -L * y, r * 0.2, r * 0.18);
     // elbow: big steel hinge disc with an arm-colour ring, and an open steel frame with struts on the inner side
     for (const sx of [-1, 1]) { const hd = mesh(new THREE.CylinderGeometry(r * 1.0, r * 1.0, 0.024, 20), steel, elbow, sx * r * 1.25, 0, 0); hd.rotation.z = Math.PI / 2; const hr = mesh(new THREE.TorusGeometry(r * 0.75, r * 0.12, 6, 20), topM, elbow, sx * r * 1.28, 0, 0); hr.rotation.y = Math.PI / 2; }
-    for (const a of [-0.5, 0.5]) { const st = mesh(rbox(r * 0.25, L * 0.5, r * 0.25, r * 0.08), steel, elbow, -side * r * 1.25, -L * 0.18, a * r); st.rotation.x = a * 0.6; }
-    // big teardrop elbow pad with ribs
-    const pad = new THREE.Group(); pad.position.set(side * r * 1.15, -L * 0.22, -r * 0.15); pad.scale.set(0.72, 2.1, 1.12); elbow.add(pad);
+    for (const a of [-0.5, 0.5]) { const st = mesh(rbox(r * 0.25, L * 0.5, r * 0.25, r * 0.08), steel, fore, -side * r * 1.25, -L * 0.18, a * r); st.rotation.x = a * 0.6; }
+    // big teardrop fore pad with ribs
+    const pad = new THREE.Group(); pad.position.set(side * r * 1.15, -L * 0.22, -r * 0.15); pad.scale.set(0.72, 2.1, 1.12); fore.add(pad);
     mesh(new THREE.SphereGeometry(r * 1.55, 24, 16), topM, pad);
     for (const k of [-1, 0, 1]) { const rb = mesh(new THREE.TorusGeometry(r * 1.55 + 0.001, 0.009, 6, 16, 1.6), blk, pad); rb.rotation.order = 'YXZ'; rb.rotation.set(0, (side > 0 ? 0 : Math.PI) + k * 0.38, -0.8); }
     // forearm: thick sleeve, a layered outer plate with a glowing triangle, steel trim, and an exposed inner panel with pistons
     const FA = [[r * 1.1, -L * 0.96], [r * 1.35, -L * 0.75], [r * 1.7, -L * 0.45], [r * 1.75, -L * 0.18], [r * 1.45, 0.0]];
-    mesh(lathe([[0, -L * 0.98]].concat(FA, [[0, 0.02]])), blk, elbow).scale.set(1, 1, 1.1);
-    mesh(plate(FA.slice(0, 4), 0.014, OUT - 1.0, 2.0), blk2, elbow).scale.set(1, 1, 1.1);
-    const tri = mesh(new THREE.CircleGeometry(r * 0.3, 3), gT, elbow, side * (r * 1.62 + 0.02), -L * 0.62, r * 0.25); tri.rotation.set(0, side * Math.PI / 2, -Math.PI / 2);
-    for (const z of [-1, 1]) mesh(new THREE.CylinderGeometry(0.0045, 0.0045, L * 0.5, 5), steel, elbow, side * r * 0.6, -L * 0.55, z * r * 1.78);
-    mesh(rbox(r * 0.3, L * 0.42, r * 1.5, r * 0.1), steel, elbow, -side * r * 1.6, -L * 0.48, 0);
-    for (let i = 0; i < 3; i++) mesh(rbox(r * 0.32, 0.008, r * 1.2, 0.003), blk, elbow, -side * r * 1.76, -L * (0.36 + i * 0.09), 0);
-    for (const dz of [-0.55, 0.55]) mesh(new THREE.CylinderGeometry(r * 0.15, r * 0.15, L * 0.5, 8), steel, elbow, -side * r * 1.25, -L * 0.45, dz * r);
-    bolt(elbow, side * r * 1.6, -L * 0.85, r * 0.6, r * 0.16);
+    mesh(lathe([[0, -L * 0.98]].concat(FA, [[0, 0.02]])), blk, fore).scale.set(1, 1, 1.1);
+    mesh(plate(FA.slice(0, 4), 0.014, OUT - 1.0, 2.0), blk2, fore).scale.set(1, 1, 1.1);
+    const tri = mesh(new THREE.CircleGeometry(r * 0.3, 3), gT, fore, side * (r * 1.62 + 0.02), -L * 0.62, r * 0.25); tri.rotation.set(0, side * Math.PI / 2, -Math.PI / 2);
+    for (const z of [-1, 1]) mesh(new THREE.CylinderGeometry(0.0045, 0.0045, L * 0.5, 5), steel, fore, side * r * 0.6, -L * 0.55, z * r * 1.78);
+    mesh(rbox(r * 0.3, L * 0.42, r * 1.5, r * 0.1), steel, fore, -side * r * 1.6, -L * 0.48, 0);
+    for (let i = 0; i < 3; i++) mesh(rbox(r * 0.32, 0.008, r * 1.2, 0.003), blk, fore, -side * r * 1.76, -L * (0.36 + i * 0.09), 0);
+    for (const dz of [-0.55, 0.55]) mesh(new THREE.CylinderGeometry(r * 0.15, r * 0.15, L * 0.5, 8), steel, fore, -side * r * 1.25, -L * 0.45, dz * r);
+    bolt(fore, side * r * 1.6, -L * 0.85, r * 0.6, r * 0.16);
     // segmented wrist
-    for (const [y, rr] of [[-L * 0.93, r * 1.2], [-L * 1.0, r * 1.05]]) { const wr = mesh(new THREE.TorusGeometry(rr, r * 0.18, 8, 22), y < -L * 0.95 ? steel : blk, elbow, 0, y, 0); wr.rotation.x = Math.PI / 2; }
+    for (const [y, rr] of [[-L * 0.93, r * 1.2], [-L * 1.0, r * 1.05]]) { const wr = mesh(new THREE.TorusGeometry(rr, r * 0.18, 8, 22), y < -L * 0.95 ? steel : blk, fore, 0, y, 0); wr.rotation.x = Math.PI / 2; }
   }
-  function armDetail(pivot, elbow, fist, armR, armLen, fistR, side, w) {
+  function armDetail(pivot, elbow, fore, fist, armR, armLen, fistR, side, w) {
     if (w === 0) return fingers(fist, fistR, side);
     // elbow piston on the outside of the arm
     rod(pivot, Math.max(0.01, armR * 0.2), armLen * 0.32, side * armR * [1.05, 1.2, 1.35][w], -armLen * 0.32, -armR * 0.4);
-    rod(elbow, Math.max(0.01, armR * 0.2), armLen * 0.18, side * armR * [1.05, 1.3, 1.6][w], -armLen * 0.12, -armR * 0.4);
+    rod(fore, Math.max(0.01, armR * 0.2), armLen * 0.18, side * armR * [1.05, 1.3, 1.6][w], -armLen * 0.12, -armR * 0.4);
     // wrist cuff
-    const cuff = mesh(new THREE.TorusGeometry(armR * [1.0, 1.25, 1.55][w], armR * 0.22, 6, 16), joint, elbow, 0, -armLen * 0.48, 0); cuff.rotation.x = Math.PI / 2;
+    const cuff = mesh(new THREE.TorusGeometry(armR * [1.0, 1.25, 1.55][w], armR * 0.22, 6, 16), joint, fore, 0, -armLen * 0.48, 0); cuff.rotation.x = Math.PI / 2;
     // gauntlet seams and bolts
     const gz = armR * [1.4, 1.2, 1.45][w], gw = armR * [1.4, 2.2, 2.8][w];
-    seam(elbow, gw, 0, -armLen * 0.16, gz + 0.004);
-    for (const sx of [-1, 1]) bolt(elbow, sx * gw * 0.38, -armLen * 0.42, gz + 0.004, armR * 0.16);
+    seam(fore, gw, 0, -armLen * 0.16, gz + 0.004);
+    for (const sx of [-1, 1]) bolt(fore, sx * gw * 0.38, -armLen * 0.42, gz + 0.004, armR * 0.16);
     bolt(pivot, side * armR * 1.05, -armLen * 0.08, armR * 0.6, armR * 0.18);
     fingers(fist, fistR, side);
     // armor bands on the upper arm
@@ -874,7 +874,7 @@ function makeFighterModel(build, accent) {
     for (const sx of [-1, 1]) mesh(new THREE.CylinderGeometry(armR * 0.7, armR * 0.7, 0.02, 12), dark, elbow, sx * armR * [1.2, 1.3, 1.45][w], 0, 0).rotation.z = Math.PI / 2;
     // ribs across the back of the forearm
     const fz = -armR * [1.4, 1.2, 1.45][w], fwid = armR * [1.3, 2.0, 2.6][w];
-    for (let i = 0; i < 3; i++) mesh(rbox(fwid, armLen * 0.03, 0.03, 0.008), dark, elbow, 0, -armLen * (0.16 + i * 0.09), fz - 0.01);
+    for (let i = 0; i < 3; i++) mesh(rbox(fwid, armLen * 0.03, 0.03, 0.008), dark, fore, 0, -armLen * (0.16 + i * 0.09), fz - 0.01);
     // shoulder drive gear
     gear(pivot, armR * 0.9, 8, 0.025, side * armR * 1.08, -0.01, 0).rotation.y = Math.PI / 2;
   }
@@ -1430,6 +1430,7 @@ function makeFighterModel(build, accent) {
 
   // ---- top (head + arms): Light = sleek dark sleeves with ribbed pauldrons, Middle = gauntlets, Heavy = power fists
   const tw2 = wi[T.w];
+  const WP = cleanWeapons(build.weapons) || [], has = id => WP.includes(id), FW = ARM_SWAP.find(has);
   const shoulderY = torsoBase + th;
   const halfTop = 0.5 * M.taper * tw * faceScale * 0.92;
   const armR = [0.055, 0.1, 0.165][tw2];
@@ -1446,22 +1447,24 @@ function makeFighterModel(build, accent) {
     mesh(new THREE.CylinderGeometry(armR, armR * 0.85, armLen * 0.5, 12), joint, pivot, 0, -armLen * 0.25, 0);
     const elbow = new THREE.Group(); elbow.position.y = -armLen * 0.5; pivot.add(elbow);
     mesh(new THREE.SphereGeometry(armR * 1.1, 12, 10), joint, elbow);
-    mesh(new THREE.CylinderGeometry(armR * 0.85, armR * 0.75, armLen * 0.5, 12), joint, elbow, 0, -armLen * 0.25, 0);
-    if (tw2 === 0) lightArm(pivot, elbow, armR, armLen, side);
+    // everything below the elbow joint lives in `fore`, so a forearm weapon can take its place
+    const fore = new THREE.Group(); elbow.add(fore);
+    mesh(new THREE.CylinderGeometry(armR * 0.85, armR * 0.75, armLen * 0.5, 12), joint, fore, 0, -armLen * 0.25, 0);
+    if (tw2 === 0) lightArm(pivot, elbow, fore, armR, armLen, side);
     else if (tw2 === 1) {
       mesh(rbox(armR * 2.1, armLen * 0.3, armR * 2.1, armR * 0.5), topM, pivot, 0, -armLen * 0.2, 0);
-      mesh(rbox(armR * 2.4, armLen * 0.36, armR * 2.4, armR * 0.6), topM, elbow, 0, -armLen * 0.3, 0);
+      mesh(rbox(armR * 2.4, armLen * 0.36, armR * 2.4, armR * 0.6), topM, fore, 0, -armLen * 0.3, 0);
     } else {
       mesh(rbox(armR * 2.4, armLen * 0.34, armR * 2.4, armR * 0.6), topM, pivot, 0, -armLen * 0.22, 0);
-      mesh(rbox(armR * 3.0, armLen * 0.46, armR * 2.9, armR * 0.6), topM, elbow, 0, -armLen * 0.28, 0);
-      for (const y of [-0.2, -0.34]) mesh(rbox(armR * 1.3, 0.022, 0.03, 0.008), gT, elbow, 0, armLen * y, armR * 1.46);
+      mesh(rbox(armR * 3.0, armLen * 0.46, armR * 2.9, armR * 0.6), topM, fore, 0, -armLen * 0.28, 0);
+      for (const y of [-0.2, -0.34]) mesh(rbox(armR * 1.3, 0.022, 0.03, 0.008), gT, fore, 0, armLen * y, armR * 1.46);
     }
     const fist = new THREE.Group(); fist.position.y = -armLen * 0.5 - fistR * 0.7; elbow.add(fist);
     // palm block; the clenched fingers and thumb are added in armDetail. The punching face is -y, the back of the hand +z
     mesh(rbox(fistR * 1.8, fistR * 1.55, fistR * 1.6, fistR * 0.4), dark, fist, 0, -fistR * 0.05, -fistR * 0.05);
     mesh(rbox(fistR * 1.1, fistR * 0.8, 0.02, 0.008), gT, fist, 0, fistR * 0.1, fistR * 0.78);
-    armDetail(pivot, elbow, fist, armR, armLen, fistR, side, tw2);
-    rig.arms.push({ pivot, elbow, side, fist });
+    armDetail(pivot, elbow, fore, fist, armR, armLen, fistR, side, tw2);
+    rig.arms.push({ pivot, elbow, side, fist, fore });
   }
   // neck + head
   // head: Light = small and sleek on a long neck, Middle = helmeted, Heavy = large and sunk into an armored gorget
@@ -1496,23 +1499,14 @@ function makeFighterModel(build, accent) {
   else { mesh(rbox(HD === 'bastion' ? 0.3 : 0.2, 0.045, 0.03, 0.012), gH, head, 0, eyeY, face); halo(head, acH, 0, eyeY, face + 0.03, HD === 'bastion' ? 0.42 : 0.32, 0.8); }
 
   // ---- weapons: each adds hardware to the model plus mount points the battle fires from
-  const WP = cleanWeapons(build.weapons) || [], has = id => WP.includes(id);
   const wmat = hex => { const m = glowMat(hex); return m; };
   const mark = (parent, x, y, z) => { const o = new THREE.Object3D(); o.position.set(x, y, z); parent.add(o); return o; };
   rig.mount = {}; rig.wfx = {};
+  // laser eyes fire from the eyes the head already has
   if (has('laser')) {
-    const lm = wmat(0xff3b3b); rig.mount.eyes = [];
-    for (const s of [-1, 1]) {
-      const ex = s * 0.075, lens = mesh(new THREE.CylinderGeometry(0.03, 0.036, 0.05, 12), joint, head, ex, eyeY + 0.035, face + 0.02); lens.rotation.x = Math.PI / 2;
-      mesh(new THREE.CircleGeometry(0.022, 12), lm, head, ex, eyeY + 0.035, face + 0.046);
-      rig.mount.eyes.push(mark(head, ex, eyeY + 0.035, face + 0.06));
-    }
-  }
-  if (has('fire')) {
-    const fm = wmat(0xff7a1a);
-    mesh(rbox(0.13, 0.06, 0.05, 0.015), dark, head, 0, eyeY - 0.085, face + 0.005);
-    for (let i = 0; i < 3; i++) mesh(rbox(0.1, 0.008, 0.01, 0.003), fm, head, 0, eyeY - 0.105 + i * 0.018, face + 0.03);
-    rig.mount.mouth = mark(head, 0, eyeY - 0.085, face + 0.06);
+    const ez = face + 0.035, vw = HD === 'bastion' ? 0.075 : 0.05;
+    const eyes = HD === 'golem' || HD === 'hawk' ? [-1, 1].map(s => [s * (HD === 'golem' ? 0.12 : 0.07), eyeY, ez]) : HD === 'wisp' ? [[0, eyeY, ez]] : [[-vw, eyeY, ez], [vw, eyeY, ez]];
+    rig.mount.eyes = eyes.map(([x, y, z]) => mark(head, x, y, z));
   }
   if (has('tesla')) {
     const tm = wmat(0x8fd8ff), ty0 = hh * 0.92;
@@ -1529,22 +1523,38 @@ function makeFighterModel(build, accent) {
     halo(body, new THREE.Color(0x7fe6ff), 0, chestY + 0.02, rz + 0.05, 0.5, 0.9);
     rig.mount.chest = mark(body, 0, chestY + 0.02, rz + 0.06);
   }
-  const rocketSides = has('rockets') ? (has('frost') ? [1] : [-1, 1]) : [];
-  if (rocketSides.length) {
+  // shoulder rockets: a launcher sits hidden inside each shoulder pad and rises out of its top to fire.
+  // Heavy arms use the big shoulder blocks, middle arms the domes, light arms the tall shoulder shields
+  if (has('rockets')) {
     rig.pods = []; rig.mount.rockets = [];
     const rm = wmat(0xffb547);
-    for (const s of rocketSides) {
-      const hinge = new THREE.Group(); hinge.position.set(s * (shX - 0.02), shoulderY + 0.06, -0.12); body.add(hinge);
-      const pod = new THREE.Group(); pod.position.set(0, 0.1, 0.02); hinge.add(pod);
-      mesh(rbox(0.2, 0.17, 0.26, 0.04), topM, pod);
-      for (const [x, y] of [[-0.045, 0.04], [0.045, 0.04], [-0.045, -0.04], [0.045, -0.04]]) { const t = mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.04, 10), dark, pod, x, y, 0.13); t.rotation.x = Math.PI / 2; mesh(new THREE.CircleGeometry(0.02, 10), rm, pod, x, y, 0.152); }
-      mesh(rbox(0.012, 0.012, 0.2, 0.004), g, pod, s * 0.1, 0.06, 0);
-      mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.08, 8), joint, hinge, 0, 0.04, 0).rotation.z = Math.PI / 2;
-      rig.pods.push(hinge); rig.mount.rockets.push(mark(pod, 0, 0, 0.18));
+    for (const s of [-1, 1]) {
+      const arm = rig.arms.find(a => a.side === s);
+      let host, x, top, rw;
+      if (tw2 === 2) { host = body; x = s * shX; top = shoulderY + 0.04 + armR * 1.05; rw = armR * 2.0; }
+      else if (tw2 === 1) { host = body; x = s * shX; top = shoulderY - 0.04 + armR * 1.65; rw = armR * 1.5; }
+      else { host = arm.pivot; x = s * armR * 0.56; top = armR * 2.7; rw = armR * 2.0; }
+      const rh = rw * 0.66, rd = rw, sink = tw2 === 2 ? 0.012 : tw2 === 1 ? 0.06 : 0.045;
+      const rack = new THREE.Group(); host.add(rack);
+      mesh(rbox(rw, rh, rd, rw * 0.12), dark, rack);
+      mesh(rbox(rw * 1.04, rh * 0.18, rd * 1.04, rw * 0.05), topM, rack, 0, rh * 0.45, 0);
+      for (const [tx, ty] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
+        const tr = rw * 0.17, t = mesh(new THREE.CylinderGeometry(tr, tr, rd * 0.22, 10), joint, rack, tx * rw * 0.24, ty * rh * 0.2, rd * 0.5); t.rotation.x = Math.PI / 2;
+        const nose = mesh(new THREE.ConeGeometry(tr * 0.7, tr * 1.4, 10), rm, rack, tx * rw * 0.24, ty * rh * 0.2, rd * 0.52 + tr * 0.4); nose.rotation.x = Math.PI / 2;
+      }
+      mesh(rbox(rw * 0.9, 0.012, 0.012, 0.004), gT, rack, 0, -rh * 0.12, rd * 0.5 + 0.006);
+      // hatch seam on top of the pad
+      if (tw2 === 2) mesh(rbox(rw * 1.08, 0.008, rd * 1.08, 0.003), dark, host, x, top + 0.002, 0);
+      else { const hs = mesh(new THREE.TorusGeometry(rw * 0.5, 0.007, 6, 20), dark, host, x, top - (tw2 === 1 ? 0.012 : 0.006), 0); hs.rotation.x = Math.PI / 2; }
+      const y0 = top - rh * 0.5 - sink, y1 = top + rh * 0.55;
+      rack.position.set(x, y0, 0); rack.visible = false;
+      rig.pods.push({ g: rack, y0, y1 }); rig.mount.rockets.push(mark(rack, 0, 0, rd * 0.6));
     }
   }
   if (has('frost')) {
-    const fm = wmat(0x9fe8ff), base = new THREE.Group(); base.position.set(-(shX - 0.02), shoulderY + 0.14, -0.04); body.add(base);
+    // with rockets in the shoulders, the frost cannon rides on the back of the left shoulder instead
+    const fm = wmat(0x9fe8ff), base = new THREE.Group(), withR = has('rockets');
+    base.position.set(-(withR ? shX * 0.55 : shX - 0.02), shoulderY + (withR ? 0.2 : 0.14), withR ? -0.2 : -0.04); body.add(base);
     mesh(rbox(0.16, 0.1, 0.2, 0.03), dark, base);
     const brl = mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.46, 14), joint, base, 0, 0.07, 0.16); brl.rotation.x = Math.PI / 2;
     for (const z of [0.04, 0.16, 0.28]) { const r = mesh(new THREE.TorusGeometry(0.067, 0.012, 6, 18), fm, base, 0, 0.07, z); }
@@ -1555,45 +1565,73 @@ function makeFighterModel(build, accent) {
     const sm2 = wmat(0x7fb6ff), em = mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.03, 6), joint, body, 0, shoulderY - 0.1, chestZ * 0.85); em.rotation.x = Math.PI / 2;
     mesh(new THREE.CircleGeometry(0.045, 6), sm2, body, 0, shoulderY - 0.1, chestZ * 0.85 + 0.017);
   }
-  // forearm weapons sit on separate faces of each forearm: cannon on top, pistol inside, blade outside, saw underneath
+  // forearm weapons: cannons, swords or chainsaws take the place of both forearms and fists.
+  // The empty fist group moves to the weapon tip so swing trails and punches still follow it
   rig.mount.arms = {}; rig.saws = [];
-  for (const arm of rig.arms) {
-    const el = arm.elbow, s = arm.side, fa = armLen * 0.5;
-    if (has('cannon')) {
-      const cr = Math.max(0.035, armR * 0.5);
-      const c = mesh(new THREE.CylinderGeometry(cr, cr * 1.15, fa * 1.05, 14), joint, el, 0, -fa * 0.62, armR * 1.25 + cr);
-      mesh(new THREE.TorusGeometry(cr * 1.15, cr * 0.25, 6, 16), dark, el, 0, -fa * 1.14, armR * 1.25 + cr).rotation.x = Math.PI / 2;
-      mesh(rbox(cr * 2.4, fa * 0.35, cr * 1.6, cr * 0.4), topM, el, 0, -fa * 0.3, armR * 1.15 + cr * 0.6);
-      (rig.mount.arms.cannon = rig.mount.arms.cannon || []).push(mark(el, 0, -fa * 1.2, armR * 1.25 + cr));
-    }
-    if (has('pistols')) {
-      const px = -s * (armR * 1.15 + 0.03);
-      mesh(rbox(0.05, 0.12, 0.08, 0.015), dark, el, px, -fa * 0.82, 0);
-      const br = mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.16, 8), joint, el, px, -fa * 1.0, 0.015);
-      mesh(rbox(0.03, 0.06, 0.05, 0.01), topM, el, px, -fa * 0.72, -0.05);
-      (rig.mount.arms.pistols = rig.mount.arms.pistols || []).push(mark(el, px, -fa * 1.12, 0.015));
-    }
-    if (has('blades')) {
-      const bl = new THREE.Group(); bl.position.set(s * (armR * 1.2 + 0.02), -fa * 0.5, 0); el.add(bl);
-      const len = fa * 1.6 + fistR;
-      const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(0.05, -0.05); sh.lineTo(0.04, -len); sh.lineTo(0, -len - 0.12); sh.lineTo(-0.025, -len + 0.05); sh.lineTo(-0.02, -0.04); sh.closePath();
-      const bg = new THREE.ExtrudeGeometry(sh, { depth: 0.012, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.006, bevelSegments: 1 });
-      const blade = mesh(bg, stdMat(0xd8e2ee, { metalness: 1, roughness: 0.12 }), bl, 0, len * 0.4, 0); blade.rotation.y = s * Math.PI / 2;
-      mesh(rbox(0.006, len * 0.9, 0.006, 0.002), wmat(0xd8f0ff), bl, s * 0.004, -len * 0.08, 0.035);
-      mesh(rbox(0.04, 0.1, 0.07, 0.012), dark, bl, 0, len * 0.4 - 0.03, 0);
-    }
-    if (has('saws')) {
-      const sz = -(armR * 1.2 + 0.035), bl = fa * 1.5;
-      mesh(rbox(0.06, 0.12, 0.09, 0.02), topM, el, 0, -fa * 0.25, sz + 0.01);
-      mesh(rbox(0.018, bl, 0.07, 0.01), joint, el, 0, -fa * 0.25 - bl * 0.5, sz - 0.01);
-      const teeth = new THREE.Group(); teeth.position.set(0, -fa * 0.25 - bl * 0.5, sz - 0.01); el.add(teeth);
-      const tm = stdMat(0x9aa1ab, { metalness: 0.9, roughness: 0.3 }), N = 9;
-      for (let i = 0; i < N; i++) for (const zz of [-0.04, 0.04]) mesh(new THREE.ConeGeometry(0.012, 0.03, 4), tm, teeth, 0, -bl / 2 + (i + 0.5) * bl / N, zz).rotation.x = zz > 0 ? Math.PI / 2 : -Math.PI / 2;
-      rig.saws.push({ teeth, step: bl / N, y0: teeth.position.y });
+  const vr = [0.1, 0.13, 0.21][tw2] * (T.id === 'titan' ? 1.15 : 1), Lw = armLen * 0.5 + fistR * 1.5;
+  const steelW = stdMat(0x8a919c, { metalness: 0.95, roughness: 0.25 }), edge = stdMat(0xdfe6ee, { metalness: 1, roughness: 0.1 }); rig.mats.push(steelW, edge);
+  for (const arm of (FW ? rig.arms : [])) {
+    const el = arm.elbow, s = arm.side;
+    arm.elbow.remove(arm.fore); while (arm.fist.children.length) arm.fist.remove(arm.fist.children[0]);
+    const wg = new THREE.Group(); el.add(wg); arm.fore = wg;
+    mesh(new THREE.CylinderGeometry(vr * 0.7, vr * 0.8, Lw * 0.12, 16), joint, wg, 0, -Lw * 0.06, 0);
+    if (FW === 'cannon') {
+      const br = vr * 0.68, L = Lw * [1.4, 1.32, 1.15][tw2];
+      mesh(rbox(vr * 2.1, L * 0.3, vr * 2.1, vr * 0.42), topM, wg, 0, -L * 0.2, 0);
+      for (const sx of [-1, 1]) mesh(rbox(0.012, L * 0.22, vr * 0.9, 0.004), gT, wg, sx * vr * 1.06, -L * 0.2, 0);
+      mesh(rbox(vr * 1.2, L * 0.1, vr * 0.5, vr * 0.15), dark, wg, 0, -L * 0.2, vr * 1.04);
+      // thick breech, long tapered barrel, recoil cylinders down both sides and a glowing sight line on the front
+      mesh(new THREE.CylinderGeometry(br * 1.12, br * 1.2, L * 0.2, 22), joint, wg, 0, -L * 0.5, 0);
+      mesh(new THREE.CylinderGeometry(br * 0.86, br * 1.0, L * 0.42, 22), steelW, wg, 0, -L * 0.76, 0);
+      const band = mesh(new THREE.TorusGeometry(br * 1.16, br * 0.1, 8, 24), dark, wg, 0, -L * 0.6, 0); band.rotation.x = Math.PI / 2;
+      for (const sx of [-1, 1]) { mesh(new THREE.CylinderGeometry(br * 0.22, br * 0.22, L * 0.42, 10), joint, wg, sx * br * 1.2, -L * 0.52, 0); mesh(new THREE.CylinderGeometry(br * 0.3, br * 0.3, L * 0.05, 10), dark, wg, sx * br * 1.2, -L * 0.73, 0); }
+      mesh(rbox(br * 0.18, L * 0.34, 0.012, 0.004), gT, wg, 0, -L * 0.77, br * 0.95);
+      mesh(new THREE.CylinderGeometry(br * 1.3, br * 1.2, L * 0.13, 22), dark, wg, 0, -L * 0.98, 0);
+      for (const a of [0, Math.PI / 2]) { const v = mesh(rbox(br * 2.7, L * 0.04, br * 0.35, 0.004), steelW, wg, 0, -L * 0.98, 0); v.rotation.y = a; }
+      mesh(new THREE.CircleGeometry(br * 0.72, 20), stdMat(0x050506, { roughness: 0.9 }), wg, 0, -L * 1.046, 0).rotation.x = Math.PI / 2;
+      const ring = mesh(new THREE.TorusGeometry(br * 0.82, br * 0.1, 8, 24), gT, wg, 0, -L * 1.045, 0); ring.rotation.x = Math.PI / 2;
+      (rig.mount.arms.cannon = rig.mount.arms.cannon || []).push(mark(wg, 0, -L * 1.1, 0));
+      arm.fist.position.set(0, -L * 1.0, 0);
+    } else if (FW === 'blades') {
+      const BL = Lw * [1.5, 1.4, 1.1][tw2], bw = vr * 1.5, t = Math.max(0.02, vr * 0.2), y0 = -Lw * 0.36;
+      mesh(rbox(vr * 2.0, Lw * 0.3, vr * 2.1, vr * 0.35), topM, wg, 0, -Lw * 0.2, 0);
+      for (const sx of [-1, 1]) mesh(rbox(0.012, Lw * 0.18, vr * 0.6, 0.004), gT, wg, sx * vr * 1.01, -Lw * 0.2, 0);
+      mesh(rbox(vr * 1.1, vr * 0.45, bw * 1.6, vr * 0.15), dark, wg, 0, y0, 0);
+      const sh = new THREE.Shape();
+      sh.moveTo(-bw / 2, 0); sh.lineTo(bw / 2, 0); sh.lineTo(bw * 0.5, -BL * 0.72); sh.quadraticCurveTo(bw * 0.45, -BL * 0.9, 0, -BL); sh.lineTo(-bw * 0.5, -BL * 0.8); sh.closePath();
+      const bg = new THREE.ExtrudeGeometry(sh, { depth: t, bevelEnabled: true, bevelThickness: t * 0.25, bevelSize: Math.min(0.01, bw * 0.06), bevelSegments: 1 });
+      bg.translate(0, 0, -t / 2); bg.rotateY(-Math.PI / 2);
+      mesh(bg, edge, wg, 0, y0, 0);
+      mesh(rbox(t * 1.9, BL * 0.62, bw * 0.16, 0.004), dark, wg, 0, y0 - BL * 0.36, -bw * 0.18);
+      mesh(rbox(t * 2.0, BL * 0.56, bw * 0.05, 0.003), gT, wg, 0, y0 - BL * 0.34, -bw * 0.18);
+      arm.fist.position.set(0, y0 - BL * 0.9, 0);
+    } else {
+      const BL = Lw * [1.3, 1.2, 0.95][tw2], bw = vr * 1.45, t = Math.max(0.018, vr * 0.2), y0 = -Lw * 0.42;
+      mesh(rbox(vr * 2.2, Lw * 0.42, vr * 2.4, vr * 0.4), topM, wg, 0, -Lw * 0.24, 0);
+      for (let i = 0; i < 3; i++) mesh(rbox(vr * 2.26, 0.012, vr * 0.9, 0.004), gT, wg, 0, -Lw * (0.13 + i * 0.07), vr * 0.5);
+      const ex = mesh(new THREE.CylinderGeometry(vr * 0.2, vr * 0.24, Lw * 0.3, 10), joint, wg, s * vr * 1.25, -Lw * 0.22, -vr * 0.6);
+      mesh(new THREE.TorusGeometry(vr * 0.3, vr * 0.07, 6, 14), dark, wg, -s * vr * 1.15, -Lw * 0.2, -vr * 0.4).rotation.y = Math.PI / 2;
+      mesh(rbox(t, BL, bw, bw * 0.45), steelW, wg, 0, y0 - BL / 2, 0);
+      mesh(rbox(t * 1.15, BL * 0.8, bw * 0.12, 0.003), gT, wg, 0, y0 - BL * 0.48, 0);
+      for (let i = 0; i < 3; i++) bolt(wg, 0, y0 - BL * (0.15 + i * 0.3), 0, bw * 0.08).rotation.z = Math.PI / 2;
+      // the chain: a row of teeth up each edge, the front row running down and the back row running up
+      const tm = stdMat(0x3a3f47, { metalness: 0.8, roughness: 0.35 }); rig.mats.push(tm);
+      const N = 10, run = BL - bw * 0.5, step = run / N;
+      for (const dz of [1, -1]) {
+        const teeth = new THREE.Group(); teeth.position.set(0, y0 - BL / 2 + bw * 0.25 * 0, 0); wg.add(teeth);
+        for (let i = 0; i < N; i++) {
+          const yy = -run / 2 + (i + 0.5) * step;
+          mesh(rbox(t * 1.5, step * 0.7, bw * 0.12, 0.003), tm, teeth, 0, yy, dz * bw * 0.5);
+          const c = mesh(new THREE.ConeGeometry(step * 0.28, bw * 0.16, 4), edge, teeth, 0, yy, dz * bw * 0.6); c.rotation.x = dz * Math.PI / 2;
+        }
+        rig.saws.push({ teeth, step, y0: teeth.position.y, dir: dz > 0 ? -1 : 1 });
+      }
+      arm.fist.position.set(0, y0 - BL * 0.9, 0);
     }
   }
   if (has('grapple')) {
-    const arm = rig.arms[1], el = arm.elbow, fa = armLen * 0.5, gx = arm.side * (armR * 1.1 + 0.04), gz = armR * 0.9;
+    // with a forearm weapon the hook launcher moves up onto the upper arm
+    const arm = rig.arms[1], el = FW ? arm.pivot : arm.elbow, fa = armLen * 0.5, gx = arm.side * ((FW ? Math.max(vr, armR * 1.3) : armR * 1.1) + 0.04), gz = FW ? vr * 0.6 : armR * 0.9;
     const t = mesh(new THREE.CylinderGeometry(0.04, 0.045, fa * 0.8, 12), dark, el, gx, -fa * 0.55, gz);
     const claw = new THREE.Group(); claw.position.set(gx, -fa * 0.98, gz); el.add(claw);
     for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2, c = mesh(rbox(0.012, 0.07, 0.012, 0.004), joint, claw, Math.cos(a) * 0.03, -0.02, Math.sin(a) * 0.03); c.rotation.set(Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5); }
@@ -1744,8 +1782,8 @@ function animateRig(rig, f, dt, time) {
   rig.body.rotation.set(cur.bx, cur.tw, cur.bz);
   rig.body.position.y = cur.by;
   if (rig.flame) { rig.flame.scale.y = 0.8 + Math.random() * 0.4 + sp * 0.5; }
-  if (rig.pods) { const open = f && f.state === 'weapon' && f.wpn.id === 'rockets' ? 1 : 0; rig.podOpen = lerp(rig.podOpen || 0, open, 1 - Math.exp(-14 * dt)); for (const h of rig.pods) h.rotation.x = -1.25 * (1 - rig.podOpen); }
-  if (rig.saws && rig.saws.length) { const rev = f && f.state === 'weapon' && f.wpn.id === 'saws'; rig.sawT = (rig.sawT || 0) + dt * (rev ? 3.5 : 0.25); for (const sw of rig.saws) sw.teeth.position.y = sw.y0 - ((rig.sawT * 1) % 1) * sw.step; }
+  if (rig.pods) { const open = f && f.state === 'weapon' && f.wpn.id === 'rockets' ? 1 : 0; rig.podOpen = lerp(rig.podOpen || 0, open, 1 - Math.exp(-14 * dt)); for (const p of rig.pods) { p.g.position.y = p.y0 + (p.y1 - p.y0) * rig.podOpen; p.g.visible = rig.podOpen > 0.03; } }
+  if (rig.saws && rig.saws.length) { const rev = f && f.state === 'weapon' && f.wpn.id === 'saws'; rig.sawT = (rig.sawT || 0) + dt * (rev ? 3.5 : 0.25); for (const sw of rig.saws) sw.teeth.position.y = sw.y0 + sw.dir * (rig.sawT % 1) * sw.step; }
   if (rig.jets) { const boost = st === 'dodge' ? 1.4 : st === 'special' ? 0.8 : 0; for (const j of rig.jets) { const k = 0.55 + Math.random() * 0.3 + sp * 0.6 + boost; j.scale.set(0.85 + boost * 0.15, k, 0.85 + boost * 0.15); } }
   if (rig.ball) {
     // roll the ball by the distance travelled: axis = up x velocity, in the fighter's local frame
@@ -1921,7 +1959,7 @@ function renderTabs() {
 }
 function renderWeapons() {
   const full = build.weapons.length >= MAX_WEAPONS;
-  $('secDesc').textContent = `Add up to ${MAX_WEAPONS} weapons to your fighter. In a fight, fire them with 1, 2 and 3. Each has its own cooldown.` + (full ? ' To swap one, tap a chosen weapon to remove it first.' : '');
+  $('secDesc').textContent = `Add up to ${MAX_WEAPONS} weapons to your fighter. In a fight, fire them with 1, 2 and 3. Each has its own cooldown.` + ' Cannons, swords and saws each replace your forearms, so you can carry one of them.' + (full ? ' To swap one, tap a chosen weapon to remove it first.' : '');
   const W = $('weights'); W.innerHTML = '';
   for (const grp of WEAPON_GROUPS) {
     const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', grp.color);
@@ -1929,12 +1967,14 @@ function renderWeapons() {
     for (const wpn of WEAPONS.filter(w => w.slot === grp.slot)) {
       const on = build.weapons.includes(wpn.id), b = document.createElement('button');
       b.type = 'button'; b.className = 'part'; b.id = `weapon-${wpn.id}`; b.setAttribute('aria-pressed', String(on));
-      if (!on && full) b.classList.add('dim');
+      const swaps = ARM_SWAP.includes(wpn.id) && build.weapons.some(id => ARM_SWAP.includes(id));
+      if (!on && full && !swaps) b.classList.add('dim');
       const key = on ? `<span class="wkey">${build.weapons.indexOf(wpn.id) + 1}</span>` : '';
       b.innerHTML = `<span class="pn">${key}${wpn.name}</span><span class="pp">${wpn.desc} <i>${wpn.cd}s cooldown</i></span>`;
       b.onclick = () => {
         let ws = build.weapons.slice();
-        if (on) ws = ws.filter(id => id !== wpn.id); else if (ws.length < MAX_WEAPONS) ws.push(wpn.id); else return;
+        if (on) ws = ws.filter(id => id !== wpn.id);
+        else { const i = ARM_SWAP.includes(wpn.id) ? ws.findIndex(id => ARM_SWAP.includes(id)) : -1; if (i >= 0) ws[i] = wpn.id; else if (ws.length < MAX_WEAPONS) ws.push(wpn.id); else return; }
         build = Object.assign({}, build, { weapons: ws }); save(); renderAll();
       };
       col.appendChild(b);
@@ -2900,7 +2940,7 @@ const Battle = {
   },
   mountPoints(f, W) {
     const m = f.rig.mount, a = m.arms || {};
-    return { laser: m.eyes, reactor: m.chest && [m.chest], fire: m.mouth && [m.mouth], tesla: m.crown && [m.crown], rockets: m.rockets, frost: m.frost && [m.frost], cannon: a.cannon, pistols: a.pistols, grapple: a.grapple }[W.id] || null;
+    return { laser: m.eyes, reactor: m.chest && [m.chest], tesla: m.crown && [m.crown], rockets: m.rockets, frost: m.frost && [m.frost], cannon: a.cannon, grapple: a.grapple }[W.id] || null;
   },
   originOf(f, W, i) {
     f.rig.root.updateMatrixWorld();
@@ -3025,7 +3065,7 @@ const Battle = {
       if (W.kind === 'beam') {
         if (t < W.w && Math.random() < 0.5) this.flash(this.originOf(f, W, 0), W.color, W.wide ? 0.4 + t / W.w * 0.8 : 0.3);
         if (!live) continue;
-        const n = W.from === 'eyes' ? 2 : 1, tgt = aimPt(o);
+        const n = W.from === 'eyes' ? Math.min(2, (this.mountPoints(f, W) || [0, 0]).length) : 1, tgt = aimPt(o);
         const d = Math.hypot(o.pos.x - f.pos.x, o.pos.z - f.pos.z), onT = d <= W.range + o.radius && this.facing(f, o) > 0.94;
         for (let i = 0; i < n; i++) {
           const a = this.originOf(f, W, i); let end = onT ? tgt.clone().add(new V3(0, rand(-0.05, 0.05), 0)) : a.clone().addScaledVector(fwd, W.range);
