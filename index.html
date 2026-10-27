@@ -547,7 +547,7 @@ const WEAPONS = [
   { id: 'tesla',   slot: 'head',  name: 'Tesla Crown',     desc: 'Lightning leaps to a nearby target and stuns it.', cd: 10, w: 0.3, a: 0.1, r: 0.35, move: 0.3, kind: 'zap', range: 5.5, mult: 1.2, kb: 3, stun: 0.9, color: 0x8fd8ff },
   { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 0.7, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
   { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 0.68, kb: 4, homing: 2.4, color: 0xffb547 },
-  { id: 'bubble',  slot: 'chest', name: 'Bubble Shield',   desc: 'A magenta bubble surrounds you for 10 seconds. Nothing can hurt you, but you cannot attack until it pops.', cd: 30, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 10, color: 0xff3dd8 },
+  { id: 'bubble',  slot: 'chest', name: 'Bubble Shield',   desc: 'A magenta bubble surrounds you for 10 seconds. Nothing can hurt you and it bounces away anyone who bumps into it, but you cannot attack until it pops.', cd: 30, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 10, color: 0xff3dd8 },
   { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Both forearms become big cannons that fire heavy shells with big knockback.', cd: 6, w: 0.3, a: 0.15, r: 0.35, move: 0.3, kind: 'proj', proj: 'shell', count: 2, speed: 20, mult: 0.65, kb: 9, stun: 0.3, color: 0xffd27a },
   { id: 'blades',  slot: 'arms',  name: 'Arm Blades',      desc: 'Both forearms become large swords for a wide, hard double slash.', cd: 5, w: 0.18, a: 0.12, r: 0.32, move: 0.4, kind: 'melee', reach: 0.7, arc: 0.0, mult: 1.4, kb: 7, stun: 0.4, color: 0xd8f0ff },
   { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Both forearms become chainsaws that rev up and grind through anything close.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
@@ -1666,7 +1666,7 @@ function makeFighterModel(build, accent) {
   shield.scale.set(0.9 + bw * 0.1, rig.height * 0.6, 0.9 + bw * 0.1); shield.position.y = rig.height * 0.5; shield.visible = false; root.add(shield); rig.shield = shield;
   // bubble shield: a magenta ball around the whole fighter, a soft fill plus a brighter rim seen from inside
   const bub = new THREE.Group(); bub.position.y = rig.height * 0.5; bub.visible = false; root.add(bub); rig.bubble = bub;
-  const br = Math.max(rig.height * 0.62, 0.95 + bw * 0.1);
+  const br = Math.max(rig.height * 0.62, 0.95 + bw * 0.1); rig.bubbleR = br;
   // a faint fill plus a fresnel rim that glows brightest at the edges, like a soap bubble
   bub.add(new THREE.Mesh(new THREE.SphereGeometry(br, 32, 20), new THREE.MeshBasicMaterial({ color: 0xff3dd8, transparent: true, opacity: 0.07, depthWrite: false, blending: THREE.AdditiveBlending })));
   bub.add(new THREE.Mesh(new THREE.SphereGeometry(br * 1.005, 40, 24), new THREE.ShaderMaterial({
@@ -3262,6 +3262,19 @@ const Battle = {
     const a = this.p1, b = this.p2;
     const dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z, l = Math.hypot(dx, dz), min = a.radius + b.radius;
     if (l < min && l > 1e-4 && Math.abs(a.pos.y - b.pos.y) < 1.0) { const push = (min - l) / 2, nx = dx / l, nz = dz / l; a.pos.x -= nx * push; a.pos.z -= nz * push; b.pos.x += nx * push; b.pos.z += nz * push; }
+    // a bubble shield bounces away an opponent that bumps into it (no damage), at most every 0.4 seconds
+    for (const [sh, o] of [[a, b], [b, a]]) {
+      if (sh.wShieldT <= 0 || o.state === 'ko' || l < 1e-4) continue;
+      const reach = sh.rig.bubbleR * 0.9 + o.radius * 0.6;
+      if (l < reach && Math.abs(a.pos.y - b.pos.y) < 1.4 && (sh._bumpT || 0) <= 0) {
+        const s = sh === a ? 1 : -1, nx = s * dx / l, nz = s * dz / l, kb = 13 * (1 - o.stats.kbRes * 0.6);
+        o.knock.x += nx * kb; o.knock.z += nz * kb; o.moveVel.multiplyScalar(0.2); sh._bumpT = 0.4;
+        if (!o.invuln && o.state !== 'special') { o.state = 'stun'; o.t = 0; o.stunDur = 0.25; o.buffer = null; }
+        const hp = sh.pos.clone().lerp(o.pos, 0.6); hp.y += sh.rig.height * 0.45;
+        this.burst(hp, 0xff3dd8, 14, 5); this.sfx('block'); this.popAt(o, 'BOUNCED', 'note', 0.6);
+      }
+    }
+    for (const f of [a, b]) f._bumpT = Math.max(0, (f._bumpT || 0) - dt);
     for (const f of [a, b]) {
       const r = Math.hypot(f.pos.x, f.pos.z), max = ARENA_R - f.radius;
       if (r > max) { f.pos.x *= max / r; f.pos.z *= max / r; const nx = f.pos.x / r, nz = f.pos.z / r; const kn = f.knock.x * nx + f.knock.z * nz; if (kn > 0) { f.knock.x -= 1.5 * kn * nx; f.knock.z -= 1.5 * kn * nz; } }
