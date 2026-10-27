@@ -1256,6 +1256,8 @@ function makeFighterModel(build, accent) {
   } else if (B.type === 'treads') {
     // Heavy: twin sloped track units with moving cleated pads, a centre chassis and one hydraulic strut up to the hips
     hipY = 0.76; rig.treads = true;
+    // the whole track unit sits on a turntable under the hips, so it swivels to face the way it drives while the body keeps facing the fight
+    const tt = new THREE.Group(); body.add(tt); rig.treadTurn = tt;
     const WR = 0.11, TX = 0.44, TW = 0.34; rig.treadX = TX;
     const centers = [[-0.46, 0.16], [0.46, 0.16], [0.1, 0.5], [-0.22, 0.5]];
     rig.treadPath = treadPath(centers, WR + 0.02);
@@ -1266,39 +1268,39 @@ function makeFighterModel(build, accent) {
     for (const s of [-1, 1]) {
       const n = rig.treadPath.n;
       const pads = new THREE.InstancedMesh(padGeo, dark, n), cleats = new THREE.InstancedMesh(cleatGeo, joint, n);
-      for (const im of [pads, cleats]) { im.castShadow = true; im.receiveShadow = true; im.position.x = s * TX; body.add(im); }
+      for (const im of [pads, cleats]) { im.castShadow = true; im.receiveShadow = true; im.position.x = s * TX; tt.add(im); }
       rig.belts.push({ s, pads, cleats, off: 0 });
       // corner sprockets and bogie wheels inside the track
-      for (const [z, y] of centers) { const wh = mesh(new THREE.CylinderGeometry(WR, WR, TW * 0.9, 16), joint, body, s * TX, y, z); wh.rotation.z = Math.PI / 2; }
-      for (const z of [-0.22, 0, 0.22]) { const wh = mesh(new THREE.CylinderGeometry(0.075, 0.075, TW * 0.8, 14), joint, body, s * TX, 0.125, z); wh.rotation.z = Math.PI / 2; }
+      for (const [z, y] of centers) { const wh = mesh(new THREE.CylinderGeometry(WR, WR, TW * 0.9, 16), joint, tt, s * TX, y, z); wh.rotation.z = Math.PI / 2; }
+      for (const z of [-0.22, 0, 0.22]) { const wh = mesh(new THREE.CylinderGeometry(0.075, 0.075, TW * 0.8, 14), joint, tt, s * TX, 0.125, z); wh.rotation.z = Math.PI / 2; }
       // outer armoured side plate with hub caps, bolts and a glowing trim line
-      const op = mesh(plateGeo, botM, body, s * (TX + TW / 2 + 0.005) + (s > 0 ? 0.03 : 0), 0, 0); op.rotation.y = -Math.PI / 2;
+      const op = mesh(plateGeo, botM, tt, s * (TX + TW / 2 + 0.005) + (s > 0 ? 0.03 : 0), 0, 0); op.rotation.y = -Math.PI / 2;
       for (const [z, y] of centers) {
-        const hub = mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.04, 14), joint, body, s * (TX + TW / 2 + 0.05), y, z); hub.rotation.z = Math.PI / 2;
-        const cap = mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.02, 8), dark, body, s * (TX + TW / 2 + 0.075), y, z); cap.rotation.z = Math.PI / 2;
+        const hub = mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.04, 14), joint, tt, s * (TX + TW / 2 + 0.05), y, z); hub.rotation.z = Math.PI / 2;
+        const cap = mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.02, 8), dark, tt, s * (TX + TW / 2 + 0.075), y, z); cap.rotation.z = Math.PI / 2;
       }
-      for (const z of [-0.22, 0, 0.22]) { const hb = mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.03, 10), joint, body, s * (TX + TW / 2 + 0.045), 0.13, z); hb.rotation.z = Math.PI / 2; }
-      for (const [z, y] of [[-0.3, 0.32], [0.26, 0.3], [-0.04, 0.42], [-0.04, 0.22]]) mesh(new THREE.SphereGeometry(0.014, 6, 5), joint, body, s * (TX + TW / 2 + 0.045), y, z);
-      mesh(rbox(0.012, 0.012, 0.5, 0.004), gB, body, s * (TX + TW / 2 + 0.05), 0.34, -0.04);
+      for (const z of [-0.22, 0, 0.22]) { const hb = mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.03, 10), joint, tt, s * (TX + TW / 2 + 0.045), 0.13, z); hb.rotation.z = Math.PI / 2; }
+      for (const [z, y] of [[-0.3, 0.32], [0.26, 0.3], [-0.04, 0.42], [-0.04, 0.22]]) mesh(new THREE.SphereGeometry(0.014, 6, 5), joint, tt, s * (TX + TW / 2 + 0.045), y, z);
+      mesh(rbox(0.012, 0.012, 0.5, 0.004), gB, tt, s * (TX + TW / 2 + 0.05), 0.34, -0.04);
       // inner frame rail
-      mesh(rbox(0.03, 0.08, 0.86, 0.012), dark, body, s * (TX - TW / 2 - 0.02), 0.2, 0);
+      mesh(rbox(0.03, 0.08, 0.86, 0.012), dark, tt, s * (TX - TW / 2 - 0.02), 0.2, 0);
     }
     // centre chassis between the tracks: axle, gearbox and a pointed front wedge
-    mesh(rbox(0.5, 0.2, 0.52, 0.05), dark, body, 0, 0.3, -0.02);
-    const ax = mesh(new THREE.CylinderGeometry(0.055, 0.055, TX * 2, 12), joint, body, 0, 0.3, -0.02); ax.rotation.z = Math.PI / 2;
-    const wedge = mesh(rbox(0.34, 0.05, 0.3, 0.02), botM, body, 0, 0.33, 0.3); wedge.rotation.x = 0.45;
-    mesh(rbox(0.2, 0.014, 0.014, 0.005), gB, body, 0, 0.37, 0.4);
-    gear(body, 0.1, 12, 0.03, 0, 0.36, -0.29);
+    mesh(rbox(0.5, 0.2, 0.52, 0.05), dark, tt, 0, 0.3, -0.02);
+    const ax = mesh(new THREE.CylinderGeometry(0.055, 0.055, TX * 2, 12), joint, tt, 0, 0.3, -0.02); ax.rotation.z = Math.PI / 2;
+    const wedge = mesh(rbox(0.34, 0.05, 0.3, 0.02), botM, tt, 0, 0.33, 0.3); wedge.rotation.x = 0.45;
+    mesh(rbox(0.2, 0.014, 0.014, 0.005), gB, tt, 0, 0.37, 0.4);
+    gear(tt, 0.1, 12, 0.03, 0, 0.36, -0.29);
     // hydraulic strut column up to the waist, with a pair of pistons
-    mesh(rbox(0.3, 0.14, 0.32, 0.05), botM, body, 0, 0.45, -0.02);
-    mesh(new THREE.CylinderGeometry(0.085, 0.095, 0.22, 14), joint, body, 0, 0.6, -0.04);
-    mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.12, 14), botM, body, 0, 0.6, -0.04);
-    for (const y of [0.54, 0.66]) { const sr = mesh(new THREE.TorusGeometry(0.12, 0.01, 6, 24), dark, body, 0, y, -0.04); sr.rotation.x = Math.PI / 2; }
-    const gr = mesh(new THREE.TorusGeometry(0.123, 0.007, 6, 24), gB, body, 0, 0.6, -0.04); gr.rotation.x = Math.PI / 2;
+    mesh(rbox(0.3, 0.14, 0.32, 0.05), botM, tt, 0, 0.45, -0.02);
+    mesh(new THREE.CylinderGeometry(0.085, 0.095, 0.22, 14), joint, tt, 0, 0.6, -0.04);
+    mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.12, 14), botM, tt, 0, 0.6, -0.04);
+    for (const y of [0.54, 0.66]) { const sr = mesh(new THREE.TorusGeometry(0.12, 0.01, 6, 24), dark, tt, 0, y, -0.04); sr.rotation.x = Math.PI / 2; }
+    const gr = mesh(new THREE.TorusGeometry(0.123, 0.007, 6, 24), gB, tt, 0, 0.6, -0.04); gr.rotation.x = Math.PI / 2;
     for (const sx of [-1, 1]) {
-      mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 8), botM, body, sx * 0.16, 0.53, 0.04);
-      mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.14, 8), joint, body, sx * 0.16, 0.64, 0.04);
-      mesh(new THREE.SphereGeometry(0.03, 8, 6), joint, body, sx * 0.16, 0.47, 0.04);
+      mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 8), botM, tt, sx * 0.16, 0.53, 0.04);
+      mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.14, 8), joint, tt, sx * 0.16, 0.64, 0.04);
+      mesh(new THREE.SphereGeometry(0.03, 8, 6), joint, tt, sx * 0.16, 0.47, 0.04);
     }
     mesh(rbox(0.42, 0.14, 0.38, 0.05), botM, body, 0, hipY - 0.03, 0);
     mesh(rbox(0.3, 0.05, 0.3, 0.02), dark, body, 0, hipY - 0.12, 0);
@@ -1975,14 +1977,24 @@ function animateRig(rig, f, dt, time) {
     Rr.roller.rotation.x += along * dt / Rr.R;
   }
   if (rig.belts) {
-    // run each track by the ground speed under it: forward speed plus the turn rate across the track's width
-    let vz = 0.12, w = 0;
+    // tank steering: the track unit has a world heading that only turns as fast as differential drive allows. It swivels toward
+    // the direction of travel (driving forward or in reverse, whichever is nearer), and each belt runs at its own ground speed:
+    // the travel speed along the heading plus or minus the turn rate across the track width, so turning runs one side faster
+    // and spinning on the spot runs the two sides in opposite directions
+    let along = 0.12, w = 0;
+    const yaw = rig.root.rotation.y;
+    if (rig.treadH === undefined) rig.treadH = yaw;
     if (f) {
-      const wx = f.moveVel.x + f.knock.x, wz = f.moveVel.z + f.knock.z, yaw = rig.root.rotation.y;
-      vz = wx * Math.sin(yaw) + wz * Math.cos(yaw);
-      if (rig.lastYaw !== undefined && dt > 0) { let dy = yaw - rig.lastYaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); w = dy / dt; }
-      rig.lastYaw = yaw;
+      const wx = f.moveVel.x + f.knock.x, wz = f.moveVel.z + f.knock.z, v = Math.hypot(wx, wz);
+      if (v > 0.4) {
+        let d = Math.atan2(wx, wz) - rig.treadH; d = Math.atan2(Math.sin(d), Math.cos(d));
+        if (d > Math.PI / 2) d -= Math.PI; else if (d < -Math.PI / 2) d += Math.PI;
+        const turn = clamp(d * (1 - Math.exp(-9 * dt)), -7 * dt, 7 * dt); rig.treadH += turn; w = dt > 0 ? turn / dt : 0;
+      }
+      along = wx * Math.sin(rig.treadH) + wz * Math.cos(rig.treadH);
     }
+    rig.treadTurn.rotation.y = rig.treadH - yaw;
+    const vz = along;
     const P = rig.treadPath, step = P.len / P.n, M4 = new THREE.Matrix4(), q = new THREE.Quaternion(), ax = new V3(1, 0, 0), one = new V3(1, 1, 1), p = new V3();
     for (const b of rig.belts) {
       b.off -= (vz - w * b.s * rig.treadX) * dt;
