@@ -1615,41 +1615,38 @@ function makeFighterModel(build, accent) {
       (rig.mount.arms.cannon = rig.mount.arms.cannon || []).push(mark(wg, 0, -L * 1.1, 0));
       arm.fist.position.set(0, -L * 1.0, 0);
     } else if (FW === 'blades') {
-      // machete blade after Sam's reference: a chunky armoured forearm block, a short S-curved steel tang, then a blade that
-      // starts narrow and widens toward a clipped, angled tip, with a raised steel frame line running up the spine side.
-      // The blade is polished silver with a darker steel frame; its edge faces forward
-      const BL = Lw * [1.55, 1.45, 1.15][tw2], bw = vr * 1.9, t = Math.max(0.018, vr * 0.16), y0 = -Lw * 0.4, V3_ = THREE.Vector3;
-      mesh(rbox(vr * 2.1, Lw * 0.34, vr * 2.2, vr * 0.3), dark, wg, 0, -Lw * 0.2, 0);
+      // long sword blade after Sam's mech reference: an armoured forearm housing, a collar, then a long, narrow, straight blade
+      // that tapers gently to a sharp point, with a lit accent line down the spine. Polished silver; thick at the root, thin at the tip
+      const BL = Lw * [2.15, 2.0, 1.45][tw2], bw = vr * 0.95, t = Math.max(0.018, vr * 0.16), y0 = -Lw * 0.42, V3_ = THREE.Vector3;
+      mesh(rbox(vr * 2.1, Lw * 0.36, vr * 2.2, vr * 0.3), dark, wg, 0, -Lw * 0.2, 0);
       mesh(rbox(vr * 2.16, Lw * 0.12, vr * 2.26, vr * 0.2), topM, wg, 0, -Lw * 0.1, 0);
       for (let i = 0; i < 3; i++) mesh(rbox(vr * 2.2, 0.01, vr * 0.5, 0.003), joint, wg, 0, -Lw * (0.22 + i * 0.05), vr * 0.95);
       for (const sx of [-1, 1]) mesh(rbox(0.012, Lw * 0.14, vr * 0.5, 0.004), gT, wg, sx * vr * 1.06, -Lw * 0.25, -vr * 0.3);
-      mesh(rbox(vr * 1.3, vr * 0.35, vr * 1.6, vr * 0.12), joint, wg, 0, y0 + vr * 0.1, 0);
       const bladeM = stdMat(0xc4cbd4, { metalness: 1, roughness: 0.2 }), frameM = stdMat(0x5d646e, { metalness: 0.9, roughness: 0.35 }); rig.mats.push(bladeM, frameM);
+      // collar and a short guard where the blade leaves the housing
+      mesh(rbox(vr * 1.2, vr * 0.3, vr * 1.7, vr * 0.1), frameM, wg, 0, y0 + vr * 0.05, 0);
+      mesh(rbox(vr * 0.8, vr * 0.18, bw * 1.5, vr * 0.06), joint, wg, 0, y0 - vr * 0.18, 0);
       const tz = (x, y) => new V3_(0, y, x);   // shape coordinates (x across, y down) to the forearm's (z forward, y down)
-      // S-curved tang from the forearm block into the blade root
-      const tang = new THREE.CatmullRomCurve3([tz(0, y0), tz(bw * 0.12, y0 - BL * 0.06), tz(-bw * 0.08, y0 - BL * 0.12), tz(-bw * 0.02, y0 - BL * 0.19)]);
-      mesh(new THREE.TubeGeometry(tang, 16, Math.max(0.012, bw * 0.1), 8, false), steelW, wg);
       const sh = new THREE.Shape();
-      sh.moveTo(-bw * 0.12, -BL * 0.15); sh.lineTo(bw * 0.1, -BL * 0.15);
-      sh.quadraticCurveTo(bw * 0.16, -BL * 0.45, bw * 0.42, -BL * 0.72);   // edge stays narrow, then sweeps out
-      sh.quadraticCurveTo(bw * 0.58, -BL * 0.86, bw * 0.48, -BL);           // tip point on the edge side
-      sh.lineTo(-bw * 0.26, -BL * 0.8);                                     // clipped, angled tip back to the spine
-      sh.quadraticCurveTo(-bw * 0.22, -BL * 0.45, -bw * 0.12, -BL * 0.15);  // gently curved spine
-      const bg = new THREE.ExtrudeGeometry(sh, { depth: t, bevelEnabled: true, bevelThickness: t * 0.3, bevelSize: Math.min(0.012, bw * 0.05), bevelSegments: 2, curveSegments: 10 });
+      sh.moveTo(-bw * 0.42, 0); sh.lineTo(bw * 0.5, 0);
+      sh.lineTo(bw * 0.4, -BL * 0.88);                 // straight cutting edge, narrowing slightly
+      sh.lineTo(bw * 0.05, -BL);                       // long angled point
+      sh.lineTo(-bw * 0.32, -BL * 0.93);
+      sh.lineTo(-bw * 0.42, 0);                        // straight spine
+      const bg = new THREE.ExtrudeGeometry(sh, { depth: t, bevelEnabled: true, bevelThickness: t * 0.3, bevelSize: Math.min(0.01, bw * 0.06), bevelSegments: 2, curveSegments: 4 });
       bg.translate(0, 0, -t / 2);
       // taper the thickness: heavy at the root, thinning steadily to a fine tip
-      const thick = y => lerp(2.4, 0.3, clamp((-y - BL * 0.15) / (BL * 0.85), 0, 1));
+      const thick = y => lerp(2.0, 0.35, clamp(-y / BL, 0, 1));
       { const P = bg.attributes.position; for (let i = 0; i < P.count; i++) P.setZ(i, P.getZ(i) * thick(P.getY(i))); bg.computeVertexNormals(); }
       bg.rotateY(-Math.PI / 2);
-      mesh(bg, bladeM, wg, 0, y0, 0);
+      mesh(bg, bladeM, wg, 0, y0 - vr * 0.2, 0);
       const taper = g => { const P = g.attributes.position; for (let i = 0; i < P.count; i++) P.setX(i, P.getX(i) * thick(P.getY(i) - y0)); g.computeVertexNormals(); return g; };
-      // raised steel frame along the spine side, hooking round at the root like the reference
-      const frame = new THREE.CatmullRomCurve3([tz(bw * 0.02, y0 - BL * 0.17), tz(-bw * 0.08, y0 - BL * 0.26), tz(-bw * 0.12, y0 - BL * 0.5), tz(-bw * 0.1, y0 - BL * 0.7), tz(bw * 0.02, y0 - BL * 0.84)]);
-      mesh(taper(new THREE.TubeGeometry(frame, 24, t * 1.15, 6, false)), frameM, wg);
-      // a bright cutting edge strip along the front
-      const edgeC = new THREE.CatmullRomCurve3([tz(bw * 0.12, y0 - BL * 0.24), tz(bw * 0.17, y0 - BL * 0.45), tz(bw * 0.36, y0 - BL * 0.68), tz(bw * 0.5, y0 - BL * 0.84), tz(bw * 0.47, y0 - BL * 0.97)]);
-      mesh(taper(new THREE.TubeGeometry(edgeC, 24, t * 0.85, 5, false)), edge, wg);
-      arm.fist.position.set(0, y0 - BL * 0.9, 0);
+      // darker steel spine and a lit accent line running most of the way down, like the reference's yellow stripe
+      const yb = y0 - vr * 0.2;
+      mesh(taper(new THREE.TubeGeometry(new THREE.LineCurve3(tz(-bw * 0.4, yb - BL * 0.02), tz(-bw * 0.32, yb - BL * 0.9)), 8, t * 1.1, 6, false)), frameM, wg);
+      mesh(taper(new THREE.TubeGeometry(new THREE.LineCurve3(tz(-bw * 0.12, yb - BL * 0.05), tz(-bw * 0.06, yb - BL * 0.78)), 8, t * 0.75, 5, false)), gT, wg);
+      mesh(taper(new THREE.TubeGeometry(new THREE.LineCurve3(tz(bw * 0.5, yb - BL * 0.03), tz(bw * 0.4, yb - BL * 0.88)), 8, t * 0.7, 5, false)), edge, wg);
+      arm.fist.position.set(0, yb - BL * 0.9, 0);
     } else {
       const BL = Lw * [1.3, 1.2, 0.95][tw2], bw = vr * 1.45, t = Math.max(0.018, vr * 0.2), y0 = -Lw * 0.42, h = bw / 2;
       // rounded engine housing with glowing rings, an exhaust and a pull handle
@@ -2014,7 +2011,7 @@ function animateRig(rig, f, dt, time) {
     // and spinning on the spot runs the two sides in opposite directions
     let along = 0.12, w = 0;
     const yaw = rig.root.rotation.y;
-    if (rig.treadH === undefined) rig.treadH = yaw;
+    if (rig.treadH === undefined || !f) rig.treadH = yaw;   // in the builder preview the track unit just turns with the body
     if (f) {
       const wx = f.moveVel.x + f.knock.x, wz = f.moveVel.z + f.knock.z, v = Math.hypot(wx, wz);
       if (v > 0.4) {
