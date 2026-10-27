@@ -455,8 +455,8 @@ const SECTIONS = {
   bottom: { label: 'Bottom', sub: 'Legs', desc: 'Your Bottom trades movement speed for defense and stability.',
             effect: { light: 'Quick movement and dodges, less defense', middle: 'Balanced', heavy: 'High defense, hard to knock back or stagger, slow' } },
 };
-// any head fits any build. Each gives a small perk: sleek heads trade a little health for speed or finesse,
-// helmets are a plain small bonus, armored heads add protection but slow you slightly
+// any head fits any build. Each gives a small perk: light heads trade a little health for speed or finesse,
+// middle heads are a plain small bonus, heavy heads add protection but slow you slightly
 const HEADS = [
   { id: 'hawk',     name: 'Hawk',     size: 0, desc: 'Round dome with a beak and fin',        perk: '+4% critical hit chance, -4 health', mod: { crit: 0.04, hp: -4 } },
   { id: 'wisp',     name: 'Wisp',     size: 0, desc: 'Tall egg pod with a single round eye',  perk: '+5% dodge speed, -4 health',         mod: { dodgeSpeedMul: 0.05, hp: -4 } },
@@ -468,7 +468,6 @@ const HEADS = [
   { id: 'titan',    name: 'Titan',    size: 2, desc: 'Dome sunk into an armored collar',      perk: '+10% knockback resistance, -3% move speed', mod: { kbRes: 0.1, moveMul: -0.03 } },
   { id: 'golem',    name: 'Golem',    size: 2, desc: 'Low, heavy slab with round eyes',       perk: '+4% defense, -3% move speed',        mod: { def: 0.04, moveMul: -0.03 } },
 ];
-const HEAD_SIZES = ['Sleek', 'Helmet', 'Armored'];
 const headById = id => HEADS.find(h => h.id === id);
 const SPECIALS = {
   light:  { id: 'blink',   name: 'Blink Strike', desc: 'Dash in untouchable and land a guard-breaking hit.' },
@@ -2254,7 +2253,7 @@ const secName = sec => sec === 'head' ? 'Head' : sec === 'weapons' ? 'Weapons' :
 // a short tag after the section name, only where the name alone doesn't say what the part is
 const secSub = sec => sec === 'weapons' ? ` · Pick ${MAX_WEAPONS}` : sec === 'middle' || sec === 'bottom' ? ` · ${SECTIONS[sec].sub}` : '';
 function secPick(sec) {
-  if (sec === 'head') return `<span class="t-pick">${headById(build.head).name}</span>`;
+  if (sec === 'head') { const h = headById(build.head); return `<span class="t-pick" style="color:${WCOLOR[WEIGHTS[h.size]]}">${h.name}</span>`; }
   if (sec === 'weapons') return `<span class="t-pick">${build.weapons.length} of ${MAX_WEAPONS}</span>`;
   const p = partById(sec, build[sec]); return `<span class="t-pick" style="color:${WCOLOR[p.w]}">${p.name}</span>`;
 }
@@ -2302,11 +2301,11 @@ function renderWeapons() {
   }
 }
 function renderHeads() {
-  $('secDesc').textContent = 'Any head fits any build. Each one adds a small perk: sleek heads are quicker but a little frailer, armored heads are tougher but a little slower.';
+  $('secDesc').textContent = 'Any head fits any build. Each one adds a small perk: light heads are quicker but a little frailer, heavy heads are tougher but a little slower.';
   const W = $('weights'); W.innerHTML = '';
-  HEAD_SIZES.forEach((label, sz) => {
-    const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', '#c9d3e6');
-    col.innerHTML = `<div class="whead"><h3>${label}</h3><div class="weffect">${['Quick, a little less health', 'A small bonus, no drawback', 'Tougher, a little slower'][sz]}</div></div>`;
+  WEIGHTS.forEach((w, sz) => {
+    const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', WCOLOR[w]);
+    col.innerHTML = `<div class="whead"><h3>${WLABEL[w]}</h3><div class="weffect">${['Quicker, a little less health', 'A small bonus, no drawback', 'Tougher, a little slower'][sz]}</div></div>`;
     for (const h of HEADS.filter(h => h.size === sz)) {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'part'; b.id = `head-${h.id}`;
       b.setAttribute('aria-pressed', String(build.head === h.id));
