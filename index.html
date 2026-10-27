@@ -1528,7 +1528,7 @@ function makeFighterModel(build, accent, shOff = 0) {
     }
   }
   if (M.id === 'core') { mesh(new THREE.SphereGeometry(0.1, 16, 12), gM, body, 0, chestY, chestZ - 0.02); mesh(new THREE.TorusGeometry(0.12, 0.022, 8, 24), joint, body, 0, chestY, chestZ - 0.02); halo(body, acM, 0, chestY, chestZ + 0.05, 0.6, 0.85); }
-  else if (M.id === 'furnace') { for (let i = 0; i < 3; i++) mesh(rbox(tw * 0.5, 0.035, 0.04, 0.012), gM, body, 0, chestY - 0.09 + i * 0.09, chestZ); halo(body, acM, 0, chestY, chestZ + 0.06, 0.7, 0.55); }
+  else if (M.id === 'furnace') { for (let i = 0; i < ((cleanWeapons(build.weapons) || []).includes('reactor') ? 2 : 3); i++) mesh(rbox(tw * 0.5, 0.035, 0.04, 0.012), gM, body, 0, chestY - 0.09 + i * 0.09, chestZ); halo(body, acM, 0, chestY, chestZ + 0.06, 0.7, 0.55); }
   else if (M.id === 'guard') { mesh(rbox(tw * 0.66, th * 0.44, 0.08, 0.03), midM, body, 0, chestY, chestZ + 0.01); mesh(rbox(0.14, 0.035, 0.02, 0.01), gM, body, 0, chestY, chestZ + 0.06); halo(body, acM, 0, chestY, chestZ + 0.08, 0.3); }
   else if (M.id === 'swift') {
     // a lit nose light, a dorsal fin down the back and two swept vanes behind the shoulders, like a racer
@@ -1686,9 +1686,9 @@ function makeFighterModel(build, accent, shOff = 0) {
   }
   if (has('reactor')) {
     // it sits mid-chest, except where a torso has its own feature there: on Brute's big chest dome it moves out onto the
-    // dome's surface, on Anvil it sits proud between the two chest plates, and on Furnace it goes above the vent bars
-    const rm = wmat(0x7fe6ff), ry = chestY + ({ anvil: 0.04, furnace: 0.24 }[M.id] ?? 0.02);
-    const rz = M.id === 'brute' ? td * 0.1 + tw * 0.42 - 0.012 : M.id === 'anvil' ? chestZ + 0.06 : chestZ + 0.03;
+    // dome's surface, on Anvil it sits proud between the two chest plates, and on Furnace it takes the place of the small light above the two vent bars
+    const rm = wmat(0x7fe6ff), ry = chestY + ({ anvil: 0.04, furnace: 0.09 }[M.id] ?? 0.02);
+    const rz = M.id === 'brute' ? td * 0.1 + tw * 0.42 - 0.012 : M.id === 'anvil' || M.id === 'furnace' ? chestZ + 0.06 : chestZ + 0.03;
     const ring = mesh(new THREE.TorusGeometry(0.1, 0.025, 10, 28), joint, body, 0, ry, rz);
     mesh(new THREE.CircleGeometry(0.085, 24), rm, body, 0, ry, rz + 0.012);
     for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; mesh(rbox(0.012, 0.03, 0.012, 0.004), dark, body, Math.cos(a) * 0.1, ry + Math.sin(a) * 0.1, rz + 0.02).rotation.z = a; }
