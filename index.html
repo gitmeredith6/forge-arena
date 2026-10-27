@@ -810,7 +810,31 @@ function makeFighterModel(build, accent) {
     // hip drive gear
     if (w > 0) gear(pivot, r * [0, 0.9, 0.8][w], 9, 0.03, side * r * [0, 1.3, 1.45][w], -0.02, 0).rotation.y = Math.PI / 2;
   }
+  // Light arms: sleek dark sleeves with trim lines, a ribbed guard on the elbow, exposed pistons on the inner forearm and a glowing marker
+  function lightArm(pivot, elbow, r, len, side) {
+    const L = len * 0.5, lathe = pts => new THREE.LatheGeometry(pts.map(([rr, y]) => new THREE.Vector2(rr, y)), 20);
+    const sleeve = stdMat(0x17191e, { metalness: 0.5, roughness: 0.32 }); rig.mats.push(sleeve);
+    // upper arm: tapered sleeve with trim lines and a bracket in the arm colour above the elbow
+    mesh(lathe([[0, -L * 0.94], [r * 1.0, -L * 0.92], [r * 1.32, -L * 0.62], [r * 1.48, -L * 0.3], [r * 1.36, -L * 0.06], [r * 1.1, 0.02], [0, 0.03]]), sleeve, pivot).scale.set(1, 1, 1.08);
+    for (const z of [-1, 1]) mesh(new THREE.CylinderGeometry(0.004, 0.004, L * 0.62, 5), joint, pivot, side * r * 0.5, -L * 0.42, z * r * 1.36);
+    const br = mesh(new THREE.TorusGeometry(r * 1.24, r * 0.2, 8, 22, Math.PI * 1.1), topM, pivot, 0, -L * 0.82, 0); br.rotation.set(Math.PI / 2, 0, side > 0 ? -0.55 * Math.PI : 0.45 * Math.PI);
+    bolt(pivot, side * r * 1.42, -L * 0.48, r * 0.3, r * 0.16);
+    // elbow: hinge disc and the ribbed guard on the outside
+    const hd = mesh(new THREE.CylinderGeometry(r * 0.75, r * 0.75, 0.02, 16), dark, elbow, side * r * 1.05, 0, 0); hd.rotation.z = Math.PI / 2;
+    const gd = mesh(new THREE.SphereGeometry(r * 1.25, 20, 14, side > 0 ? Math.PI - 1.5 : -1.5, 3.0), topM, elbow, side * r * 0.75, -L * 0.18, -r * 0.1); gd.scale.set(0.75, 1.9, 1.05);
+    for (const k of [-1, 0, 1]) mesh(new THREE.CylinderGeometry(0.0055, 0.0055, L * 0.36, 5), dark, elbow, side * r * 1.68, -L * 0.18, -r * 0.1 + k * r * 0.42);
+    // forearm: tapered sleeve, trim lines, a glowing marker, and exposed pistons on the inner side
+    mesh(lathe([[0, -L * 0.98], [r * 0.95, -L * 0.96], [r * 1.22, -L * 0.62], [r * 1.42, -L * 0.3], [r * 1.18, -0.02], [0, 0.0]]), sleeve, elbow).scale.set(1, 1, 1.1);
+    for (const z of [-1, 1]) mesh(new THREE.CylinderGeometry(0.004, 0.004, L * 0.5, 5), joint, elbow, side * r * 0.45, -L * 0.6, z * r * 1.32);
+    const tri = mesh(new THREE.CircleGeometry(r * 0.24, 3), gT, elbow, side * r * 1.4, -L * 0.68, r * 0.2); tri.rotation.set(0, side * Math.PI / 2, Math.PI / 2);
+    for (const dz of [-0.35, 0.35]) mesh(new THREE.CylinderGeometry(r * 0.16, r * 0.16, L * 0.42, 8), joint, elbow, -side * r * 1.2, -L * 0.42, dz * r);
+    mesh(rbox(r * 0.4, L * 0.22, r * 1.1, r * 0.1), dark, elbow, -side * r * 1.15, -L * 0.42, 0);
+    bolt(elbow, side * r * 1.3, -L * 0.86, r * 0.5, r * 0.15);
+    // wrist ring
+    const wr = mesh(new THREE.TorusGeometry(r * 1.0, r * 0.2, 8, 20), joint, elbow, 0, -L * 0.97, 0); wr.rotation.x = Math.PI / 2;
+  }
   function armDetail(pivot, elbow, fist, armR, armLen, fistR, side, w) {
+    if (w === 0) return fingers(fist, fistR, side);
     // elbow piston on the outside of the arm
     rod(pivot, Math.max(0.01, armR * 0.2), armLen * 0.32, side * armR * [1.05, 1.2, 1.35][w], -armLen * 0.32, -armR * 0.4);
     rod(elbow, Math.max(0.01, armR * 0.2), armLen * 0.18, side * armR * [1.05, 1.3, 1.6][w], -armLen * 0.12, -armR * 0.4);
@@ -821,6 +845,19 @@ function makeFighterModel(build, accent) {
     seam(elbow, gw, 0, -armLen * 0.16, gz + 0.004);
     for (const sx of [-1, 1]) bolt(elbow, sx * gw * 0.38, -armLen * 0.42, gz + 0.004, armR * 0.16);
     bolt(pivot, side * armR * 1.05, -armLen * 0.08, armR * 0.6, armR * 0.18);
+    fingers(fist, fistR, side);
+    // armor bands on the upper arm
+    for (const y of [-0.1, -0.34]) mesh(rbox(armR * [1.95, 2.25, 2.55][w], armLen * 0.035, armR * [2.35, 2.25, 2.55][w], armLen * 0.01), dark, pivot, 0, armLen * y, 0);
+    // elbow hinge with end caps
+    const hinge = mesh(new THREE.CylinderGeometry(armR * 0.55, armR * 0.55, armR * [2.4, 2.6, 2.9][w], 10), joint, elbow); hinge.rotation.z = Math.PI / 2;
+    for (const sx of [-1, 1]) mesh(new THREE.CylinderGeometry(armR * 0.7, armR * 0.7, 0.02, 12), dark, elbow, sx * armR * [1.2, 1.3, 1.45][w], 0, 0).rotation.z = Math.PI / 2;
+    // ribs across the back of the forearm
+    const fz = -armR * [1.4, 1.2, 1.45][w], fwid = armR * [1.3, 2.0, 2.6][w];
+    for (let i = 0; i < 3; i++) mesh(rbox(fwid, armLen * 0.03, 0.03, 0.008), dark, elbow, 0, -armLen * (0.16 + i * 0.09), fz - 0.01);
+    // shoulder drive gear
+    gear(pivot, armR * 0.9, 8, 0.025, side * armR * 1.08, -0.01, 0).rotation.y = Math.PI / 2;
+  }
+  function fingers(fist, fistR, side) {
     // clenched fingers: each has three jointed segments that run forward over the knuckles, down the front and curl back under the palm
     const F = fistR, fw = F * 0.36, fr = F * 0.1;
     for (let i = 0; i < 4; i++) {
@@ -837,16 +874,6 @@ function makeFighterModel(build, accent) {
     const tb = mesh(rbox(F * 0.4, F * 0.62, F * 0.42, fr), topM, fist, tx * F * 0.98, -F * 0.55, -F * 0.25); tb.rotation.z = tx * 0.25;
     mesh(new THREE.SphereGeometry(F * 0.17, 8, 6), dark, fist, tx * F * 0.92, -F * 0.9, -F * 0.42);
     mesh(rbox(F * 0.62, F * 0.32, F * 0.34, fr), joint, fist, tx * F * 0.55, -F * 1.12, -F * 0.48);
-    // armor bands on the upper arm
-    for (const y of [-0.1, -0.34]) mesh(rbox(armR * [1.95, 2.25, 2.55][w], armLen * 0.035, armR * [2.35, 2.25, 2.55][w], armLen * 0.01), dark, pivot, 0, armLen * y, 0);
-    // elbow hinge with end caps
-    const hinge = mesh(new THREE.CylinderGeometry(armR * 0.55, armR * 0.55, armR * [2.4, 2.6, 2.9][w], 10), joint, elbow); hinge.rotation.z = Math.PI / 2;
-    for (const sx of [-1, 1]) mesh(new THREE.CylinderGeometry(armR * 0.7, armR * 0.7, 0.02, 12), dark, elbow, sx * armR * [1.2, 1.3, 1.45][w], 0, 0).rotation.z = Math.PI / 2;
-    // ribs across the back of the forearm
-    const fz = -armR * [1.4, 1.2, 1.45][w], fwid = armR * [1.3, 2.0, 2.6][w];
-    for (let i = 0; i < 3; i++) mesh(rbox(fwid, armLen * 0.03, 0.03, 0.008), dark, elbow, 0, -armLen * (0.16 + i * 0.09), fz - 0.01);
-    // shoulder drive gear
-    gear(pivot, armR * 0.9, 8, 0.025, side * armR * 1.08, -0.01, 0).rotation.y = Math.PI / 2;
   }
   function chestDetail(w, tw, th, td, base, faceScale, prof) {
     const rAt = y => { for (let i = 1; i < prof.length; i++) { const [r0, y0] = prof[i - 1], [r1, y1] = prof[i]; if (y <= y1 && y >= y0 && y1 > y0) return r0 + (r1 - r0) * (y - y0) / (y1 - y0); } return prof[prof.length - 2][0]; };
@@ -1380,7 +1407,7 @@ function makeFighterModel(build, accent) {
     for (const sx of [-1, 1]) pipe(body, [[0, ty + tl * 0.32, tz - 0.05], [sx * 0.07, ty + tl * 0.42, tz - 0.1], [sx * 0.17, ty + tl * 0.36, tz - tr - 0.005]], 0.014);
   }
 
-  // ---- top (head + arms): Light = slender blades, Middle = gauntlets, Heavy = power fists
+  // ---- top (head + arms): Light = sleek dark sleeves with ribbed pauldrons, Middle = gauntlets, Heavy = power fists
   const tw2 = wi[T.w];
   const shoulderY = torsoBase + th;
   const halfTop = 0.5 * M.taper * tw * faceScale * 0.92;
@@ -1391,7 +1418,16 @@ function makeFighterModel(build, accent) {
   const collar = mesh(new THREE.TorusGeometry(Math.max(0.1, halfTop * 0.45), 0.03, 8, 20), joint, body, 0, shoulderY - 0.01, 0); collar.rotation.x = Math.PI / 2;
   rig.armSplay = [0.1, 0.14, 0.2][tw2];
   for (const side of [-1, 1]) {
-    if (tw2 === 0) { const pd = mesh(rbox(armR * 3.2, armR * 1.3, armR * 3.4, armR * 0.4), topM, body, side * (shX + armR * 0.3), shoulderY + 0.01, 0); pd.rotation.z = -side * 0.4; }
+    if (tw2 === 0) {
+      // Light: a rounded, ribbed pauldron over a dark gyro joint
+      const pg = new THREE.Group(); pg.position.set(side * (shX + armR * 0.35), shoulderY - 0.02, 0); pg.rotation.z = -side * 0.32; pg.scale.set(1, 1.2, 1.15); body.add(pg);
+      const R = armR * 2.15, out = side > 0 ? Math.PI : 0;
+      mesh(new THREE.SphereGeometry(R, 28, 16, 0, Math.PI * 2, 0, 1.95), topM, pg);
+      mesh(new THREE.CircleGeometry(R * 0.92, 24), dark, pg, 0, -R * 0.36, 0).rotation.x = Math.PI / 2;
+      for (const k of [-1, 0, 1]) { const rb = mesh(new THREE.TorusGeometry(R + 0.002, 0.0075, 6, 20, 1.5), dark, pg, 0, 0, 0); rb.rotation.set(0, (side > 0 ? 0 : Math.PI) + k * 0.42, 0); rb.rotation.order = 'YXZ'; rb.rotation.z = -0.15; }
+      const lip = mesh(new THREE.TorusGeometry(R * 0.99, 0.008, 6, 28, 3.3), joint, pg, 0, -R * 0.36, 0); lip.rotation.set(Math.PI / 2, 0, (side > 0 ? Math.PI : 0) - 1.65);
+      const gy = mesh(new THREE.TorusGeometry(armR * 0.8, armR * 0.24, 10, 24), dark, body, side * (shX - armR * 0.5), shoulderY - 0.06, -armR * 0.4); gy.rotation.y = Math.PI / 2;
+    }
     else if (tw2 === 1) { mesh(new THREE.SphereGeometry(armR * 1.65, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), topM, body, side * shX, shoulderY - 0.04, 0); const rr = mesh(new THREE.TorusGeometry(armR * 1.65, 0.016, 6, 24), gT, body, side * shX, shoulderY - 0.04, 0); rr.rotation.x = Math.PI / 2; }
     else { mesh(rbox(armR * 3.4, armR * 2.1, armR * 3.2, armR * 0.6), topM, body, side * shX, shoulderY + 0.04, 0); mesh(rbox(armR * 3.0, armR * 0.9, armR * 2.9, armR * 0.35), topM, body, side * (shX + armR * 0.2), shoulderY - armR * 1.2, 0); mesh(rbox(0.025, armR * 0.5, armR * 1.5, 0.01), gT, body, side * (shX + armR * 1.72), shoulderY + 0.04, 0); }
     const pivot = new THREE.Group(); pivot.position.set(side * shX, shoulderY - 0.06, 0); body.add(pivot);
@@ -1399,11 +1435,8 @@ function makeFighterModel(build, accent) {
     const elbow = new THREE.Group(); elbow.position.y = -armLen * 0.5; pivot.add(elbow);
     mesh(new THREE.SphereGeometry(armR * 1.1, 12, 10), joint, elbow);
     mesh(new THREE.CylinderGeometry(armR * 0.85, armR * 0.75, armLen * 0.5, 12), joint, elbow, 0, -armLen * 0.25, 0);
-    if (tw2 === 0) {
-      mesh(rbox(armR * 1.8, armLen * 0.3, armR * 2.2, armR * 0.4), topM, pivot, 0, -armLen * 0.22, 0);
-      mesh(rbox(armR * 1.6, armLen * 0.42, armR * 2.8, armR * 0.4), topM, elbow, 0, -armLen * 0.27, 0);
-      mesh(rbox(0.014, armLen * 0.32, 0.014, 0.005), gT, elbow, side * armR * 0.86, -armLen * 0.27, 0);
-    } else if (tw2 === 1) {
+    if (tw2 === 0) lightArm(pivot, elbow, armR, armLen, side);
+    else if (tw2 === 1) {
       mesh(rbox(armR * 2.1, armLen * 0.3, armR * 2.1, armR * 0.5), topM, pivot, 0, -armLen * 0.2, 0);
       mesh(rbox(armR * 2.4, armLen * 0.36, armR * 2.4, armR * 0.6), topM, elbow, 0, -armLen * 0.3, 0);
     } else {
