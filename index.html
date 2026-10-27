@@ -94,6 +94,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .sec-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .sec-desc { margin: 0; color: var(--muted); font-size: 14px; }
 .paint { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.paint-all { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; font-weight: 700; font-size: 13px; color: var(--fg); }
+.paint-all:hover:not(:disabled) { border-color: var(--muted); }
+.paint-all:disabled { opacity: 0.5; cursor: default; }
 .paint-tabs { display: inline-flex; align-self: flex-start; background: #0c111b; border: 1px solid var(--line); border-radius: 8px; padding: 3px; gap: 3px; }
 .paint-tabs button { background: none; border: 0; padding: 5px 14px; border-radius: 6px; font-weight: 700; font-size: 13px; color: var(--muted); }
 .paint-tabs button[aria-selected="true"] { background: var(--panel-2); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line); }
@@ -2133,6 +2136,7 @@ function renderPaint() {
   const name = sec === 'head' ? 'Head' : SECTIONS[sec].label, part = sec === 'head' ? headById(build.head).name : partById(sec, build[sec]).name;
   const cur = (build[key] || {})[sec], def = lights ? ACCENT.p1 : partColor(Object.assign({}, build, { colors: {} }), sec);
   const named = list.find(p => p[1] === cur);
+  const same = PAINT_SECS.every(s2 => (build[key] || {})[s2] === cur);
   P.innerHTML = `<div class="paint-tabs" role="tablist" aria-label="Colour type">
       <button type="button" role="tab" id="paint-primary" aria-selected="${!lights}">Primary</button>
       <button type="button" role="tab" id="paint-lights" aria-selected="${lights}">Lights</button>
@@ -2141,11 +2145,14 @@ function renderPaint() {
     <div class="sw${lights ? ' lit' : ''}" role="group" aria-label="${name} ${lights ? 'lights' : 'colour'}">
       <button type="button" class="def" style="--c:${hex(def)}" title="${lights ? 'Team colour' : 'Original colour'}" aria-label="${lights ? 'Team colour' : 'Original colour'}" aria-pressed="${cur == null}" data-c=""></button>
       ${list.map(([n, c]) => `<button type="button" style="--c:${hex(c)}" title="${n}" aria-label="${n}" aria-pressed="${cur === c}" data-c="${c}"></button>`).join('')}
-    </div>`;
+    </div>
+    <button type="button" class="paint-all" id="paintAll"${same ? ' disabled' : ''}>${same ? (lights ? 'All lights match' : 'All parts match') : `Apply to all parts`}</button>`;
   $('paint-primary').onclick = () => { paintMode = 'primary'; renderPaint(); };
   $('paint-lights').onclick = () => { paintMode = 'lights'; renderPaint(); };
   const set = c => { const o = Object.assign({}, build[key]); if (c == null) delete o[sec]; else o[sec] = c; build = Object.assign({}, build, { [key]: o }); save(); renderAll(); };
   P.querySelectorAll('.sw button').forEach(b => b.onclick = () => set(b.dataset.c === '' ? null : +b.dataset.c));
+  // copy this section's choice (or its reset to original/team colour) onto every section
+  $('paintAll').onclick = () => { const o = {}; if (cur != null) for (const s2 of PAINT_SECS) o[s2] = cur; build = Object.assign({}, build, { [key]: o }); save(); renderAll(); };
 }
 function renderParts() {
   renderPaint();
