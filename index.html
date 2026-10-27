@@ -248,10 +248,11 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 .touch.on { display: block; }
 .stick { position: absolute; left: max(18px, env(safe-area-inset-left, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); width: 130px; height: 130px; border-radius: 50%; background: #ffffff10; border: 1px solid #ffffff30; pointer-events: auto; touch-action: none; }
 .stick i { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; background: #ffffff40; }
-.tbtns { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(3, 62px); grid-template-rows: repeat(2, 62px); gap: 8px; pointer-events: auto; }
+.tbtns { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(3, 62px); grid-template-rows: repeat(3, 62px); gap: 8px; pointer-events: auto; }
 .tbtns button { border-radius: 50%; border: 1px solid #ffffff40; background: #0b0f18aa; font-weight: 700; font-size: 12px; letter-spacing: 0.04em; touch-action: none; }
 .tbtns button.big { background: #ffb54755; }
 .tbtns button.sp { background: #ffffff22; }
+.tbtns button.jp { grid-column: 2; border-radius: 31px; }
 .wbtns { position: absolute; right: max(14px, env(safe-area-inset-right, 0px)); bottom: calc(18px + 62px * 2 + 8px + 12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 8px; pointer-events: auto; }
 .wbtns button { position: relative; overflow: hidden; width: 62px; height: 40px; border-radius: 10px; border: 1px solid #ffffff40; background: #0b0f18aa; font-weight: 700; font-size: 10.5px; line-height: 1.05; touch-action: none; padding: 2px 4px; }
 .wbtns button i, .ws i { position: absolute; left: 0; right: 0; bottom: 0; background: #ffffff2e; pointer-events: none; }
@@ -335,6 +336,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <span><kbd>Q</kbd> kick (its style comes from your bottom)</span>
     <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> fire your weapons</span>
     <span><kbd>Space</kbd> dodge</span>
+    <span><kbd>F</kbd> jump (legs jump highest, other bottoms hop)</span>
     <span><kbd>E</kbd> special (when energy is full)</span>
     <span><kbd>Esc</kbd> pause</span>
   </div>
@@ -385,9 +387,10 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       <button type="button" data-a="dodge">DODGE</button>
       <button type="button" data-a="kick">KICK</button>
       <button type="button" data-a="light" class="big">LIGHT</button>
+      <button type="button" data-a="jump" class="jp">JUMP</button>
     </div>
   </div>
-  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click light</span><span><kbd>K</kbd>/right-click heavy</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>E</kbd> special</span></div>
+  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click light</span><span><kbd>K</kbd>/right-click heavy</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>F</kbd> jump</span><span><kbd>E</kbd> special</span></div>
   <div class="vs" id="vs" hidden>
     <div class="side"><div class="who" style="color: var(--p1)">You</div><div class="nm" id="vsP1"></div><div class="vsw" id="vsP1w"></div></div>
     <div class="mid">VS<small id="vsArena"></small></div>
@@ -487,6 +490,13 @@ const WEIGHT_MODS = {
 };
 const partById = (sec, id) => PARTS[sec].find(p => p.id === id);
 
+// jump height in metres: real legs jump highest (the light Sprinter most), every other bottom does a smaller hop.
+// Heavier arms and midsections weigh the jump down
+function jumpHeight(build) {
+  const B = partById('bottom', build.bottom), wv = { light: 0, middle: 1, heavy: 2 };
+  const base = { sprinter: 1.2, ranger: 1.05, phantom: 0.55 }[B.id] || 0.45;
+  return base * (1 - 0.13 * wv[partById('top', build.top).w] - 0.15 * wv[partById('middle', build.middle).w]);
+}
 function computeStats(build) {
   const m = {};
   for (const sec of ['top', 'middle', 'bottom']) {
@@ -512,6 +522,7 @@ function computeStats(build) {
     crit: 0.05 + g('crit'),
     heavyMul: 1 + g('heavyMul'),
     radius: 0.46 + bulk * 0.035,
+    jump: jumpHeight(build),
     wcdMul: 0.72 + bulk * 0.1,
   };
 }
@@ -523,6 +534,7 @@ const STAT_VIEW = [
   { k: 'def',    label: 'Defense',      min: 0,   max: 0.36, fmt: v => Math.round(v * 100) + '%' },
   { k: 'blockRed', label: 'Guard',      min: 0.45, max: 0.85, fmt: v => Math.round(v * 100) + '%' },
   { k: 'energyRegen', label: 'Energy',  min: 0.7, max: 1.8,  fmt: v => '×' + v.toFixed(2) },
+  { k: 'jump',   label: 'Jump',         min: 0.15, max: 1.2, fmt: v => v.toFixed(2) + 'm' },
 ];
 /* weapons: pick up to three, each on its own button and cooldown. Grouped by where they mount */
 const WEAPON_GROUPS = [
@@ -1758,6 +1770,12 @@ function animateRig(rig, f, dt, time) {
   P.aR.z = -rig.armSplay; P.aL.z = rig.armSplay;
   P.by = Math.sin(time * 2.2) * 0.012 + (rig.hover ? Math.sin(time * 3) * 0.06 + 0.08 : 0);
   P.bx = sp * 0.12;
+  // in the air: legs tuck up on the way up and reach for the ground on the way down, arms lift for balance
+  if (f && f.air && st !== 'ko') {
+    const rising = f.vy > 0;
+    if (!rig.treads && !rig.hover) { P.lR.k = P.lL.k = rising ? 1.1 : 0.45; P.lR.x = rising ? -0.7 : -0.25; P.lL.x = rising ? -0.45 : -0.15; }
+    P.aR.z -= 0.25; P.aL.z += 0.25;
+  }
   let rate = 16;
   if (f) {
     const t = f.t;
@@ -1845,7 +1863,8 @@ function animateRig(rig, f, dt, time) {
   rig.body.rotation.set(cur.bx, cur.tw, cur.bz);
   rig.body.position.y = cur.by;
   if (rig.swayY) balanceSway(rig, f, st, dt, time);
-  if (rig.flame) { rig.flame.scale.y = 0.8 + Math.random() * 0.4 + sp * 0.5; }
+  // Phantom's beam flares into a big burst for the jump
+  if (rig.flame) { const jb = f && f.jumpT > 0 ? f.jumpT / 0.35 : 0; const sy = 0.8 + Math.random() * 0.4 + sp * 0.5 + jb * 2.6; rig.flame.scale.set(1 + jb * 0.9, sy, 1 + jb * 0.9); rig.flame.position.y = -0.75 - 0.25 * sy; }
   if (rig.pods) { const open = f && f.state === 'weapon' && f.wpn.id === 'rockets' ? 1 : 0; rig.podOpen = lerp(rig.podOpen || 0, open, 1 - Math.exp(-14 * dt)); for (const p of rig.pods) { p.g.position.y = p.y0 + (p.y1 - p.y0) * rig.podOpen; p.g.visible = rig.podOpen > 0.03; } }
   if (rig.saws && rig.saws.length) { const rev = f && f.state === 'weapon' && f.wpn.id === 'saws'; rig.sawT = (rig.sawT || 0) + dt * (rev ? 3.5 : 0.25); for (const sw of rig.saws) sawPlace(sw, rig.sawT * sw.step); }
   if (rig.jets) { const boost = st === 'dodge' ? 1.4 : st === 'special' ? 0.8 : 0; for (const j of rig.jets) { const k = 0.55 + Math.random() * 0.3 + sp * 0.6 + boost; j.scale.set(0.85 + boost * 0.15, k, 0.85 + boost * 0.15); } }
@@ -2476,6 +2495,12 @@ class Fighter {
       this.blockHeld = !!inp.block;
     }
     if (this.buffer) { this.buffer.t -= dt; if (this.buffer.t <= 0) this.buffer = null; }
+    // jump from the ground while free to move; the world's gravity brings it back down
+    this.jumpT = Math.max(0, (this.jumpT || 0) - dt);
+    if (inp && inp.jump && !this.air && (this.state === 'idle' || this.state === 'block')) {
+      this.vy = Math.sqrt(2 * 26 * s.jump); this.air = true; this.pos.y += 0.02; this.jumpT = 0.35; this.state = 'idle';
+      game.sfx('whoosh'); if (this.rig.hover) game.burst(this.pos.clone(), 0xffffff, 8, 3);
+    }
     const to = new V3(opp.pos.x - this.pos.x, 0, opp.pos.z - this.pos.z);
     const dist = to.length();
     const lockYaw = Math.atan2(to.x, to.z);
@@ -2589,11 +2614,12 @@ class AIController {
       this.seenAttack = opp.attackId;
       if (Math.random() < L.guard) {
         const heavyish = opp.state === 'heavy' || opp.state === 'kick' || (opp.state === 'special' && opp.special.id === 'pulse');
-        this.pending = { at: this.clock + L.react * rand(0.7, 1.3), act: (heavyish && Math.random() < 0.6) || Math.random() < 0.25 ? 'dodge' : 'block' };
+        this.pending = { at: this.clock + L.react * rand(0.7, 1.3), act: (heavyish && Math.random() < 0.6) || Math.random() < 0.25 ? (Math.random() < 0.25 ? 'jump' : 'dodge') : 'block' };
       }
     }
     if (this.pending && this.clock >= this.pending.at) {
       if (this.pending.act === 'block') this.blockUntil = this.clock + rand(0.35, 0.7);
+      else if (this.pending.act === 'jump') inp.jump = true;
       else { inp.dodge = true; this.mx = Math.random() < 0.5 ? -1 : 1; this.mz = -0.3; inp.mx = this.mx; inp.mz = this.mz; }
       this.pending = null;
     }
@@ -2690,6 +2716,7 @@ const Input = {
       kick: p.has('KeyQ') || p.has('t-kick'),
       w1: p.has('Digit1') || p.has('Numpad1') || p.has('t-w1'), w2: p.has('Digit2') || p.has('Numpad2') || p.has('t-w2'), w3: p.has('Digit3') || p.has('Numpad3') || p.has('t-w3'),
       dodge: p.has('Space') || p.has('t-dodge'),
+      jump: p.has('KeyF') || p.has('t-jump'),
       special: p.has('KeyE') || p.has('KeyI') || p.has('t-special'),
       block: h.has('KeyL') || h.has('ShiftLeft') || h.has('ShiftRight') || h.has('mouse1') || this.touchHeld.has('block'),
     };
