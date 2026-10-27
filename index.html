@@ -974,6 +974,7 @@ function makeFighterModel(build, accent) {
     // shoulder drive gear
     gear(pivot, armR * 0.9, 8, 0.025, side * armR * 1.08, -0.01, 0).rotation.y = Math.PI / 2;
   }
+  const spikeM = stdMat(0xd4d9e0, { metalness: 1, roughness: 0.15 }); rig.mats.push(spikeM);
   function fingers(fist, fistR, side) {
     // clenched fingers: each has three jointed segments that run forward over the knuckles, down the front and curl back under the palm
     const F = fistR, fw = F * 0.36, fr = F * 0.1;
@@ -985,6 +986,8 @@ function makeFighterModel(build, accent) {
       const k1 = mesh(new THREE.CylinderGeometry(F * 0.13, F * 0.13, fw * 0.9, 8), joint, fist, x, -F * 1.2, F * 0.36); k1.rotation.z = Math.PI / 2;
       const k2 = mesh(new THREE.CylinderGeometry(F * 0.12, F * 0.12, fw * 0.86, 8), joint, fist, x, -F * 1.2, -F * 0.36); k2.rotation.z = Math.PI / 2;
       mesh(new THREE.SphereGeometry(F * 0.07, 6, 5), joint, fist, x, -F * 0.78, F * 0.66);
+      // Golem: a small polished silver spike on each knuckle, pointing out of the punching face
+      if (T.id === 'golem') { const sp = mesh(new THREE.ConeGeometry(F * 0.085, F * 0.34, 10), spikeM, fist, x, -F * 1.48, F * 0.4); sp.rotation.x = Math.PI + 0.35; mesh(new THREE.CylinderGeometry(F * 0.11, F * 0.12, F * 0.06, 10), spikeM, fist, x, -F * 1.33, F * 0.37).rotation.x = 0.35; }
     }
     // thumb on the inner side, folded down and across the front of the fingers
     const tx = -side;
@@ -1071,6 +1074,24 @@ function makeFighterModel(build, accent) {
     }
   }
 
+  // pelvis for legged bottoms: a dark belt sized to the torso's waist, a hip girdle in the leg colour that widens out to the
+  // hip joints, a front plate and armour over each hip, so any torso blends down into the legs
+  function pelvis(hipY, hipW, r, am, am2, chrome) {
+    const mwB = wi[M.w], twB = [0.5, 0.7, 0.95][mwB], tdB = [0.32, 0.42, 0.56][mwB];
+    const waistX = Math.max(0.1, torsoProf(M, mwB)[1][0] * twB), waistZ = Math.max(0.1, torsoProf(M, mwB)[1][0] * tdB);
+    const bot = hipW + r * 0.55, top = Math.min(bot * 0.82, Math.max(waistX * 1.1, 0.13)), ph = 0.22, dep = Math.max(0.26, waistZ * 2.1);
+    const sh = new THREE.Shape(); sh.moveTo(-top, ph / 2); sh.lineTo(top, ph / 2); sh.lineTo(bot, -ph * 0.05); sh.lineTo(bot * 0.55, -ph / 2); sh.lineTo(-bot * 0.55, -ph / 2); sh.lineTo(-bot, -ph * 0.05); sh.closePath();
+    const pg = new THREE.ExtrudeGeometry(sh, { depth: dep, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 3 }); pg.translate(0, 0, -dep / 2);
+    mesh(pg, am, body, 0, hipY + 0.02, 0);
+    mesh(rbox(top * 2 + 0.06, 0.06, dep + 0.08, 0.025), dark, body, 0, hipY + ph / 2 + 0.03, 0);
+    for (let i = -1; i <= 1; i++) mesh(rbox(0.012, 0.035, 0.012, 0.004), chrome, body, i * top * 0.6, hipY + ph / 2 + 0.03, dep / 2 + 0.042);
+    const fp = mesh(rbox(top * 0.95, ph * 0.75, 0.04, 0.018), am2, body, 0, hipY - 0.01, dep / 2 + 0.035); fp.rotation.x = 0.18;
+    mesh(rbox(top * 0.5, 0.014, 0.012, 0.004), gB, body, 0, hipY + 0.02, dep / 2 + 0.06);
+    for (const side of [-1, 1]) {
+      const tas = mesh(rbox(0.035, ph * 0.95, dep * 0.8, 0.015), am2, body, side * (bot + 0.035), hipY + 0.035, 0); tas.rotation.z = side * 0.28;
+      bolt(body, side * (bot + 0.06), hipY + 0.07, 0, 0.016);
+    }
+  }
   // ---- bottom
   MESH_SEC = 'bottom';
   let hipY;
@@ -1128,7 +1149,7 @@ function makeFighterModel(build, accent) {
       const hub = mesh(new THREE.SphereGeometry(R * 0.36, 14, 10), joint, grp, x + side * 0.026, y, z); hub.scale.set(0.5, 1, 1);
       const c = mesh(new THREE.TorusGeometry(R * 0.2, R * 0.05, 6, 16, Math.PI * 1.5), dark, grp, x + side * 0.042, y, z); c.rotation.y = Math.PI / 2;
     };
-    mesh(rbox(hipW * 2 + r * 2, 0.2, 0.3 + r, 0.08), dark, body, 0, hipY, 0);
+    pelvis(hipY, hipW, r, am, am2, chrome);
     const TP = [[r * 0.9, -L * 0.84], [r * 1.12, -L * 0.66], [r * 1.24, -L * 0.42], [r * 1.26, -L * 0.2], [r * 1.12, -L * 0.02], [r * 0.96, 0.04]];
     const rs = r * 0.62; // the lower leg is much slimmer than the thigh
     const SP = [[rs * 0.62, -L * 0.9], [rs * 0.7, -L * 0.74], [rs * 1.1, -L * 0.46], [rs * 1.22, -L * 0.24], [rs * 1.15, -L * 0.08], [r * 0.7, -0.03]];
@@ -1190,8 +1211,7 @@ function makeFighterModel(build, accent) {
     // smooth, sleek plating instead of the panelled texture, with a few deliberate seams
     const sm = stdMat(bc, { metalness: 0.6, roughness: 0.26 }); rig.mats.push(sm);
     const lathe = pts => new THREE.LatheGeometry(pts.map(([rr, y]) => new THREE.Vector2(rr, y)), 22);
-    mesh(rbox(hipW * 2 + 0.16, 0.17, 0.24, 0.06), dark, body, 0, hipY, 0);
-    mesh(rbox(0.13, 0.12, 0.05, 0.025), sm, body, 0, hipY - 0.03, 0.13);
+    pelvis(hipY, hipW, r, sm, sm, joint);
     for (const side of [-1, 1]) {
       const pivot = new THREE.Group(); pivot.position.set(side * hipW, hipY, 0); body.add(pivot);
       // rounded hip guard on the outside of the hip
@@ -1481,6 +1501,18 @@ function makeFighterModel(build, accent) {
   const faceScale = M.segs === 4 ? 0.71 : 1;
   const chestZ = td * 0.5 * faceScale * Math.max(1, M.taper * 0.97);
   const chestY = torsoBase + th * 0.65;
+  // on the broad heavy bottoms a slim waist looks perched, so a stepped armoured turret ring widens it down onto the base
+  if (B.w === 'heavy' && mw < 2) {
+    // sit it on whatever the bottom has at its centre: find the highest point of the bottom near the middle
+    root.updateMatrixWorld(true);
+    const bms = []; body.traverse(o => { if (o.isMesh && o.userData.sec === 'bottom') bms.push(o); });
+    const hit = new THREE.Raycaster(new V3(0, torsoBase + 0.25, 0), new V3(0, -1, 0)).intersectObjects(bms, false)[0], topY = hit ? hit.point.y : hipY;
+    const y0 = clamp(topY, hipY - 0.2, torsoBase + 0.12), h = Math.max(0.07, torsoBase + 0.02 - y0);
+    const rt = mw === 0 ? 0.085 : tw * 0.32, rb = mw === 0 ? 0.25 : tw * 0.46;
+    mesh(new THREE.CylinderGeometry(rt, rb, h, 24), dark, body, 0, y0 + h / 2, 0);
+    const lip = mesh(new THREE.TorusGeometry(rb * 0.97, 0.016, 6, 32), midM, body, 0, y0 + 0.012, 0); lip.rotation.x = Math.PI / 2;
+    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; bolt(body, Math.sin(a) * rb * 0.84, y0 + 0.03, Math.cos(a) * rb * 0.84, 0.012); }
+  }
   if (mw === 0) {
     mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.24, 10), joint, body, 0, hipY + 0.1, 0);
     for (const y of [0.06, 0.13]) { const rr = mesh(new THREE.TorusGeometry(0.075, 0.016, 6, 16), dark, body, 0, hipY + y, 0); rr.rotation.x = Math.PI / 2; }
@@ -1664,7 +1696,7 @@ function makeFighterModel(build, accent) {
   // Heavy arms use the big shoulder blocks, middle arms the domes, light arms the tall shoulder shields
   if (has('rockets')) {
     rig.pods = []; rig.mount.rockets = [];
-    const rm = wmat(0xffb547), heavyMarks = [];
+    const rm = stdMat(0xd80c0c, { metalness: 0.35, roughness: 0.28 }), heavyMarks = []; rm.emissive.setHex(0x3a0000);   // glossy red rocket heads (kept out of rig.mats so the hit flash leaves its tint alone)
     for (const s of [-1, 1]) {
       const arm = rig.arms.find(a => a.side === s);
       if (tw2 === 2) {
@@ -3346,7 +3378,7 @@ const Battle = {
     const dir = tgt.clone().sub(o).normalize(), vel = dir.clone().multiplyScalar(W.speed);
     if (W.proj === 'rocket') { const side = new V3(-dir.z, 0, dir.x); vel.multiplyScalar(0.55).addScaledVector(side, (i % 2 ? 1 : -1) * rand(2, 4)).add(new V3(0, rand(3, 5), 0)); }
     if (W.proj === 'bullet') { vel.x += rand(-0.6, 0.6); vel.y += rand(-0.3, 0.3); }
-    const mat = W.proj === 'rocket' ? stdMat(0xb8bec8, { metalness: 0.8, roughness: 0.3 }) : new THREE.MeshBasicMaterial({ color: new THREE.Color(W.color).convertSRGBToLinear() });
+    const mat = W.proj === 'rocket' ? stdMat(0xd80c0c, { metalness: 0.35, roughness: 0.28 }) : new THREE.MeshBasicMaterial({ color: new THREE.Color(W.color).convertSRGBToLinear() });
     const m = new THREE.Mesh(this.projGeo()[W.proj], mat); m.position.copy(o); this.scene.add(m);
     if (W.proj !== 'bullet') { const h = halo(m, new THREE.Color(W.color), 0, 0, W.proj === 'rocket' ? -0.14 : 0, W.proj === 'shell' ? 0.6 : 0.45, 0.9); h.castShadow = false; }
     const P = { W, owner: f, target: opp, pos: o.clone(), vel, life: W.proj === 'rocket' ? 2.6 : (W.range || 18) / W.speed + 0.2, m, from: o.clone() };
