@@ -125,6 +125,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .sw label { background: conic-gradient(#e44, #ed4, #4d6, #4ce, #46e, #c4e, #e44); }
 .sw label input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 .weights { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.weights.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .wcol { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .wcol h3 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 22px; line-height: 1; letter-spacing: 0.04em; text-transform: uppercase; color: var(--wc); }
 .wcol .weffect { margin: 0 0 2px; font-size: 12.5px; color: var(--muted); line-height: 1.3; }
@@ -148,10 +149,15 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 
 .b-preview { position: relative; overflow: hidden; min-height: 520px; background: radial-gradient(closest-side at 50% 62%, #233456 0%, #121926 100%); }
 .b-preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: pan-y; }
-.pv-label { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; justify-content: space-between; align-items: end; gap: 8px; pointer-events: none; }
+.pv-label { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 8px; pointer-events: none; }
 .pv-name { font-family: var(--f-display); font-size: 30px; line-height: 0.9; font-weight: 600; }
 .pv-name small { display: block; font-family: var(--f-body); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .wchips { display: flex; gap: 4px; }
+.pv-ability { flex-basis: 100%; display: flex; align-items: center; gap: 8px; margin-bottom: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
+.pv-ab-ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: #0b0f18cc; border: 1px solid currentColor; box-shadow: 0 0 14px -4px currentColor; }
+.pv-ab-ico svg { width: 26px; height: 26px; }
+.ab-ico { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 6px; vertical-align: -5px; }
+.ab-ico svg { width: 22px; height: 22px; }
 .wchip { font-family: var(--f-display); font-size: 18px; line-height: 1; padding: 4px 6px 1px; border-radius: 4px; color: #0a0e16; background: var(--wc); font-weight: 600; }
 .pv-spin { position: absolute; top: 8px; left: 10px; z-index: 2; background: #0b0f18cc; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: var(--fg); display: inline-flex; gap: 6px; align-items: center; }
 .pv-spin:hover { border-color: #ffffff40; }
@@ -331,6 +337,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       <div class="pv-hint" id="pvHint">Click a part to change it</div>
       <button type="button" class="pv-spin" id="spinBtn" aria-pressed="false"></button>
       <div class="pv-label">
+        <div class="pv-ability" id="pvAbility" hidden></div>
         <div class="pv-name" id="pvName"></div>
         <div class="wchips" id="pvChips"></div>
       </div>
@@ -364,6 +371,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <span><kbd>Space</kbd> dodge</span>
     <span><kbd>F</kbd> jump (legs jump highest, other bottoms hop)</span>
     <span><kbd>E</kbd> special (when energy is full)</span>
+    <span><kbd>R</kbd> use your ability</span>
     <span><kbd>Esc</kbd> pause</span>
   </div>
 </section>
@@ -416,7 +424,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       <button type="button" data-a="jump" class="jp">JUMP</button>
     </div>
   </div>
-  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click left arm</span><span><kbd>K</kbd>/right-click right arm</span><span><kbd>J</kbd>+<kbd>K</kbd> smash</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>F</kbd> jump</span><span><kbd>E</kbd> special</span></div>
+  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click left arm</span><span><kbd>K</kbd>/right-click right arm</span><span><kbd>J</kbd>+<kbd>K</kbd> smash</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>F</kbd> jump</span><span><kbd>E</kbd> special</span><span><kbd>R</kbd> ability</span></div>
   <div class="vs" id="vs" hidden>
     <div class="side"><div class="who" style="color: var(--p1)">You</div><div class="nm" id="vsP1"></div><div class="vsw" id="vsP1w"></div></div>
     <div class="mid">VS<small id="vsArena"></small></div>
@@ -565,17 +573,15 @@ const STAT_VIEW = [
 ];
 /* weapons: pick up to two. Head and chest weapons each get a numbered button and cooldown; an arm weapon replaces your punches. Grouped by where they mount */
 const WEAPON_GROUPS = [
-  { slot: 'head',  label: 'Head',     effect: 'Eyes, coil and brow', color: '#ff6b6b' },
-  { slot: 'chest', label: 'Chest & shoulders', effect: 'Reactor, rockets and bubble', color: '#7fd8ff' },
+  { slot: 'head',  label: 'Head',     effect: 'Eyes and coil', color: '#ff6b6b' },
+  { slot: 'chest', label: 'Chest & shoulders', effect: 'Reactor and rockets', color: '#7fd8ff' },
   { slot: 'arms',  label: 'Arms',     effect: 'Cannons, swords or saws', color: '#ffb547' },
 ];
 const WEAPONS = [
   { id: 'laser',   slot: 'head',  name: 'Laser Eyes',      desc: 'Beams fire straight from the eyes and burn the target at long range.', cd: 7,  w: 0.25, a: 0.6,  r: 0.25, move: 0.5,  kind: 'beam',  from: 'eyes',  tick: 0.1,  mult: 0.46, kb: 0.4, range: 14, color: 0xff3b3b },
   { id: 'tesla',   slot: 'head',  name: 'Tesla Coil',      desc: 'Lightning leaps to a nearby target and stuns it.', cd: 10, w: 0.3, a: 0.1, r: 0.35, move: 0.3, kind: 'zap', range: 5.5, mult: 1.2, kb: 3, stun: 0.9, color: 0x8fd8ff },
-  { id: 'tractor', slot: 'head',  name: 'Tractor Beam',    desc: 'A green beam from an emitter on the brow locks on and drags the opponent right up to you.', cd: 9, w: 0.2, a: 0.9, r: 0.3, move: 0.2, kind: 'beam', from: 'brow', tick: 0.1, mult: 0.08, kb: 0, pull: 9, stun: 0.15, range: 10, color: 0x4dff88, beamR: 0.05 },
   { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 0.7, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
   { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 0.68, kb: 4, homing: 2.4, color: 0xffb547 },
-  { id: 'bubble',  slot: 'chest', name: 'Bubble Shield',   desc: 'A magenta bubble surrounds you for 10 seconds. Nothing can hurt you and it bounces away anyone who bumps into it, but you cannot attack until it pops.', cd: 30, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 10, color: 0xff3dd8 },
   { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Forearm cannons. J or K fires that arm; both together fire a heavy double blast.', cd: 6, w: 0.3, a: 0.15, r: 0.35, move: 0.3, kind: 'proj', proj: 'shell', count: 2, speed: 20, mult: 0.65, kb: 9, stun: 0.3, color: 0xffd27a },
   { id: 'blades',  slot: 'arms',  name: 'Arm Blades',      desc: 'Long forearm swords. J or K slashes with that arm; both together make a hard double slash.', cd: 5, w: 0.18, a: 0.12, r: 0.32, move: 0.4, kind: 'melee', reach: 0.7, arc: 0.0, mult: 1.4, kb: 7, stun: 0.4, color: 0xd8f0ff },
   { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Forearm chainsaws. J or K jabs with that arm; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
@@ -586,6 +592,23 @@ const MAX_WEAPONS = 2;
 const ARM_SWAP = ['cannon', 'blades', 'saws'];
 // tabled ideas, kept in the code but switched off
 const FURNACE_JETPACK = false;
+/* abilities: pick one. Used with R in a fight, each on its own cooldown. They run through the weapon state like a weapon would */
+const ABILITIES = [
+  { id: 'jetpack',  name: 'Jetpack',       desc: 'Twin fuel tanks strapped to your back. Press R to blast up and forward through the air.', cd: 6, w: 0.06, a: 0.1, r: 0.12, move: 1, kind: 'jet', color: 0xffb547 },
+  { id: 'teleport', name: 'Teleport',      desc: 'Press R to vanish in a flash and reappear right behind your opponent.', cd: 9, w: 0.2, a: 0.05, r: 0.15, move: 0, kind: 'blink', color: 0xb57bff },
+  { id: 'tractor',  name: 'Tractor Beam',  desc: 'Press R and a green beam from an emitter on your brow locks on and drags the opponent right up to you.', cd: 9, w: 0.2, a: 0.9, r: 0.3, move: 0.2, kind: 'beam', from: 'brow', tick: 0.1, mult: 0.08, kb: 0, pull: 9, stun: 0.15, range: 10, color: 0x4dff88, beamR: 0.05 },
+  { id: 'bubble',   name: 'Bubble Shield', desc: 'A magenta bubble surrounds you for 10 seconds. Nothing can hurt you and it bounces away anyone who bumps into it, but you cannot attack until it pops.', cd: 30, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 10, color: 0xff3dd8 },
+];
+const ABILITY = Object.fromEntries(ABILITIES.map(a => [a.id, a]));
+const cleanAbility = id => ABILITY[id] ? id : null;
+// simple line icons, drawn in currentColor so they take the colour of wherever they sit
+const ABILITY_ICON = {
+  jetpack: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="5" height="12" rx="2.5"/><rect x="14" y="3" width="5" height="12" rx="2.5"/><path d="M10 7h4M10 11h4"/><path d="M6.2 15l-.7 2h4l-.7-2M15.2 15l-.7 2h4l-.7-2"/><path d="M7.5 18.5c0 1.2-.8 2-.8 2.5M16.5 18.5c0 1.2-.8 2-.8 2.5" stroke-width="1.5"/></svg>',
+  teleport: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="19" rx="7" ry="2.2"/><ellipse cx="12" cy="5" rx="7" ry="2.2" stroke-dasharray="2 2.4"/><path d="M12 8v8M9 13l3 3 3-3"/><path d="M5 9.5l1 .6M19 9.5l-1 .6M4.5 14l1.2-.2M19.5 14l-1.2-.2"/></svg>',
+  tractor: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="2.4"/><path d="M7.5 9.5L20 5M7.5 14.5L20 19"/><path d="M13 9.5l-2 2.5 2 2.5M17 8.5l-2 3.5 2 3.5"/></svg>',
+  bubble: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/><path d="M8 13.5a5 5 0 0 1 3-2.2" stroke-width="1.5"/><circle cx="12" cy="17" r="1.6"/></svg>',
+};
+const abilityIcon = (id, cls = 'ab-ico') => `<span class="${cls}" style="color:#${ABILITY[id].color.toString(16).padStart(6, '0')}" aria-hidden="true">${ABILITY_ICON[id]}</span>`;
 const cleanWeapons = ws => { if (!Array.isArray(ws)) return null; return [...new Set(ws.filter(id => WEAPON[id]))].slice(0, MAX_WEAPONS); };
 // which arm weapon sits on each arm, as [right, left] (the order of rig.arms); the first one picked goes on the left arm (J)
 const armLoadout = ws => { const a = (ws || []).filter(id => ARM_SWAP.includes(id)); return !a.length ? null : a.length === 1 ? [a[0], a[0]] : [a[1], a[0]]; };
@@ -612,7 +635,7 @@ const LIGHTS = [
 // earlier light colours, so a saved fighter picks up the richer versions
 const OLD_LIGHTS = { 0xff1010: 0xe80008, 0x1050ff: 0x0a2ad8, 0x10ff40: 0x00e02a, 0xff6000: 0xc84600, 0xffdc00: 0xffc000 };
 const cleanColors = c => { const o = {}; if (c && typeof c === 'object') for (const k of PAINT_SECS) if (Number.isInteger(c[k]) && c[k] >= 0 && c[k] <= 0xffffff) o[k] = c[k]; return o; };
-const randomBuild = () => ({ head: pick(HEADS).id, top: pick(PARTS.top).id, middle: pick(PARTS.middle).id, bottom: pick(PARTS.bottom).id, weapons: randomWeapons() });
+const randomBuild = () => ({ head: pick(HEADS).id, top: pick(PARTS.top).id, middle: pick(PARTS.middle).id, bottom: pick(PARTS.bottom).id, weapons: randomWeapons(), ability: Math.random() < 0.85 ? pick(ABILITIES).id : null });
 const buildName = b => `${partById('top', b.top).name} · ${partById('middle', b.middle).name} · ${partById('bottom', b.bottom).name}`;
 
 /* ======================= MODELS ======================= */
@@ -1567,10 +1590,14 @@ function makeFighterModel(build, accent, shOff = 0) {
   else if (M.id === 'anvil') { for (const s of [-1, 1]) mesh(rbox(tw * 0.34, th * 0.26, 0.08, 0.03), midM, body, s * tw * 0.19, chestY + 0.04, chestZ + 0.01); mesh(rbox(0.1, 0.05, 0.03, 0.015), gM, body, 0, chestY - 0.12, chestZ); }
   else { mesh(rbox(0.13, 0.05, 0.03, 0.015), gM, body, 0, chestY, chestZ); halo(body, acM, 0, chestY, chestZ + 0.04, 0.26); if (M.id === 'striker') mesh(rbox(0.05, th * 0.7, 0.03, 0.015), joint, body, tw * 0.12, chestY - 0.05, chestZ - 0.01).rotation.z = 0.5; }
   chestDetail(mw, tw, th, td, torsoBase, faceScale, torsoProf(M, mw));
-  // TABLED: the Furnace jet pack is switched off for now (Sam). Set FURNACE_JETPACK to true to bring it back
-  if (M.id === 'furnace' && FURNACE_JETPACK) {
-    // jet pack: twin fuel tanks on a back plate, a central turbine housing and flared nozzles with live flames
-    const bz = -td * 0.5 * Math.max(1, M.taper * 0.97), tz = bz - 0.16, tr = 0.12, tl = th * 0.56, ty = chestY - 0.05;
+  // jet pack ability (once a Furnace-only detail, tabled; FURNACE_JETPACK brings that back): twin fuel tanks on a back plate,
+  // a central turbine housing and flared nozzles with live flames. A ray from behind finds the back of whichever torso it's on
+  if (build.ability === 'jetpack' || (M.id === 'furnace' && FURNACE_JETPACK)) {
+    const tr = 0.12, tl = th * 0.56, ty = chestY - 0.05;
+    root.updateMatrixWorld(true);
+    const bms = []; body.traverse(c => { if (c.isMesh && c.userData.sec === 'middle') bms.push(c); });
+    const hitB = new THREE.Raycaster(body.localToWorld(new V3(0, ty, -3)), body.localToWorld(new V3(0, ty, 1)).sub(body.localToWorld(new V3(0, ty, 0))).normalize()).intersectObjects(bms, false)[0];
+    const bz = hitB ? body.worldToLocal(hitB.point.clone()).z + 0.03 : -td * 0.5 * Math.max(1, M.taper * 0.97), tz = bz - 0.16;
     mesh(rbox(tw * 0.56, th * 0.62, 0.08, 0.03), dark, body, 0, ty, bz - 0.01);
     for (const sx of [-1, 1]) for (const y of [ty + th * 0.2, ty - th * 0.2]) { const st = mesh(rbox(0.05, 0.05, 0.14, 0.015), joint, body, sx * 0.17, y, bz - 0.07); }
     rig.jets = [];
@@ -1704,7 +1731,7 @@ function makeFighterModel(build, accent, shOff = 0) {
     rig.coil = { pulse, arc, glow, y0: ty0 + 0.02, y1: ty0 + 0.17, z: -0.04, t: Math.random(), k: 0 };
   }
   // tractor beam: a small dish emitter with a glowing green lens on the brow, just above the eyes
-  if (has('tractor')) {
+  if (build.ability === 'tractor') {
     // sit flush on the front of the head whatever its shape: cast a ray back at the brow to find the surface
     const by = eyeY + 0.085, tm = wmat(0x4dff88);
     root.updateMatrixWorld(true);
@@ -2107,7 +2134,7 @@ function animateRig(rig, f, dt, time) {
       pa.needsUpdate = true; c.arc.material.opacity = 0.6 + Math.random() * 0.4;
     }
   }
-  if (rig.jets) { const boost = st === 'dodge' ? 1.4 : st === 'special' ? 0.8 : 0; for (const j of rig.jets) { const k = 0.55 + Math.random() * 0.3 + sp * 0.6 + boost; j.scale.set(0.85 + boost * 0.15, k, 0.85 + boost * 0.15); } }
+  if (rig.jets) { const boost = f && f.jetT > 0 ? 2.6 : st === 'dodge' ? 1.4 : st === 'special' ? 0.8 : 0; for (const j of rig.jets) { const k = 0.55 + Math.random() * 0.3 + sp * 0.6 + boost; j.scale.set(0.85 + boost * 0.15, k, 0.85 + boost * 0.15); } }
   if (rig.ball) {
     // roll the ball by the distance travelled: axis = up x velocity, in the fighter's local frame
     let vx = 0, vz = Math.sin(time * 0.8) * 0.25;
@@ -2289,22 +2316,23 @@ const SFX = {
 };
 
 /* ======================= BUILDER UI ======================= */
-let build = { head: 'sentinel', top: 'sentinel', middle: 'furnace', bottom: 'sprinter', weapons: ['laser', 'rockets', 'blades'] };
+let build = { head: 'sentinel', top: 'sentinel', middle: 'furnace', bottom: 'sprinter', weapons: ['laser', 'blades'], ability: 'jetpack' };
 let curSec = null;
 let difficulty = 'normal';
 let arenaId = 'guerrilla';
 try { const a = localStorage.getItem('forge-arena-map'); if (['classic', 'guerrilla', 'citadel'].includes(a)) arenaId = a; } catch (e) {}
-try { const s = JSON.parse(localStorage.getItem('forge-arena-build') || 'null'); if (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) build = Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons, head: headById(s.head) ? s.head : s.top, colors: cleanColors(s.colors), lights: Object.fromEntries(Object.entries(cleanColors(s.lights)).map(([k, c]) => [k, OLD_LIGHTS[c] || c])) }); } catch (e) {}
+try { const s = JSON.parse(localStorage.getItem('forge-arena-build') || 'null'); if (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) build = Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons, ability: cleanAbility(s.ability) || (s.ability === undefined && (s.weapons || []).find(id => ABILITY[id])) || null, head: headById(s.head) ? s.head : s.top, colors: cleanColors(s.colors), lights: Object.fromEntries(Object.entries(cleanColors(s.lights)).map(([k, c]) => [k, OLD_LIGHTS[c] || c])) }); } catch (e) {}
 try { const d = localStorage.getItem('forge-arena-diff'); if (['easy', 'normal', 'hard'].includes(d)) difficulty = d; } catch (e) {}
 const save = () => { try { localStorage.setItem('forge-arena-build', JSON.stringify(build)); localStorage.setItem('forge-arena-diff', difficulty); } catch (e) {} };
 
 // the left panel: a list of the fighter's sections, or, once one is picked (here or by clicking the model), that section's options
-const secName = sec => sec === 'head' ? 'Head' : sec === 'weapons' ? 'Weapons' : SECTIONS[sec].label;
+const secName = sec => sec === 'head' ? 'Head' : sec === 'weapons' ? 'Weapons' : sec === 'abilities' ? 'Abilities' : SECTIONS[sec].label;
 // a short tag after the section name, only where the name alone doesn't say what the part is
-const secSub = sec => sec === 'weapons' ? ` · Pick ${MAX_WEAPONS}` : sec === 'middle' || sec === 'bottom' ? ` · ${SECTIONS[sec].sub}` : '';
+const secSub = sec => sec === 'weapons' ? ` · Pick ${MAX_WEAPONS}` : sec === 'abilities' ? ' · Pick 1' : sec === 'middle' || sec === 'bottom' ? ` · ${SECTIONS[sec].sub}` : '';
 function secPick(sec) {
   if (sec === 'head') { const h = headById(build.head); return `<span class="t-pick" style="color:${WCOLOR[WEIGHTS[h.size]]}">${h.name}</span>`; }
   if (sec === 'weapons') return `<span class="t-pick">${build.weapons.length} of ${MAX_WEAPONS}</span>`;
+  if (sec === 'abilities') return `<span class="t-pick">${build.ability ? ABILITY[build.ability].name : 'None'}</span>`;
   const p = partById(sec, build[sec]); return `<span class="t-pick" style="color:${WCOLOR[p.w]}">${p.name}</span>`;
 }
 function openSec(sec) { curSec = sec; renderTabs(); renderParts(); Preview.select(sec); if (sec && matchMedia('(max-width: 720px)').matches) $('tabs').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
@@ -2317,12 +2345,28 @@ function renderTabs() {
 function renderSecList() {
   $('secDesc').textContent = 'Click any part of your fighter in the preview to change it, or pick a section here.';
   const W = $('weights'); W.innerHTML = '';
-  for (const sec of ['head', 'top', 'middle', 'bottom', 'weapons']) {
+  for (const sec of ['head', 'top', 'middle', 'bottom', 'weapons', 'abilities']) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'secpick'; b.id = 'tab-' + sec;
     b.innerHTML = `<span class="t-sec">${secName(sec)}${secSub(sec)}</span>${secPick(sec)}<span class="go" aria-hidden="true">›</span>`;
     b.onclick = () => openSec(sec);
     b.onpointerenter = () => Preview.hover(sec); b.onpointerleave = () => Preview.hover(null);
     W.appendChild(b);
+  }
+}
+function renderAbilities() {
+  $('secDesc').textContent = 'Pick one ability. In a fight, use it with R (or the ABILITY button on touch screens); it recharges after each use. Tap your ability again to remove it.';
+  const W = $('weights'); W.innerHTML = '';
+  // two columns of two, so each box has room for its icon and name
+  for (const pair of [ABILITIES.slice(0, 2), ABILITIES.slice(2)]) {
+    const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', '#c9a7ff');
+    for (const A of pair) {
+      const on = build.ability === A.id, b = document.createElement('button');
+      b.type = 'button'; b.className = 'part wrap ab'; b.id = `ability-${A.id}`; b.setAttribute('aria-pressed', String(on));
+      b.innerHTML = `<span class="pn">${abilityIcon(A.id)}${A.name}</span><span class="pp">${A.desc} <i>${A.cd}s cooldown</i></span>`;
+      b.onclick = () => { build = Object.assign({}, build, { ability: on ? null : A.id }); save(); renderAll(); };
+      col.appendChild(b);
+    }
+    W.appendChild(col);
   }
 }
 function renderWeapons() {
@@ -2396,10 +2440,11 @@ function renderPaint() {
 }
 function renderParts() {
   renderPaint();
-  $('weights').classList.toggle('list', !curSec);
+  $('weights').classList.toggle('list', !curSec); $('weights').classList.toggle('two', curSec === 'abilities');
   if (!curSec) return renderSecList();
   if (curSec === 'weapons') { renderWeapons(); return tidyTable(); }
   if (curSec === 'head') { renderHeads(); return tidyTable(); }
+  if (curSec === 'abilities') { renderAbilities(); return tidyTable(); }
   $('secDesc').textContent = SECTIONS[curSec].desc;
   const W = $('weights'); W.innerHTML = '';
   for (const w of WEIGHTS) {
@@ -2453,10 +2498,12 @@ function renderStats(hoverBuild) {
   }).join('');
   const sp = SPECIALS[partById('top', (hoverBuild || build).top).w];
   $('special').innerHTML = `<div class="sk">Special move (from your Arms)</div><div class="sn">${sp.name}</div><p>${sp.desc}</p>`
-    + `<div class="sk" style="margin-top:8px">Weapons</div><div class="wlist">${build.weapons.length ? build.weapons.map(id => `<span><kbd>${weaponKey(build.weapons, id)}</kbd>${WEAPON[id].name}</span>`).join('') : '<span>None yet. Click Weapons to add some.</span>'}</div>`;
+    + `<div class="sk" style="margin-top:8px">${build.ability ? 'Ability and weapons' : 'Weapons'}</div><div class="wlist">${build.ability ? `<span><kbd>R</kbd>${ABILITY[build.ability].name}</span>` : ''}${build.weapons.length ? build.weapons.map(id => `<span><kbd>${weaponKey(build.weapons, id)}</kbd>${WEAPON[id].name}</span>`).join('') : '<span>None yet. Click Weapons to add some.</span>'}</div>`;
 }
 function renderAll() {
   renderTabs(); renderParts(); renderStats();
+  $('pvAbility').innerHTML = build.ability ? `${abilityIcon(build.ability, 'pv-ab-ico')}<span>${ABILITY[build.ability].name}</span>` : '';
+  $('pvAbility').hidden = !build.ability;
   $('pvName').innerHTML = `<small>Your fighter</small>${buildName(build)}`;
   $('pvChips').innerHTML = wchips(build);
   Preview.setBuild(build);
@@ -2508,7 +2555,7 @@ const Preview = (() => {
     for (const m of hlCache.values()) m.dispose(); hlCache.clear();
     rig = makeFighterModel(b, ACCENT.p1); scene.add(rig.root); pop = 1; fitT = 0.35;
     // show the bubble shield around the preview when it's one of the chosen weapons
-    rig.bubble.visible = (cleanWeapons(b.weapons) || []).includes('bubble');
+    rig.bubble.visible = b.ability === 'bubble';
     if (hoverSec) { const h = hoverSec; hoverSec = null; hover(h); }
   }
   // clicking the model opens that section; hovering lights it up. A press that moves more than a few pixels is a drag to turn
@@ -2777,6 +2824,7 @@ class Fighter {
     this.kick = kickFor(build);
     const ws = (cleanWeapons(build.weapons) || []).map(id => WEAPON[id]);
     const AW = armLoadout(ws.map(W => W.id)); this.armW = AW && AW.map(id => WEAPON[id]); this.armWpn = this.armW && this.armW[1]; this.weapons = ws.filter(W => W.slot !== 'arms');
+    this.ability = ABILITY[build.ability] || null;
     this.radius = this.stats.radius;
     this.pos = this.rig.root.position;
     this.knock = new V3(); this.moveVel = new V3();
@@ -2787,7 +2835,7 @@ class Fighter {
     this.state = 'idle'; this.t = 0; this.knock.set(0, 0, 0); this.moveVel.set(0, 0, 0); this.vy = 0; this.air = false;
     this.dodgeCdT = 0; this.fortifyT = 0; this.buffer = null; this.invuln = false; this.attackId = 0; this.punchSide = 0;
     this.hitDone = false; this.blockHeld = false; this.flash = 0; this.speedNow = 0; this.stunDur = 0;
-    this.wcd = [0, 0, 0]; this.wpn = null; this.burnT = 0; this.burnDps = 0; this.burnBy = null; this.slowT = 0; this.wShieldT = 0; this.tickT = 0; this.shots = 0;
+    this.wcd = [0, 0, 0]; this.abCd = 0; this.jetT = 0; this.wpn = null; this.burnT = 0; this.burnDps = 0; this.burnBy = null; this.slowT = 0; this.wShieldT = 0; this.tickT = 0; this.shots = 0;
     this.rig.root.rotation.y = yaw; this.rig.shield.visible = false; this.rig.bubble.visible = false;
   }
   timing(kind) { if (kind === 'kick') return this.kick; const s = (this.slowT > 0 ? 1.3 : 1) / this.stats.atkSpd; return kind === 'light' ? { w: 0.15 * s, a: 0.08 * s, r: 0.22 * s } : { w: 0.48 * s, a: 0.1 * s, r: 0.42 * s }; }
@@ -2819,6 +2867,11 @@ class Fighter {
     if (a === 'light' || a === 'heavy' || a === 'kick') { this.startAttack(a); return true; }
     // punchSide 1 throws with the left arm, 0 with the right
     if (a === 'left' || a === 'right') { this.startAttack('light', a === 'left' ? 1 : 0); return true; }
+    if (a === 'ability') {
+      const A = this.ability; if (!A || this.abCd > 0) return false;
+      this.state = 'weapon'; this.wpn = A; this.wpn2 = null; this.t = 0; this.hitDone = false; this.tickT = 0; this.shots = 0; this.attackId++;
+      this.abCd = A.cd; this.abDir = wish.lengthSq() > 0.01 ? wish.clone().normalize() : fwd.clone(); game.onWeaponStart(this, A); return true;
+    }
     if (a[0] === 'w') {
       const i = +a[1] - 1, W = this.weapons[i];
       if (!W || this.wcd[i] > 0) return false;
@@ -2838,10 +2891,11 @@ class Fighter {
     this.flash = Math.max(0, this.flash - dt);
     if (this.state !== 'ko' && this.state !== 'victory') this.energy = Math.min(100, this.energy + 5.5 * s.energyRegen * dt);
     for (let i = 0; i < 3; i++) this.wcd[i] = Math.max(0, this.wcd[i] - dt);
+    this.abCd = Math.max(0, this.abCd - dt); this.jetT = Math.max(0, this.jetT - dt);
     this.wShieldT = Math.max(0, this.wShieldT - dt); this.slowT = Math.max(0, this.slowT - dt);
     if (this.burnT > 0) { this.burnT -= dt; game.dot(this, this.burnDps * dt); }
     if (inp) {
-      for (const a of ['dodge', 'special', 'w1', 'w2', 'w3', 'heavy', 'kick', 'light', 'left', 'right']) if (inp[a]) { this.buffer = { a, t: 0.25 }; break; }
+      for (const a of ['dodge', 'special', 'ability', 'w1', 'w2', 'w3', 'heavy', 'kick', 'light', 'left', 'right']) if (inp[a]) { this.buffer = { a, t: 0.25 }; break; }
       this.blockHeld = !!inp.block;
       // arm presses this close together count as pressing both buttons at once
       const armP = inp.left || inp.right; this.chordOk = armP && this.armT > 0; if (armP) this.armT = 0.12;
@@ -2957,6 +3011,8 @@ class Fighter {
     r.shield.visible = this.fortifyT > 0;
     // the bubble pulses gently and blinks in its last 1.5 seconds
     r.bubble.visible = this.wShieldT > 0 && !(this.wShieldT < 1.5 && Math.sin(time * 28) < -0.2);
+    // teleport: shrink away in the wind-up, then pop back in at the new spot
+    { const W = this.state === 'weapon' && this.wpn && this.wpn.kind === 'blink' ? this.wpn : null, k = !W ? 1 : this.t < W.w ? 1 - 0.85 * (this.t / W.w) : Math.min(1, 0.15 + (this.t - W.w) / 0.12); r.root.scale.setScalar(k); }
     if (r.bubble.visible) { const k = 1 + Math.sin(time * 3) * 0.02; r.bubble.scale.set(k, k, k); r.bubble.rotation.y += 0.01; }
     // while shielded, keep the bubble big enough for whatever stance the fighter is in (it only grows during one shield)
     if (this.wShieldT > 0 && (this.bubFitT = (this.bubFitT || 0) - dt) <= 0) { this.bubFitT = 0.25; fitToPose(r, true); }
@@ -3044,6 +3100,11 @@ class AIController {
         }
       }
       if (opp.state === 'stun' && dist < range + 0.6) { inp.light = true; }
+      // abilities: bubble when hurt or under fire, teleport or jet in from a distance, tractor to haul a runner in
+      const A = me.ability;
+      if (A && me.abCd <= 0 && opp.state !== 'ko' && Math.random() < L.weapon) {
+        if (A.kind === 'shield' ? opp.state === 'weapon' || me.hp < me.stats.hp * 0.45 : A.kind === 'beam' ? dist > 3.5 && dist < A.range && clear : dist > 6) inp.ability = true;
+      }
     }
     if (inp.block) { inp.mz = Math.min(inp.mz, 0); }
     if (World.solids.length && !inp.dodge) this.steer(dt, me, opp, inp, dist);
@@ -3092,6 +3153,7 @@ const Input = {
       dodge: p.has('Space') || p.has('t-dodge'),
       jump: p.has('KeyF') || p.has('t-jump'),
       special: p.has('KeyE') || p.has('KeyI') || p.has('t-special'),
+      ability: p.has('KeyR') || p.has('t-ability'),
       block: h.has('KeyL') || h.has('ShiftLeft') || h.has('ShiftRight') || h.has('mouse1') || this.touchHeld.has('block'),
     };
   },
@@ -3313,9 +3375,10 @@ const Battle = {
     this.ai = new AIController(difficulty);
     this.wins = [0, 0]; this.round = 0;
     $('p1Name').innerHTML = `${buildName(build)}<small>YOU</small>`;
-    $('p1W').innerHTML = this.p1.weapons.map((W, i) => `<div class="ws" id="ws${i}"><b>${i + 1}</b>${W.name}<i></i></div>`).join('') + (this.p1.armW ? [...new Set([...this.p1.armW].reverse())].map(W => `<div class="ws"><b>${weaponKey(this.p1.build.weapons, W.id)}</b>${W.name}</div>`).join('') : '');
-    $('wbtns').innerHTML = this.p1.weapons.map((W, i) => `<button type="button" data-w="${i + 1}">${W.name}<i></i></button>`).join('');
-    for (const b of $('wbtns').children) b.addEventListener('pointerdown', e => { e.preventDefault(); Input.pressed.add('t-w' + b.dataset.w); });
+    const AB = this.p1.ability;
+    $('p1W').innerHTML = (AB ? `<div class="ws" id="wsA"><b>R</b>${AB.name}<i></i></div>` : '') + this.p1.weapons.map((W, i) => `<div class="ws" id="ws${i}"><b>${i + 1}</b>${W.name}<i></i></div>`).join('') + (this.p1.armW ? [...new Set([...this.p1.armW].reverse())].map(W => `<div class="ws"><b>${weaponKey(this.p1.build.weapons, W.id)}</b>${W.name}</div>`).join('') : '');
+    $('wbtns').innerHTML = this.p1.weapons.map((W, i) => `<button type="button" data-w="${i + 1}">${W.name}<i></i></button>`).join('') + (AB ? `<button type="button" data-w="A" id="wbA">${AB.name}<i></i></button>` : '');
+    for (const b of $('wbtns').children) b.addEventListener('pointerdown', e => { e.preventDefault(); Input.pressed.add(b.dataset.w === 'A' ? 't-ability' : 't-w' + b.dataset.w); });
     $('p2Name').innerHTML = `<small>CPU · ${difficulty.toUpperCase()}</small>${buildName(this.enemyBuild)}`;
     $('vsP1').textContent = buildName(build); $('vsP1w').innerHTML = wchips(build);
     $('vsP2').textContent = buildName(this.enemyBuild); $('vsP2w').innerHTML = wchips(this.enemyBuild);
@@ -3499,6 +3562,25 @@ const Battle = {
       if (d <= f.stats.reach + W.reach + opp.radius && this.facing(f, opp) >= W.arc) this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.kb, stun: W.stun, stop: 0.09, heavy: true });
       else this.sfx('whoosh');
     } else if (W.kind === 'shield') { f.wShieldT = W.dur; fitToPose(f.rig); f.bubFitT = 0.25; this.sfx('special'); }
+    else if (W.kind === 'jet') {
+      // blast up and along the stick (or straight at the opponent), flames roaring for a moment
+      f.vy = Math.sqrt(2 * 26 * 2.0); f.air = true; f.pos.y += 0.02; f.jumpT = 0.35; f.jetT = 0.7;
+      f.knock.addScaledVector(f.abDir, 11); this.burst(f.pos.clone(), W.color, 14, 4); this.sfx('whoosh');
+    } else if (W.kind === 'blink') {
+      // reappear just behind the opponent, or beside them if that spot is outside the ring or inside cover
+      const n = new V3(opp.pos.x - f.pos.x, 0, opp.pos.z - f.pos.z); if (n.lengthSq() < 1e-4) n.set(0, 0, 1); n.normalize();
+      const gap = opp.radius + f.radius + 0.55, from = f.pos.clone();
+      let to = null;
+      for (const [a, b] of [[1, 0], [0, 1], [0, -1], [-1, 0]]) {
+        const d = new V3(n.x * a - n.z * b, 0, n.z * a + n.x * b), c = opp.pos.clone().addScaledVector(d, gap); c.y = opp.pos.y;
+        if (Math.hypot(c.x, c.z) < ARENA_R - 0.8 && !(World.solids.length && World.solidAt(c.x, c.y + 0.6, c.z))) { to = c; break; }
+      }
+      if (to) {
+        this.burst(from.clone().setY(from.y + 1), W.color, 18, 5); this.flash(from.clone().setY(from.y + 1), W.color, 0.8);
+        f.pos.copy(to); f.knock.set(0, 0, 0); f.moveVel.set(0, 0, 0); f.yaw = Math.atan2(opp.pos.x - to.x, opp.pos.z - to.z); f.rig.root.rotation.y = f.yaw;
+        this.burst(to.clone().setY(to.y + 1), W.color, 18, 5); this.flash(to.clone().setY(to.y + 1), W.color, 0.8); this.sfx('special');
+      } else this.sfx('whoosh');
+    }
   },
   projGeo() {
     if (this._pg) return this._pg;
@@ -3752,6 +3834,7 @@ const Battle = {
       if (el) { el.classList.toggle('ready', k <= 0); el.lastChild.style.height = (k * 100) + '%'; }
       if (wb[i]) wb[i].lastChild.style.height = (k * 100) + '%';
     });
+    if (this.p1.ability) { const k = this.p1.abCd / this.p1.ability.cd; for (const el of [$('wsA'), $('wbA')]) if (el) { el.classList.toggle('ready', k <= 0); el.lastChild.style.height = (k * 100) + '%'; } }
   },
   matchOver() {
     this.phase = 'over';
