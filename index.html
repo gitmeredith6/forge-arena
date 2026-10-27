@@ -835,7 +835,7 @@ function shapeBubble(rig) {
   bub.add(floor, ring);
   for (const c of bub.children) { c.castShadow = false; c.receiveShadow = false; }
 }
-function makeFighterModel(build, accent) {
+function makeFighterModel(build, accent, shOff = 0) {
   const T = partById('top', build.top), M = partById('middle', build.middle), B = partById('bottom', build.bottom);
   const wi = { light: 0, middle: 1, heavy: 2 };
   const root = new THREE.Group(), body = new THREE.Group(); root.add(body);
@@ -1587,7 +1587,7 @@ function makeFighterModel(build, accent) {
   const armR = [0.055, 0.1, 0.165][tw2];
   const armLen = [0.74, 0.8, 0.86][tw2];
   const fistR = [0.1, 0.13, 0.21][tw2] * (T.id === 'titan' ? 1.3 : 1);
-  const shX = halfTop + armR + 0.03;
+  const shX = halfTop + armR + 0.03 + shOff;   // shOff pushes the shoulders out when a wide head would collide with them
   const collar = mesh(new THREE.TorusGeometry(Math.max(0.1, halfTop * 0.45), 0.03, 8, 20), joint, body, 0, shoulderY - 0.01, 0); collar.rotation.x = Math.PI / 2;
   rig.armSplay = [0.1, 0.14, 0.2][tw2];
   for (const side of [-1, 1]) {
@@ -1841,6 +1841,16 @@ function makeFighterModel(build, accent) {
   const bub = new THREE.Group(); bub.visible = false; root.add(bub); rig.bubble = bub;
   shapeBubble(rig);
   MESH_SEC = null;
+  // keep the shoulders (and any shoulder rockets) clear of the head: if the head is wider than the gap between them,
+  // build again with the shoulders moved out just enough
+  {
+    root.updateMatrixWorld(true);
+    const v = new V3(); let hx = 0;
+    head.traverse(o => { if (!o.isMesh) return; const P = o.geometry.attributes.position; for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld); hx = Math.max(hx, Math.abs(v.x)); } });
+    const half = [has('rockets') ? armR * 2.2 : armR * 1.25, has('rockets') ? armR * 1.8 : armR * 1.65, armR * 1.7][tw2];
+    const need = hx + 0.015 - (shX - half);
+    if (need > 0.004 && shOff < 0.6) { disposeObj(root); return makeFighterModel(build, accent, shOff + need); }
+  }
   root.traverse(o => { if (o.isSprite) o.castShadow = false; else if (o.isGroup) mergeGroup(o); });
   rig.pose = newPose();
   return rig;
