@@ -466,15 +466,15 @@ const SECTIONS = {
 // any head fits any build. Each gives a small perk: light heads trade a little health for speed or finesse,
 // middle heads are a plain small bonus, heavy heads add protection but slow you slightly
 const HEADS = [
-  { id: 'hawk',     name: 'Hawk',     size: 0, desc: 'Round dome with a beak and fin',        perk: '+4% critical hit chance, -4 health', mod: { crit: 0.04, hp: -4 } },
-  { id: 'wisp',     name: 'Wisp',     size: 0, desc: 'Tall egg pod with a single round eye',  perk: '+5% dodge speed, -4 health',         mod: { dodgeSpeedMul: 0.05, hp: -4 } },
-  { id: 'viper',    name: 'Viper',    size: 0, desc: 'Angular faceted head with swept fins',  perk: '+4% attack speed, -4 health',        mod: { atkSpdMul: 0.04, hp: -4 } },
-  { id: 'sentinel', name: 'Sentinel', size: 1, desc: 'Boxy helmet with ear sensors',          perk: '+6% energy gain',                    mod: { energyRegen: 0.06 } },
-  { id: 'ronin',    name: 'Ronin',    size: 1, desc: 'Samurai helmet with a crest',           perk: '+4% power',                          mod: { powerMul: 0.04 } },
-  { id: 'warden',   name: 'Warden',   size: 1, desc: 'Gem-cut head with twin antennae',       perk: '+4% guard',                          mod: { blockRed: 0.04 } },
-  { id: 'bastion',  name: 'Bastion',  size: 2, desc: 'Wide armored block with a visor',       perk: '+8 health, -3% move speed',          mod: { hp: 8, moveMul: -0.03 } },
-  { id: 'titan',    name: 'Titan',    size: 2, desc: 'Dome sunk into an armored collar',      perk: '+10% knockback resistance, -3% move speed', mod: { kbRes: 0.1, moveMul: -0.03 } },
-  { id: 'golem',    name: 'Golem',    size: 2, desc: 'Low, heavy slab with round eyes',       perk: '+4% defense, -3% move speed',        mod: { def: 0.04, moveMul: -0.03 } },
+  { id: 'hawk',     name: 'Kestrel',     size: 0, desc: 'Round dome with a beak and fin',        perk: '+4% critical hit chance, -4 health', mod: { crit: 0.04, hp: -4 } },
+  { id: 'wisp',     name: 'Lumen',     size: 0, desc: 'Tall egg pod with a single round eye',  perk: '+5% dodge speed, -4 health',         mod: { dodgeSpeedMul: 0.05, hp: -4 } },
+  { id: 'viper',    name: 'Shard',    size: 0, desc: 'Angular faceted head with swept fins',  perk: '+4% attack speed, -4 health',        mod: { atkSpdMul: 0.04, hp: -4 } },
+  { id: 'sentinel', name: 'Watcher', size: 1, desc: 'Boxy helmet with ear sensors',          perk: '+6% energy gain',                    mod: { energyRegen: 0.06 } },
+  { id: 'ronin',    name: 'Shogun',    size: 1, desc: 'Samurai helmet with a crest',           perk: '+4% power',                          mod: { powerMul: 0.04 } },
+  { id: 'warden',   name: 'Prism',   size: 1, desc: 'Gem-cut head with twin antennae',       perk: '+4% guard',                          mod: { blockRed: 0.04 } },
+  { id: 'bastion',  name: 'Bulwark',  size: 2, desc: 'Wide armored block with a visor',       perk: '+8 health, -3% move speed',          mod: { hp: 8, moveMul: -0.03 } },
+  { id: 'titan',    name: 'Colossus',    size: 2, desc: 'Dome sunk into an armored collar',      perk: '+10% knockback resistance, -3% move speed', mod: { kbRes: 0.1, moveMul: -0.03 } },
+  { id: 'golem',    name: 'Monolith',    size: 2, desc: 'Low, heavy slab with round eyes',       perk: '+4% defense, -3% move speed',        mod: { def: 0.04, moveMul: -0.03 } },
 ];
 const headById = id => HEADS.find(h => h.id === id);
 const SPECIALS = {
