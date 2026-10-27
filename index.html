@@ -1528,7 +1528,11 @@ function makeFighterModel(build, accent, shOff = 0) {
     }
   }
   if (M.id === 'core') { mesh(new THREE.SphereGeometry(0.1, 16, 12), gM, body, 0, chestY, chestZ - 0.02); mesh(new THREE.TorusGeometry(0.12, 0.022, 8, 24), joint, body, 0, chestY, chestZ - 0.02); halo(body, acM, 0, chestY, chestZ + 0.05, 0.6, 0.85); }
-  else if (M.id === 'furnace') { for (let i = 0; i < ((cleanWeapons(build.weapons) || []).includes('reactor') ? 2 : 3); i++) mesh(rbox(tw * 0.5, 0.035, 0.04, 0.012), gM, body, 0, chestY - 0.09 + i * 0.09, chestZ); halo(body, acM, 0, chestY, chestZ + 0.06, 0.7, 0.55); }
+  else if (M.id === 'furnace') {
+    // four upright glow vents across the abdomen, the outer pair a little shorter; the small light above them gives way to the arc reactor
+    const vh = th * 0.2, vy = chestY - 0.13;
+    for (const k of [-1.5, -0.5, 0.5, 1.5]) { const h = Math.abs(k) > 1 ? vh * 0.75 : vh; mesh(rbox(0.035, h, 0.04, 0.012), gM, body, k * tw * 0.085, vy - (vh - h) * 0.5, chestZ); }
+    if (!(cleanWeapons(build.weapons) || []).includes('reactor')) mesh(rbox(0.05, 0.035, 0.04, 0.012), gM, body, 0, chestY + 0.09, chestZ); halo(body, acM, 0, chestY, chestZ + 0.06, 0.7, 0.55); }
   else if (M.id === 'guard') { mesh(rbox(tw * 0.66, th * 0.44, 0.08, 0.03), midM, body, 0, chestY, chestZ + 0.01); mesh(rbox(0.14, 0.035, 0.02, 0.01), gM, body, 0, chestY, chestZ + 0.06); halo(body, acM, 0, chestY, chestZ + 0.08, 0.3); }
   else if (M.id === 'swift') {
     // a lit nose light, a dorsal fin down the back and two swept vanes behind the shoulders, like a racer
