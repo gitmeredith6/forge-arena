@@ -360,7 +360,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <span><kbd>J</kbd>+<kbd>K</kbd> together: double-arm smash</span>
     <span><kbd>L</kbd> or <kbd>Shift</kbd> hold: block</span>
     <span><kbd>Q</kbd> kick (its style comes from your bottom)</span>
-    <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> fire your weapons</span>
+    <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> fire your head and chest weapons (arm weapons fire with <kbd>J</kbd> and <kbd>K</kbd>)</span>
     <span><kbd>Space</kbd> dodge</span>
     <span><kbd>F</kbd> jump (legs jump highest, other bottoms hop)</span>
     <span><kbd>E</kbd> special (when energy is full)</span>
@@ -563,7 +563,7 @@ const STAT_VIEW = [
   { k: 'energyRegen', label: 'Energy',  min: 0.7, max: 1.8,  fmt: v => '×' + v.toFixed(2) },
   { k: 'jump',   label: 'Jump',         min: 0.15, max: 1.2, fmt: v => v.toFixed(2) + 'm' },
 ];
-/* weapons: pick up to three, each on its own button and cooldown. Grouped by where they mount */
+/* weapons: pick up to three. Head and chest weapons each get a numbered button and cooldown; an arm weapon replaces your punches. Grouped by where they mount */
 const WEAPON_GROUPS = [
   { slot: 'head',  label: 'Head',     effect: 'Eyes, coil and brow', color: '#ff6b6b' },
   { slot: 'chest', label: 'Chest & shoulders', effect: 'Reactor, rockets and bubble', color: '#7fd8ff' },
@@ -576,15 +576,25 @@ const WEAPONS = [
   { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 0.7, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
   { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 0.68, kb: 4, homing: 2.4, color: 0xffb547 },
   { id: 'bubble',  slot: 'chest', name: 'Bubble Shield',   desc: 'A magenta bubble surrounds you for 10 seconds. Nothing can hurt you and it bounces away anyone who bumps into it, but you cannot attack until it pops.', cd: 30, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 10, color: 0xff3dd8 },
-  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Both forearms become big cannons that fire heavy shells with big knockback.', cd: 6, w: 0.3, a: 0.15, r: 0.35, move: 0.3, kind: 'proj', proj: 'shell', count: 2, speed: 20, mult: 0.65, kb: 9, stun: 0.3, color: 0xffd27a },
-  { id: 'blades',  slot: 'arms',  name: 'Arm Blades',      desc: 'Both forearms become large swords for a wide, hard double slash.', cd: 5, w: 0.18, a: 0.12, r: 0.32, move: 0.4, kind: 'melee', reach: 0.7, arc: 0.0, mult: 1.4, kb: 7, stun: 0.4, color: 0xd8f0ff },
-  { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Both forearms become chainsaws that rev up and grind through anything close.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
+  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Both forearms become cannons. J and K fire a shell from that arm instead of punching; both together fire a heavy double blast.', cd: 6, w: 0.3, a: 0.15, r: 0.35, move: 0.3, kind: 'proj', proj: 'shell', count: 2, speed: 20, mult: 0.65, kb: 9, stun: 0.3, color: 0xffd27a },
+  { id: 'blades',  slot: 'arms',  name: 'Arm Blades',      desc: 'Both forearms become long swords. J and K slash with that arm instead of punching; both together make a wide, hard double slash.', cd: 5, w: 0.18, a: 0.12, r: 0.32, move: 0.4, kind: 'melee', reach: 0.7, arc: 0.0, mult: 1.4, kb: 7, stun: 0.4, color: 0xd8f0ff },
+  { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Both forearms become chainsaws. J and K jab with a revving saw instead of punching; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
 ];
 const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
 const MAX_WEAPONS = 3;
 // cannons, swords and saws all replace the forearms, so a build carries at most one of them
 const ARM_SWAP = ['cannon', 'blades', 'saws'];
 const cleanWeapons = ws => { if (!Array.isArray(ws)) return null; let sw = false; return [...new Set(ws.filter(id => WEAPON[id]))].filter(id => !ARM_SWAP.includes(id) || (!sw && (sw = true))).slice(0, MAX_WEAPONS); };
+// arm weapons are not on a numbered button: they replace your punches. One arm's button uses that arm's lighter version
+// (side 1 = left, 0 = right, matching punchSide); both buttons use the full double-arm version
+const ARM_SINGLE = {
+  cannon: { count: 1, w: 0.12, a: 0.05, r: 0.3, mult: 0.5, kb: 4, stun: 0, move: 0.4 },
+  blades: { w: 0.12, a: 0.1, r: 0.24, mult: 0.85, kb: 3, stun: 0, arc: 0.2 },
+  saws:   { w: 0.1, a: 0.32, r: 0.2, mult: 0.2, stun: 0.08 },
+};
+const armVariant = (W, side) => side < 0 ? W : Object.assign({}, W, ARM_SINGLE[W.id], { side });
+// the key shown for a weapon: arm weapons use J and K, the rest are numbered in the order they were added
+const weaponKey = (ws, id) => ARM_SWAP.includes(id) ? 'J K' : String(ws.filter(x => !ARM_SWAP.includes(x)).indexOf(id) + 1);
 const randomWeapons = () => { let pool = WEAPONS.map(w => w.id); const out = []; while (out.length < MAX_WEAPONS) { const id = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; out.push(id); if (ARM_SWAP.includes(id)) pool = pool.filter(p => !ARM_SWAP.includes(p)); } return out; };
 // paint: each section can be recoloured; with no choice it keeps its part's own colour (the head follows the arms)
 const PAINTS = [
@@ -1976,7 +1986,16 @@ function animateRig(rig, f, dt, time) {
       // aim the hardware: arm guns point both arms at the target, blades slash across, saws jab, head and chest weapons lean in
       const W = f.wpn, live = t >= W.w && t < W.w + W.a + W.r * 0.4;
       rate = 20;
-      if (W.slot === 'arms' && W.kind !== 'melee' && W.kind !== 'grind') {
+      if (W.side !== undefined) {
+        // one arm: that arm aims, slashes or jabs while the other stays up on guard
+        const A = W.side ? 'aL' : 'aR', O = W.side ? 'aR' : 'aL', zs = W.side ? 1 : -1;
+        P[O].x = -0.8; P[O].e = -1.7; rate = 30;
+        if (W.kind === 'proj') { if (t < W.w + W.a + W.r * 0.5) { P[A].x = -1.5; P[A].e = -0.1; P[A].r = 0; P.tw = 0.15 * zs; } }
+        else if (W.kind === 'melee') {
+          if (t < W.w) { P[A].x = -2.3; P[A].z = -0.7 * zs; P[A].e = -1.0; P.tw = -0.3 * zs; }
+          else if (live) { P[A].x = -1.3; P[A].z = 0.55 * zs; P[A].e = -0.15; P.tw = 0.35 * zs; P.bx = 0.15; rate = 40; }
+        } else { const j = Math.sin(t * 28); P[A].x = -1.4 + j * 0.1; P[A].e = -0.2; P[A].r = 0; P.tw = 0.2 * zs; P.bx = 0.1; }
+      } else if (W.slot === 'arms' && W.kind !== 'melee' && W.kind !== 'grind') {
         const both = W.id !== 'grapple', aim = t < W.w + W.a + W.r * 0.5;
         if (aim) { if (both) { P.aR.x = P.aL.x = -1.5; P.aR.e = P.aL.e = -0.1; P.aR.r = P.aL.r = 0; } else { P.aL.x = -1.55; P.aL.e = -0.05; P.aL.r = 0; } }
       } else if (W.kind === 'melee') {
@@ -2287,8 +2306,8 @@ function renderWeapons() {
       b.type = 'button'; b.className = 'part wrap'; b.id = `weapon-${wpn.id}`; b.setAttribute('aria-pressed', String(on));
       const swaps = ARM_SWAP.includes(wpn.id) && build.weapons.some(id => ARM_SWAP.includes(id));
       if (!on && full && !swaps) b.classList.add('dim');
-      const key = on ? `<span class="wkey">${build.weapons.indexOf(wpn.id) + 1}</span>` : '';
-      b.innerHTML = `<span class="pn">${key}${wpn.name}</span><span class="pp">${wpn.desc} <i>${wpn.cd}s cooldown</i></span>`;
+      const key = on ? `<span class="wkey">${weaponKey(build.weapons, wpn.id)}</span>` : '';
+      b.innerHTML = `<span class="pn">${key}${wpn.name}</span><span class="pp">${wpn.desc} <i>${wpn.slot === 'arms' ? 'Replaces your punches, no cooldown' : wpn.cd + 's cooldown'}</i></span>`;
       b.onclick = () => {
         let ws = build.weapons.slice();
         if (on) ws = ws.filter(id => id !== wpn.id);
@@ -2404,7 +2423,7 @@ function renderStats(hoverBuild) {
   }).join('');
   const sp = SPECIALS[partById('top', (hoverBuild || build).top).w];
   $('special').innerHTML = `<div class="sk">Special move (from your Arms)</div><div class="sn">${sp.name}</div><p>${sp.desc}</p>`
-    + `<div class="sk" style="margin-top:8px">Weapons</div><div class="wlist">${build.weapons.length ? build.weapons.map((id, i) => `<span><kbd>${i + 1}</kbd>${WEAPON[id].name}</span>`).join('') : '<span>None yet. Click Weapons to add some.</span>'}</div>`;
+    + `<div class="sk" style="margin-top:8px">Weapons</div><div class="wlist">${build.weapons.length ? build.weapons.map(id => `<span><kbd>${weaponKey(build.weapons, id)}</kbd>${WEAPON[id].name}</span>`).join('') : '<span>None yet. Click Weapons to add some.</span>'}</div>`;
 }
 function renderAll() {
   renderTabs(); renderParts(); renderStats();
@@ -2726,7 +2745,8 @@ class Fighter {
     this.trails = [makeTrail(scene, accent), makeTrail(scene, accent)];
     this.special = SPECIALS[partById('top', build.top).w];
     this.kick = kickFor(build);
-    this.weapons = (cleanWeapons(build.weapons) || []).map(id => WEAPON[id]);
+    const ws = (cleanWeapons(build.weapons) || []).map(id => WEAPON[id]);
+    this.armWpn = ws.find(W => W.slot === 'arms') || null; this.weapons = ws.filter(W => W.slot !== 'arms');
     this.radius = this.stats.radius;
     this.pos = this.rig.root.position;
     this.knock = new V3(); this.moveVel = new V3();
@@ -2743,6 +2763,8 @@ class Fighter {
   timing(kind) { if (kind === 'kick') return this.kick; const s = (this.slowT > 0 ? 1.3 : 1) / this.stats.atkSpd; return kind === 'light' ? { w: 0.15 * s, a: 0.08 * s, r: 0.22 * s } : { w: 0.48 * s, a: 0.1 * s, r: 0.42 * s }; }
   inWindup() { if (this.state === 'weapon') return this.t < this.wpn.w + 0.05; return (this.state === 'light' || this.state === 'heavy' || this.state === 'kick') && this.t < this.timing(this.state).w; }
   startAttack(kind, side) { this.state = kind; this.t = 0; this.hitDone = false; this.attackId++; if (kind === 'light') this.punchSide = side === undefined ? this.punchSide ^ 1 : side; }
+  // attack with the fitted arm weapon instead of a punch: side 1 = left arm, 0 = right, -1 = both
+  useArm(side) { if (side >= 0) this.punchSide = side; this.state = 'weapon'; this.wpn = armVariant(this.armWpn, side); this.t = 0; this.hitDone = false; this.tickT = 0; this.shots = 0; this.attackId++; }
   tryAction(a, wish, fwd, right, game) {
     // inside the bubble shield you can move, block, dodge and jump, but not attack, so it's a safe breather rather than a free 10 seconds of hits
     if (this.wShieldT > 0 && a !== 'dodge') return false;
@@ -2752,6 +2774,9 @@ class Fighter {
       this.dodgeDir = wish.lengthSq() > 0.01 ? wish.clone().normalize() : fwd.clone().negate();
       this.dodgeLocal = { x: this.dodgeDir.dot(right), z: this.dodgeDir.dot(fwd) };
       game.sfx('whoosh'); return true;
+    }
+    if (this.armWpn && (a === 'light' || a === 'heavy' || a === 'left' || a === 'right')) {
+      this.useArm(a === 'heavy' ? -1 : a === 'left' ? 1 : a === 'right' ? 0 : (this.punchSide ^ 1)); game.sfx('whoosh'); return true;
     }
     if (a === 'light' || a === 'heavy' || a === 'kick') { this.startAttack(a); return true; }
     // punchSide 1 throws with the left arm, 0 with the right
@@ -2785,7 +2810,7 @@ class Fighter {
     }
     this.armT = Math.max(0, (this.armT || 0) - dt);
     // a punch queued during a punch waits for that punch's follow-through rather than expiring, so quick one-two combos never drop a press
-    const queued = this.state === 'light' && this.buffer && (this.buffer.a === 'light' || this.buffer.a === 'left' || this.buffer.a === 'right');
+    const queued = (this.state === 'light' || (this.state === 'weapon' && this.wpn.side !== undefined)) && this.buffer && (this.buffer.a === 'light' || this.buffer.a === 'left' || this.buffer.a === 'right');
     if (this.buffer && !queued) { this.buffer.t -= dt; if (this.buffer.t <= 0) this.buffer = null; }
     // jump from the ground while free to move; the world's gravity brings it back down
     this.jumpT = Math.max(0, (this.jumpT || 0) - dt);
@@ -2825,6 +2850,12 @@ class Fighter {
         const W = this.wpn;
         speedMul = W.move; turnRate = W.kind === 'beam' || W.kind === 'cone' ? 3.5 : 8;
         game.weaponStep(this, opp, dt);
+        if (W.side !== undefined && this.state === 'weapon' && this.buffer) {
+          // one arm's weapon works like a punch: the other button in the wind-up upgrades to both arms, a press during the follow-through chains the next
+          const arm = this.buffer.a === 'left' ? 1 : this.buffer.a === 'right' ? 0 : -1;
+          if (this.t < W.w && (this.buffer.a === 'heavy' || (arm >= 0 && arm !== W.side && this.chordOk))) { this.buffer = null; this.useArm(-1); break; }
+          if (this.t >= W.w + W.a + W.r * 0.35 && (arm >= 0 || this.buffer.a === 'light')) { this.buffer = null; this.useArm(arm >= 0 ? arm : W.side ^ 1); break; }
+        }
         if (this.state === 'weapon' && this.t >= W.w + W.a + W.r) this.state = 'idle';
         break;
       }
@@ -2960,6 +2991,8 @@ class AIController {
         const ready = me.weapons.map((W, i) => [W, i]).filter(([W, i]) => me.wcd[i] <= 0 && fits(W));
         if (ready.length) inp['w' + (pick(ready)[1] + 1)] = true;
       }
+      // hand cannons shoot from range like punches that reach
+      if (me.armWpn && me.armWpn.kind === 'proj' && !inp.special && opp.state !== 'ko' && dist > range && dist < 14 && clear && Math.random() < L.aggro * 0.5) inp.light = true;
       if (dist > range + 0.4) { this.mz = 1; this.mx = this.strafe * rand(0, 0.5); }
       else if (dist < range * 0.55) { this.mz = -0.7; this.mx = this.strafe * 0.5; }
       else {
@@ -3242,7 +3275,7 @@ const Battle = {
     this.ai = new AIController(difficulty);
     this.wins = [0, 0]; this.round = 0;
     $('p1Name').innerHTML = `${buildName(build)}<small>YOU</small>`;
-    $('p1W').innerHTML = this.p1.weapons.map((W, i) => `<div class="ws" id="ws${i}"><b>${i + 1}</b>${W.name}<i></i></div>`).join('');
+    $('p1W').innerHTML = this.p1.weapons.map((W, i) => `<div class="ws" id="ws${i}"><b>${i + 1}</b>${W.name}<i></i></div>`).join('') + (this.p1.armWpn ? `<div class="ws"><b>J K</b>${this.p1.armWpn.name}</div>` : '');
     $('wbtns').innerHTML = this.p1.weapons.map((W, i) => `<button type="button" data-w="${i + 1}">${W.name}<i></i></button>`).join('');
     for (const b of $('wbtns').children) b.addEventListener('pointerdown', e => { e.preventDefault(); Input.pressed.add('t-w' + b.dataset.w); });
     $('p2Name').innerHTML = `<small>CPU · ${difficulty.toUpperCase()}</small>${buildName(this.enemyBuild)}`;
@@ -3406,7 +3439,7 @@ const Battle = {
     }
     if (W.kind === 'proj') {
       const every = W.a / W.count;
-      while (f.shots < W.count && t >= A0 + f.shots * every) { this.spawnProj(f, opp, W, f.shots); f.shots++; }
+      while (f.shots < W.count && t >= A0 + f.shots * every) { this.spawnProj(f, opp, W, W.side !== undefined ? W.side : f.shots); f.shots++; }
       return;
     }
     if (f.hitDone) return; f.hitDone = true;
