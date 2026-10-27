@@ -563,13 +563,13 @@ const STAT_VIEW = [
 ];
 /* weapons: pick up to three, each on its own button and cooldown. Grouped by where they mount */
 const WEAPON_GROUPS = [
-  { slot: 'head',  label: 'Head',     effect: 'Eyes, crown and brow', color: '#ff6b6b' },
+  { slot: 'head',  label: 'Head',     effect: 'Eyes, coil and brow', color: '#ff6b6b' },
   { slot: 'chest', label: 'Chest & shoulders', effect: 'Reactor, rockets and bubble', color: '#7fd8ff' },
   { slot: 'arms',  label: 'Arms',     effect: 'Cannons, swords or saws', color: '#ffb547' },
 ];
 const WEAPONS = [
   { id: 'laser',   slot: 'head',  name: 'Laser Eyes',      desc: 'Beams fire straight from the eyes and burn the target at long range.', cd: 7,  w: 0.25, a: 0.6,  r: 0.25, move: 0.5,  kind: 'beam',  from: 'eyes',  tick: 0.1,  mult: 0.46, kb: 0.4, range: 14, color: 0xff3b3b },
-  { id: 'tesla',   slot: 'head',  name: 'Tesla Crown',     desc: 'Lightning leaps to a nearby target and stuns it.', cd: 10, w: 0.3, a: 0.1, r: 0.35, move: 0.3, kind: 'zap', range: 5.5, mult: 1.2, kb: 3, stun: 0.9, color: 0x8fd8ff },
+  { id: 'tesla',   slot: 'head',  name: 'Tesla Coil',      desc: 'Lightning leaps to a nearby target and stuns it.', cd: 10, w: 0.3, a: 0.1, r: 0.35, move: 0.3, kind: 'zap', range: 5.5, mult: 1.2, kb: 3, stun: 0.9, color: 0x8fd8ff },
   { id: 'tractor', slot: 'head',  name: 'Tractor Beam',    desc: 'A green beam from an emitter on the brow locks on and drags the opponent right up to you.', cd: 9, w: 0.2, a: 0.9, r: 0.3, move: 0.2, kind: 'beam', from: 'brow', tick: 0.1, mult: 0.08, kb: 0, pull: 9, stun: 0.15, range: 10, color: 0x4dff88, beamR: 0.05 },
   { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 0.7, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
   { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 0.68, kb: 4, homing: 2.4, color: 0xffb547 },
@@ -1671,8 +1671,15 @@ function makeFighterModel(build, accent, shOff = 0) {
     const tm = wmat(0x8fd8ff), ty0 = hh * 0.92;
     mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.16, 8), joint, head, 0, ty0 + 0.06, -0.04);
     for (let i = 0; i < 3; i++) { const c = mesh(new THREE.TorusGeometry(0.05 - i * 0.008, 0.009, 6, 18), joint, head, 0, ty0 + 0.04 + i * 0.045, -0.04); c.rotation.x = Math.PI / 2; }
-    mesh(new THREE.SphereGeometry(0.045, 14, 10), tm, head, 0, ty0 + 0.2, -0.04); halo(head, new THREE.Color(0x8fd8ff), 0, ty0 + 0.2, -0.04, 0.35, 0.8);
+    mesh(new THREE.SphereGeometry(0.045, 14, 10), tm, head, 0, ty0 + 0.2, -0.04); const glow = halo(head, new THREE.Color(0x8fd8ff), 0, ty0 + 0.2, -0.04, 0.35, 0.8);
     rig.mount.crown = mark(head, 0, ty0 + 0.2, -0.04);
+    // a constant electric pulse: a bright ring climbs the coil over and over, with a crackling arc wound round it
+    const add = { transparent: true, blending: THREE.AdditiveBlending, depthWrite: false };
+    const pulse = new THREE.Mesh(new THREE.TorusGeometry(0.056, 0.011, 6, 22), new THREE.MeshBasicMaterial({ color: 0xbfeaff, opacity: 0.9, ...add }));
+    pulse.rotation.x = Math.PI / 2; pulse.position.set(0, ty0 + 0.03, -0.04); head.add(pulse);
+    const arc = new THREE.Line(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(3 * 28), 3)), new THREE.LineBasicMaterial({ color: 0xe4f7ff, opacity: 0.95, ...add }));
+    arc.frustumCulled = false; head.add(arc);
+    rig.coil = { pulse, arc, glow, y0: ty0 + 0.02, y1: ty0 + 0.17, z: -0.04, t: Math.random(), k: 0 };
   }
   // tractor beam: a small dish emitter with a glowing green lens on the brow, just above the eyes
   if (has('tractor')) {
@@ -2037,6 +2044,17 @@ function animateRig(rig, f, dt, time) {
   if (rig.flame) { const jb = f && f.jumpT > 0 ? f.jumpT / 0.35 : 0; const sy = 0.8 + Math.random() * 0.4 + sp * 0.5 + jb * 2.6; rig.flame.scale.set(1 + jb * 0.9, sy, 1 + jb * 0.9); rig.flame.position.y = -0.75 - 0.25 * sy; }
   if (rig.pods) { const open = f && f.state === 'weapon' && f.wpn.id === 'rockets' ? 1 : 0; rig.podOpen = lerp(rig.podOpen || 0, open, 1 - Math.exp(-14 * dt)); for (const p of rig.pods) { p.g.position.y = p.y0 + (p.y1 - p.y0) * rig.podOpen; p.g.visible = rig.podOpen > 0.03; } }
   if (rig.saws && rig.saws.length) { const rev = f && f.state === 'weapon' && f.wpn.id === 'saws'; rig.sawT = (rig.sawT || 0) + dt * (rev ? 3.5 : 0.25); for (const sw of rig.saws) sawPlace(sw, rig.sawT * sw.step); }
+  if (rig.coil) {
+    const c = rig.coil; c.t = (c.t + dt * 1.7) % 1;
+    const sc = 1 - c.t * 0.4; c.pulse.position.y = lerp(c.y0, c.y1, c.t); c.pulse.scale.set(sc, sc, 1); c.pulse.material.opacity = 0.95 * (1 - c.t * 0.55);
+    c.glow.material.opacity = 0.55 + Math.random() * 0.4;
+    if ((c.k -= dt) <= 0) {
+      // re-strike the arc: a jittery spiral up the coil into the ball
+      c.k = 0.04 + Math.random() * 0.05; const pa = c.arc.geometry.attributes.position, n = pa.count, a0 = Math.random() * 6.3;
+      for (let i = 0; i < n; i++) { const u = i / (n - 1), a = a0 + u * 9.5, r = (0.052 - u * 0.03) * (0.8 + Math.random() * 0.45); pa.setXYZ(i, Math.cos(a) * r, lerp(c.y0, c.y1 + 0.03, u) + (Math.random() - 0.5) * 0.012, c.z + Math.sin(a) * r); }
+      pa.needsUpdate = true; c.arc.material.opacity = 0.6 + Math.random() * 0.4;
+    }
+  }
   if (rig.jets) { const boost = st === 'dodge' ? 1.4 : st === 'special' ? 0.8 : 0; for (const j of rig.jets) { const k = 0.55 + Math.random() * 0.3 + sp * 0.6 + boost; j.scale.set(0.85 + boost * 0.15, k, 0.85 + boost * 0.15); } }
   if (rig.ball) {
     // roll the ball by the distance travelled: axis = up x velocity, in the fighter's local frame
