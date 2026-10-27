@@ -810,28 +810,49 @@ function makeFighterModel(build, accent) {
     // hip drive gear
     if (w > 0) gear(pivot, r * [0, 0.9, 0.8][w], 9, 0.03, side * r * [0, 1.3, 1.45][w], -0.02, 0).rotation.y = Math.PI / 2;
   }
-  // Light arms: sleek dark sleeves with trim lines, a ribbed guard on the elbow, exposed pistons on the inner forearm and a glowing marker
+  // Light arms: chunky black armour with a tall slotted shoulder shield, layered plates, a big ribbed elbow pad,
+  // an exposed elbow frame and pistons, after a sleek sci-fi prosthetic. The shield, pad, brackets and knuckles take the arm colour
   function lightArm(pivot, elbow, r, len, side) {
-    const L = len * 0.5, lathe = pts => new THREE.LatheGeometry(pts.map(([rr, y]) => new THREE.Vector2(rr, y)), 20);
-    const sleeve = stdMat(0x17191e, { metalness: 0.5, roughness: 0.32 }); rig.mats.push(sleeve);
-    // upper arm: tapered sleeve with trim lines and a bracket in the arm colour above the elbow
-    mesh(lathe([[0, -L * 0.94], [r * 1.0, -L * 0.92], [r * 1.32, -L * 0.62], [r * 1.48, -L * 0.3], [r * 1.36, -L * 0.06], [r * 1.1, 0.02], [0, 0.03]]), sleeve, pivot).scale.set(1, 1, 1.08);
-    for (const z of [-1, 1]) mesh(new THREE.CylinderGeometry(0.004, 0.004, L * 0.62, 5), joint, pivot, side * r * 0.5, -L * 0.42, z * r * 1.36);
-    const br = mesh(new THREE.TorusGeometry(r * 1.24, r * 0.2, 8, 22, Math.PI * 1.1), topM, pivot, 0, -L * 0.82, 0); br.rotation.set(Math.PI / 2, 0, side > 0 ? -0.55 * Math.PI : 0.45 * Math.PI);
-    bolt(pivot, side * r * 1.42, -L * 0.48, r * 0.3, r * 0.16);
-    // elbow: hinge disc and the ribbed guard on the outside
-    const hd = mesh(new THREE.CylinderGeometry(r * 0.75, r * 0.75, 0.02, 16), dark, elbow, side * r * 1.05, 0, 0); hd.rotation.z = Math.PI / 2;
-    const gd = mesh(new THREE.SphereGeometry(r * 1.25, 20, 14, side > 0 ? Math.PI - 1.5 : -1.5, 3.0), topM, elbow, side * r * 0.75, -L * 0.18, -r * 0.1); gd.scale.set(0.75, 1.9, 1.05);
-    for (const k of [-1, 0, 1]) mesh(new THREE.CylinderGeometry(0.0055, 0.0055, L * 0.36, 5), dark, elbow, side * r * 1.68, -L * 0.18, -r * 0.1 + k * r * 0.42);
-    // forearm: tapered sleeve, trim lines, a glowing marker, and exposed pistons on the inner side
-    mesh(lathe([[0, -L * 0.98], [r * 0.95, -L * 0.96], [r * 1.22, -L * 0.62], [r * 1.42, -L * 0.3], [r * 1.18, -0.02], [0, 0.0]]), sleeve, elbow).scale.set(1, 1, 1.1);
-    for (const z of [-1, 1]) mesh(new THREE.CylinderGeometry(0.004, 0.004, L * 0.5, 5), joint, elbow, side * r * 0.45, -L * 0.6, z * r * 1.32);
-    const tri = mesh(new THREE.CircleGeometry(r * 0.24, 3), gT, elbow, side * r * 1.4, -L * 0.68, r * 0.2); tri.rotation.set(0, side * Math.PI / 2, Math.PI / 2);
-    for (const dz of [-0.35, 0.35]) mesh(new THREE.CylinderGeometry(r * 0.16, r * 0.16, L * 0.42, 8), joint, elbow, -side * r * 1.2, -L * 0.42, dz * r);
-    mesh(rbox(r * 0.4, L * 0.22, r * 1.1, r * 0.1), dark, elbow, -side * r * 1.15, -L * 0.42, 0);
-    bolt(elbow, side * r * 1.3, -L * 0.86, r * 0.5, r * 0.15);
-    // wrist ring
-    const wr = mesh(new THREE.TorusGeometry(r * 1.0, r * 0.2, 8, 20), joint, elbow, 0, -L * 0.97, 0); wr.rotation.x = Math.PI / 2;
+    const L = len * 0.5, V2 = THREE.Vector2;
+    const lathe = (pts, n = 22) => new THREE.LatheGeometry(pts.map(([rr, y]) => new V2(rr, y)), n);
+    const plate = (prof, off, phi0, phiLen, t = 0.012) => { const a = prof.map(([rr, y]) => new V2(rr + off, y)); return new THREE.LatheGeometry(a.concat(prof.slice().reverse().map(([rr, y]) => new V2(rr + off - t, y)), [a[0].clone()]), 16, phi0, phiLen); };
+    const blk = stdMat(0x121418, { metalness: 0.6, roughness: 0.24 }), blk2 = stdMat(0x22252c, { metalness: 0.55, roughness: 0.3, side: THREE.DoubleSide });
+    const steel = stdMat(0x9097a2, { metalness: 0.95, roughness: 0.22 }); rig.mats.push(blk, blk2, steel);
+    const OUT = side > 0 ? Math.PI / 2 : -Math.PI / 2, IN = -OUT;   // lathe angle facing out of / into the body
+    // tall shield over the shoulder, with deep vertical slots and a trim lip
+    const pg = new THREE.Group(); pg.position.set(side * r * 1.0, -r * 0.9, 0); pg.rotation.z = side * 0.12; pg.scale.set(0.9, 1.55, 1.12); pivot.add(pg);
+    const R = r * 2.35;
+    mesh(new THREE.SphereGeometry(R, 30, 18, 0, Math.PI * 2, 0, 2.05), topM, pg);
+    mesh(new THREE.CircleGeometry(R * 0.9, 24), blk, pg, 0, -R * 0.45, 0).rotation.x = Math.PI / 2;
+    for (const k of [-1.5, -0.5, 0.5, 1.5]) { const sl = mesh(new THREE.TorusGeometry(R + 0.001, 0.012, 6, 18, 1.45), blk, pg); sl.rotation.order = 'YXZ'; sl.rotation.set(0, (side > 0 ? 0 : Math.PI) + k * 0.3, -0.25); }
+    const lip = mesh(new THREE.TorusGeometry(R * 0.97, 0.01, 6, 30), steel, pg, 0, -R * 0.42, 0); lip.rotation.x = Math.PI / 2;
+    // upper arm: thick black sleeve with a layered outer plate, steel trim and an arm-colour bracket above the elbow
+    const UP = [[r * 1.25, -L * 0.95], [r * 1.6, -L * 0.75], [r * 1.9, -L * 0.45], [r * 1.85, -L * 0.15], [r * 1.5, 0.02]];
+    mesh(lathe([[0, -L * 0.97]].concat(UP, [[0, 0.04]])), blk, pivot).scale.set(1, 1, 1.08);
+    mesh(plate(UP.slice(0, 4), 0.014, OUT - 0.9, 1.8), blk2, pivot).scale.set(1, 1, 1.08);
+    mesh(plate(UP.slice(1, 3), 0.026, OUT - 0.6, 1.2, 0.01), blk2, pivot).scale.set(1, 1, 1.08);
+    for (const z of [-1, 1]) mesh(new THREE.CylinderGeometry(0.0045, 0.0045, L * 0.55, 5), steel, pivot, side * r * 0.9, -L * 0.5, z * r * 1.75);
+    const br = mesh(new THREE.TorusGeometry(r * 1.45, r * 0.24, 8, 24, Math.PI * 1.2), topM, pivot, 0, -L * 0.86, 0); br.rotation.set(Math.PI / 2, 0, side > 0 ? -0.6 * Math.PI : 0.4 * Math.PI);
+    for (const y of [0.35, 0.6]) bolt(pivot, side * r * 1.98, -L * y, r * 0.2, r * 0.18);
+    // elbow: big steel hinge disc with an arm-colour ring, and an open steel frame with struts on the inner side
+    for (const sx of [-1, 1]) { const hd = mesh(new THREE.CylinderGeometry(r * 1.0, r * 1.0, 0.024, 20), steel, elbow, sx * r * 1.25, 0, 0); hd.rotation.z = Math.PI / 2; const hr = mesh(new THREE.TorusGeometry(r * 0.75, r * 0.12, 6, 20), topM, elbow, sx * r * 1.28, 0, 0); hr.rotation.y = Math.PI / 2; }
+    for (const a of [-0.5, 0.5]) { const st = mesh(rbox(r * 0.25, L * 0.5, r * 0.25, r * 0.08), steel, elbow, -side * r * 1.25, -L * 0.18, a * r); st.rotation.x = a * 0.6; }
+    // big teardrop elbow pad with ribs
+    const pad = new THREE.Group(); pad.position.set(side * r * 1.15, -L * 0.22, -r * 0.15); pad.scale.set(0.72, 2.1, 1.12); elbow.add(pad);
+    mesh(new THREE.SphereGeometry(r * 1.55, 24, 16), topM, pad);
+    for (const k of [-1, 0, 1]) { const rb = mesh(new THREE.TorusGeometry(r * 1.55 + 0.001, 0.009, 6, 16, 1.6), blk, pad); rb.rotation.order = 'YXZ'; rb.rotation.set(0, (side > 0 ? 0 : Math.PI) + k * 0.38, -0.8); }
+    // forearm: thick sleeve, a layered outer plate with a glowing triangle, steel trim, and an exposed inner panel with pistons
+    const FA = [[r * 1.1, -L * 0.96], [r * 1.35, -L * 0.75], [r * 1.7, -L * 0.45], [r * 1.75, -L * 0.18], [r * 1.45, 0.0]];
+    mesh(lathe([[0, -L * 0.98]].concat(FA, [[0, 0.02]])), blk, elbow).scale.set(1, 1, 1.1);
+    mesh(plate(FA.slice(0, 4), 0.014, OUT - 1.0, 2.0), blk2, elbow).scale.set(1, 1, 1.1);
+    const tri = mesh(new THREE.CircleGeometry(r * 0.3, 3), gT, elbow, side * (r * 1.62 + 0.02), -L * 0.62, r * 0.25); tri.rotation.set(0, side * Math.PI / 2, -Math.PI / 2);
+    for (const z of [-1, 1]) mesh(new THREE.CylinderGeometry(0.0045, 0.0045, L * 0.5, 5), steel, elbow, side * r * 0.6, -L * 0.55, z * r * 1.78);
+    mesh(rbox(r * 0.3, L * 0.42, r * 1.5, r * 0.1), steel, elbow, -side * r * 1.6, -L * 0.48, 0);
+    for (let i = 0; i < 3; i++) mesh(rbox(r * 0.32, 0.008, r * 1.2, 0.003), blk, elbow, -side * r * 1.76, -L * (0.36 + i * 0.09), 0);
+    for (const dz of [-0.55, 0.55]) mesh(new THREE.CylinderGeometry(r * 0.15, r * 0.15, L * 0.5, 8), steel, elbow, -side * r * 1.25, -L * 0.45, dz * r);
+    bolt(elbow, side * r * 1.6, -L * 0.85, r * 0.6, r * 0.16);
+    // segmented wrist
+    for (const [y, rr] of [[-L * 0.93, r * 1.2], [-L * 1.0, r * 1.05]]) { const wr = mesh(new THREE.TorusGeometry(rr, r * 0.18, 8, 22), y < -L * 0.95 ? steel : blk, elbow, 0, y, 0); wr.rotation.x = Math.PI / 2; }
   }
   function armDetail(pivot, elbow, fist, armR, armLen, fistR, side, w) {
     if (w === 0) return fingers(fist, fistR, side);
@@ -1413,21 +1434,12 @@ function makeFighterModel(build, accent) {
   const halfTop = 0.5 * M.taper * tw * faceScale * 0.92;
   const armR = [0.055, 0.1, 0.165][tw2];
   const armLen = [0.74, 0.8, 0.86][tw2];
-  const fistR = [0.08, 0.13, 0.21][tw2] * (T.id === 'titan' ? 1.3 : 1);
+  const fistR = [0.1, 0.13, 0.21][tw2] * (T.id === 'titan' ? 1.3 : 1);
   const shX = halfTop + armR + 0.03;
   const collar = mesh(new THREE.TorusGeometry(Math.max(0.1, halfTop * 0.45), 0.03, 8, 20), joint, body, 0, shoulderY - 0.01, 0); collar.rotation.x = Math.PI / 2;
   rig.armSplay = [0.1, 0.14, 0.2][tw2];
   for (const side of [-1, 1]) {
-    if (tw2 === 0) {
-      // Light: a rounded, ribbed pauldron over a dark gyro joint
-      const pg = new THREE.Group(); pg.position.set(side * (shX + armR * 0.35), shoulderY - 0.02, 0); pg.rotation.z = -side * 0.32; pg.scale.set(1, 1.2, 1.15); body.add(pg);
-      const R = armR * 2.15, out = side > 0 ? Math.PI : 0;
-      mesh(new THREE.SphereGeometry(R, 28, 16, 0, Math.PI * 2, 0, 1.95), topM, pg);
-      mesh(new THREE.CircleGeometry(R * 0.92, 24), dark, pg, 0, -R * 0.36, 0).rotation.x = Math.PI / 2;
-      for (const k of [-1, 0, 1]) { const rb = mesh(new THREE.TorusGeometry(R + 0.002, 0.0075, 6, 20, 1.5), dark, pg, 0, 0, 0); rb.rotation.set(0, (side > 0 ? 0 : Math.PI) + k * 0.42, 0); rb.rotation.order = 'YXZ'; rb.rotation.z = -0.15; }
-      const lip = mesh(new THREE.TorusGeometry(R * 0.99, 0.008, 6, 28, 3.3), joint, pg, 0, -R * 0.36, 0); lip.rotation.set(Math.PI / 2, 0, (side > 0 ? Math.PI : 0) - 1.65);
-      const gy = mesh(new THREE.TorusGeometry(armR * 0.8, armR * 0.24, 10, 24), dark, body, side * (shX - armR * 0.5), shoulderY - 0.06, -armR * 0.4); gy.rotation.y = Math.PI / 2;
-    }
+    if (tw2 === 0) { const gy = mesh(new THREE.TorusGeometry(armR * 0.9, armR * 0.3, 10, 24), dark, body, side * (shX - armR * 0.4), shoulderY - 0.06, 0); gy.rotation.y = Math.PI / 2;     }
     else if (tw2 === 1) { mesh(new THREE.SphereGeometry(armR * 1.65, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), topM, body, side * shX, shoulderY - 0.04, 0); const rr = mesh(new THREE.TorusGeometry(armR * 1.65, 0.016, 6, 24), gT, body, side * shX, shoulderY - 0.04, 0); rr.rotation.x = Math.PI / 2; }
     else { mesh(rbox(armR * 3.4, armR * 2.1, armR * 3.2, armR * 0.6), topM, body, side * shX, shoulderY + 0.04, 0); mesh(rbox(armR * 3.0, armR * 0.9, armR * 2.9, armR * 0.35), topM, body, side * (shX + armR * 0.2), shoulderY - armR * 1.2, 0); mesh(rbox(0.025, armR * 0.5, armR * 1.5, 0.01), gT, body, side * (shX + armR * 1.72), shoulderY + 0.04, 0); }
     const pivot = new THREE.Group(); pivot.position.set(side * shX, shoulderY - 0.06, 0); body.add(pivot);
