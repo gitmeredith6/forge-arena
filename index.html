@@ -232,6 +232,8 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 .hpbar .trail { position: absolute; inset: 0 auto 0 0; background: #fff; opacity: 0.55; }
 .hpbar .fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(180deg, #fff6 0, transparent 50%), var(--c); }
 .hp-side.r .hpbar .trail, .hp-side.r .hpbar .fill { left: auto; right: 0; }
+.hpbar .hpnum { position: absolute; inset: 0 8px 0 auto; display: flex; align-items: center; font: 700 11px/1 var(--font, sans-serif); color: #fff; text-shadow: 0 1px 2px #000c; transform: skewX(14deg); }
+.hp-side.r .hpbar .hpnum { inset: 0 auto 0 8px; transform: skewX(-14deg); }
 .enbar { position: relative; width: min(260px, 70%); height: 7px; background: #0b0f18cc; border-radius: 3px; overflow: hidden; transform: skewX(-14deg); }
 .hp-side.r .enbar { transform: skewX(14deg); }
 .enbar .fill { position: absolute; inset: 0 auto 0 0; background: #8fd8ff; }
@@ -394,7 +396,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   <div class="hud">
     <div class="hp-side">
       <div class="hp-name" id="p1Name"></div>
-      <div class="hpbar" style="--c: var(--p1)"><div class="trail" id="p1Trail"></div><div class="fill" id="p1Fill"></div></div>
+      <div class="hpbar" style="--c: var(--p1)"><div class="trail" id="p1Trail"></div><div class="fill" id="p1Fill"></div><span class="hpnum" id="p1Num"></span></div>
       <div class="enbar" id="p1En"><div class="fill" id="p1EnFill"></div></div>
       <div class="en-label" id="p1EnLbl"></div>
       <div class="wslots" id="p1W"></div>
@@ -406,7 +408,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     </div>
     <div class="hp-side r">
       <div class="hp-name" id="p2Name"></div>
-      <div class="hpbar" style="--c: var(--p2)"><div class="trail" id="p2Trail"></div><div class="fill" id="p2Fill"></div></div>
+      <div class="hpbar" style="--c: var(--p2)"><div class="trail" id="p2Trail"></div><div class="fill" id="p2Fill"></div><span class="hpnum" id="p2Num"></span></div>
       <div class="enbar" id="p2En"><div class="fill" id="p2EnFill"></div></div>
     </div>
   </div>
@@ -456,25 +458,25 @@ const WEIGHTS = ['light', 'middle', 'heavy'];
 const WLABEL = { light: 'Light', middle: 'Middle', heavy: 'Heavy' };
 const WCOLOR = { light: 'var(--w-light)', middle: 'var(--w-middle)', heavy: 'var(--w-heavy)' };
 const SECTIONS = {
-  top:    { label: 'Arms', desc: 'Your Arms set health, guard strength and how fast your special charges. Their weight class also decides your special move.',
-            effect: { light: 'Faster energy, less health, weaker guard', middle: 'Balanced, with a little extra health and energy', heavy: 'More health and a stronger guard, slower energy' } },
+  top:    { label: 'Arms', desc: 'Your Arms set armor, block strength and accuracy. Their weight class also decides your special move.',
+            effect: { light: 'More accuracy, less armor, weaker block', middle: 'Balanced, with a little extra armor', heavy: 'More armor and a stronger block' } },
   middle: { label: 'Middle', sub: 'Torso', desc: 'Your Middle trades attack power for attack speed.',
             effect: { light: 'Fast attacks, less power', middle: 'Balanced', heavy: 'Big power, slower attacks' } },
-  bottom: { label: 'Bottom', sub: 'Legs', desc: 'Your Bottom trades movement speed for defense and stability.',
-            effect: { light: 'Quick movement and dodges, less defense', middle: 'Balanced', heavy: 'High defense, hard to knock back or stagger, slow' } },
+  bottom: { label: 'Bottom', sub: 'Legs', desc: 'Your Bottom trades mobility for armor and stability.',
+            effect: { light: 'High mobility and quick rolls, less armor', middle: 'Balanced', heavy: 'More armor, hard to knock back or stagger, slow' } },
 };
 // any head fits any build. Each gives a small perk: light heads trade a little health for speed or finesse,
 // middle heads are a plain small bonus, heavy heads add protection but slow you slightly
 const HEADS = [
-  { id: 'hawk',     name: 'Kestrel',     size: 0, desc: 'Round dome with a beak and fin',        perk: '+4% critical hit chance, -4 health', mod: { crit: 0.04, hp: -4 } },
-  { id: 'wisp',     name: 'Lumen',     size: 0, desc: 'Tall egg pod with a single round eye',  perk: '+5% dodge speed, -4 health',         mod: { dodgeSpeedMul: 0.05, hp: -4 } },
-  { id: 'viper',    name: 'Shard',    size: 0, desc: 'Angular faceted head with swept fins',  perk: '+4% attack speed, -4 health',        mod: { atkSpdMul: 0.04, hp: -4 } },
-  { id: 'sentinel', name: 'Watcher', size: 1, desc: 'Boxy helmet with ear sensors',          perk: '+6% energy gain',                    mod: { energyRegen: 0.06 } },
-  { id: 'ronin',    name: 'Shogun',    size: 1, desc: 'Samurai helmet with a crest',           perk: '+4% power',                          mod: { powerMul: 0.04 } },
-  { id: 'warden',   name: 'Prism',   size: 1, desc: 'Gem-cut head with twin antennae',       perk: '+4% guard',                          mod: { blockRed: 0.04 } },
-  { id: 'bastion',  name: 'Bulwark',  size: 2, desc: 'Wide armored block with a visor',       perk: '+8 health, -3% move speed',          mod: { hp: 8, moveMul: -0.03 } },
-  { id: 'titan',    name: 'Colossus',    size: 2, desc: 'Dome sunk into an armored collar',      perk: '+10% knockback resistance, -3% move speed', mod: { kbRes: 0.1, moveMul: -0.03 } },
-  { id: 'golem',    name: 'Monolith',    size: 2, desc: 'Low, heavy slab with round eyes',       perk: '+4% defense, -3% move speed',        mod: { def: 0.04, moveMul: -0.03 } },
+  { id: 'hawk',     name: 'Kestrel',     size: 0, desc: 'Round dome with a beak and fin',        perk: '+8 Accuracy, -4 Armor', mod: { acc: 0.04, armor: -0.02 } },
+  { id: 'wisp',     name: 'Lumen',     size: 0, desc: 'Tall egg pod with a single round eye',  perk: '+5% roll speed, -4 Armor',         mod: { dodgeSpeedMul: 0.05, armor: -0.02 } },
+  { id: 'viper',    name: 'Shard',    size: 0, desc: 'Angular faceted head with swept fins',  perk: '+4 Speed, -4 Armor',        mod: { atkSpdMul: 0.04, armor: -0.02 } },
+  { id: 'sentinel', name: 'Watcher', size: 1, desc: 'Boxy helmet with ear sensors',          perk: '+4 Mobility',                       mod: { moveMul: 0.04 } },
+  { id: 'ronin',    name: 'Shogun',    size: 1, desc: 'Samurai helmet with a crest',           perk: '+3 Power',                          mod: { powerMul: 0.04 } },
+  { id: 'warden',   name: 'Prism',   size: 1, desc: 'Gem-cut head with twin antennae',       perk: '+8 Block',                          mod: { blockRed: 0.04 } },
+  { id: 'bastion',  name: 'Bulwark',  size: 2, desc: 'Wide armored block with a visor',       perk: '+8 Armor, -3 Mobility',          mod: { armor: 0.04, moveMul: -0.03 } },
+  { id: 'titan',    name: 'Colossus',    size: 2, desc: 'Dome sunk into an armored collar',      perk: '+10% knockback resistance, -3 Mobility', mod: { kbRes: 0.1, moveMul: -0.03 } },
+  { id: 'golem',    name: 'Monolith',    size: 2, desc: 'Low, heavy slab with round eyes',       perk: '+6 Armor, -3 Mobility',        mod: { armor: 0.03, moveMul: -0.03 } },
 ];
 const headById = id => HEADS.find(h => h.id === id);
 const SPECIALS = {
@@ -484,43 +486,43 @@ const SPECIALS = {
 };
 const PARTS = {
   top: [
-    { id: 'hawk',     w: 'light',  name: 'Hawk',     perk: '+20% critical hit chance', mod: { crit: 0.20 }, color: 0xe8ecf2 },
-    { id: 'wisp',     w: 'light',  name: 'Wisp',     perk: '+30% energy gain',         mod: { energyRegen: 0.3 }, color: 0xbfe3dc },
-    { id: 'viper',    w: 'light',  name: 'Viper',    perk: '+10% attack speed',        mod: { atkSpdMul: 0.10 }, color: 0x9fb86a },
-    { id: 'sentinel', w: 'middle', name: 'Sentinel', perk: '+12 health',               mod: { hp: 12 }, color: 0x5f7fb0 },
-    { id: 'ronin',    w: 'middle', name: 'Ronin',    perk: '+10% power',               mod: { powerMul: 0.10 }, color: 0xa8483e },
-    { id: 'warden',   w: 'middle', name: 'Warden',   perk: '+10% guard, +12 health', mod: { blockRed: 0.10, hp: 12 }, color: 0x3f8c8a },
-    { id: 'bastion',  w: 'heavy',  name: 'Bastion',  perk: '+16 health',               mod: { hp: 16 }, color: 0x5a6272 },
+    { id: 'hawk',     w: 'light',  name: 'Hawk',     perk: '+24 Accuracy',            mod: { acc: 0.12 }, color: 0xe8ecf2 },
+    { id: 'wisp',     w: 'light',  name: 'Wisp',     perk: '+6 Speed, +16 Accuracy', mod: { atkSpdMul: 0.06, acc: 0.08 }, color: 0xbfe3dc },
+    { id: 'viper',    w: 'light',  name: 'Viper',    perk: '+10 Speed',               mod: { atkSpdMul: 0.10 }, color: 0x9fb86a },
+    { id: 'sentinel', w: 'middle', name: 'Sentinel', perk: '+12 Armor',                mod: { armor: 0.06 }, color: 0x5f7fb0 },
+    { id: 'ronin',    w: 'middle', name: 'Ronin',    perk: '+8 Power',               mod: { powerMul: 0.10 }, color: 0xa8483e },
+    { id: 'warden',   w: 'middle', name: 'Warden',   perk: '+20 Block, +12 Armor', mod: { blockRed: 0.10, armor: 0.06 }, color: 0x3f8c8a },
+    { id: 'bastion',  w: 'heavy',  name: 'Bastion',  perk: '+16 Armor',                mod: { armor: 0.08 }, color: 0x5a6272 },
     { id: 'titan',    w: 'heavy',  name: 'Titan',    perk: '+25% double-arm smash damage (huge fists)', mod: { heavyMul: 0.25 }, color: 0xb07a3c },
-    { id: 'golem',    w: 'heavy',  name: 'Golem',    perk: '+5% defense',              mod: { def: 0.05 }, color: 0x6f7a55 },
+    { id: 'golem',    w: 'heavy',  name: 'Golem',    perk: '+8 Armor',                mod: { armor: 0.04 }, color: 0x6f7a55 },
   ],
   middle: [
-    { id: 'reed',     w: 'light',  name: 'Reed',     perk: '+7% attack speed',         mod: { atkSpdMul: 0.07 }, color: 0xeae6dc, segs: 6, taper: 1.35 },
-    { id: 'swift',    w: 'light',  name: 'Swift',    perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x7fb6e0, segs: 16, taper: 1.2, prof: 'egg' },
-    { id: 'lancer',   w: 'light',  name: 'Lancer',   perk: '+6% move and attack speed', mod: { moveMul: 0.06, atkSpdMul: 0.06 }, color: 0x9a86c8, segs: 4, taper: 1.15 },
-    { id: 'core',     w: 'middle', name: 'Core',     perk: '+30% energy gain, +6 health', mod: { energyRegen: 0.3, hp: 6 }, color: 0x4f6a94, segs: 16, taper: 1.15 },
-    { id: 'striker',  w: 'middle', name: 'Striker',  perk: '+8% power',                mod: { powerMul: 0.08 }, color: 0xc2603a, segs: 6, taper: 1.3 },
-    { id: 'guard',    w: 'middle', name: 'Guard',    perk: '+5% defense',              mod: { def: 0.05 }, color: 0x4f7a64, segs: 4, taper: 1.0 },
-    { id: 'furnace',  w: 'heavy',  name: 'Furnace',  perk: '+10% power',               mod: { powerMul: 0.10 }, color: 0x3d3a3a, segs: 8, taper: 1.1 },
-    { id: 'anvil',    w: 'heavy',  name: 'Anvil',    perk: '+12 health',               mod: { hp: 12 }, color: 0x4d5868, segs: 4, taper: 1.28 },
-    { id: 'brute',    w: 'heavy',  name: 'Brute',    perk: '+40% knockback, +13% power', mod: { kbDealt: 0.4, powerMul: 0.13 }, color: 0x8a5a3a, segs: 16, taper: 0.95 },
+    { id: 'reed',     w: 'light',  name: 'Reed',     perk: '+7 Speed',                mod: { atkSpdMul: 0.07 }, color: 0xeae6dc, segs: 6, taper: 1.35 },
+    { id: 'swift',    w: 'light',  name: 'Swift',    perk: '+8 Mobility',             mod: { moveMul: 0.08 }, color: 0x7fb6e0, segs: 16, taper: 1.2, prof: 'egg' },
+    { id: 'lancer',   w: 'light',  name: 'Lancer',   perk: '+6 Mobility and Speed', mod: { moveMul: 0.06, atkSpdMul: 0.06 }, color: 0x9a86c8, segs: 4, taper: 1.15 },
+    { id: 'core',     w: 'middle', name: 'Core',     perk: '+6 Armor, +16 Accuracy', mod: { armor: 0.03, acc: 0.08 }, color: 0x4f6a94, segs: 16, taper: 1.15 },
+    { id: 'striker',  w: 'middle', name: 'Striker',  perk: '+7 Power',                mod: { powerMul: 0.08 }, color: 0xc2603a, segs: 6, taper: 1.3 },
+    { id: 'guard',    w: 'middle', name: 'Guard',    perk: '+8 Armor',                mod: { armor: 0.04 }, color: 0x4f7a64, segs: 4, taper: 1.0 },
+    { id: 'furnace',  w: 'heavy',  name: 'Furnace',  perk: '+8 Power',               mod: { powerMul: 0.10 }, color: 0x3d3a3a, segs: 8, taper: 1.1 },
+    { id: 'anvil',    w: 'heavy',  name: 'Anvil',    perk: '+12 Armor',                mod: { armor: 0.06 }, color: 0x4d5868, segs: 4, taper: 1.28 },
+    { id: 'brute',    w: 'heavy',  name: 'Brute',    perk: '+40% knockback, +11 Power', mod: { kbDealt: 0.4, powerMul: 0.13 }, color: 0x8a5a3a, segs: 16, taper: 0.95 },
   ],
   bottom: [
-    { id: 'strider',  w: 'light',  name: 'Strider',  perk: 'Rolls on a ball. +20% dodge distance', mod: { dodgeSpeedMul: 0.2 }, color: 0xe2e6ea, type: 'ball' },
-    { id: 'sprinter', w: 'light',  name: 'Sprinter', perk: '+10% move speed',          mod: { moveMul: 0.10 }, color: 0x6fc2b0, type: 'sculpt' },
-    { id: 'phantom',  w: 'light',  name: 'Phantom',  perk: 'Hovers. 25% faster dodge recharge', mod: { dodgeCdMul: -0.25 }, color: 0xb7b4e6, type: 'hover' },
-    { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 health. Kicks with a long, sweeping tail whip',               mod: { hp: 10 }, color: 0x6f7f96, type: 'snake' },
-    { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8% move speed',           mod: { moveMul: 0.08 }, color: 0x6e8a4e, type: 'mech', r: 0.115, len: 1.0, kneeGlow: true },
-    { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+4% defense. Kicks with a stab from its two front legs', mod: { def: 0.04 }, color: 0x7a6f9a, type: 'spider' },
-    { id: 'treads',   w: 'heavy',  name: 'Treads',   perk: 'Tank treads. +30% knockback resistance, +8% defense, +8 health', mod: { kbRes: 0.3, def: 0.08, hp: 8 }, color: 0x4a4f44, type: 'treads' },
-    { id: 'pillar',   w: 'heavy',  name: 'Pillar',   perk: '+18 health',               mod: { hp: 18 }, color: 0x1f2124, type: 'roller' },
-    { id: 'juggernaut', w: 'heavy', name: 'Juggernaut', perk: '+10% guard, +14 health', mod: { blockRed: 0.10, hp: 14 }, color: 0x7a4636, type: 'legs', r: 0.22, len: 0.88, armor: true },
+    { id: 'strider',  w: 'light',  name: 'Strider',  perk: 'Rolls on a ball. +20% roll distance', mod: { dodgeSpeedMul: 0.2 }, color: 0xe2e6ea, type: 'ball' },
+    { id: 'sprinter', w: 'light',  name: 'Sprinter', perk: '+10 Mobility',             mod: { moveMul: 0.10 }, color: 0x6fc2b0, type: 'sculpt' },
+    { id: 'phantom',  w: 'light',  name: 'Phantom',  perk: 'Hovers. 25% faster roll recharge', mod: { dodgeCdMul: -0.25 }, color: 0xb7b4e6, type: 'hover' },
+    { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 Armor. Kicks with a long, sweeping tail whip',               mod: { armor: 0.05 }, color: 0x6f7f96, type: 'snake' },
+    { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8 Mobility',             mod: { moveMul: 0.08 }, color: 0x6e8a4e, type: 'mech', r: 0.115, len: 1.0, kneeGlow: true },
+    { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+6 Armor. Kicks with a stab from its two front legs', mod: { armor: 0.03 }, color: 0x7a6f9a, type: 'spider' },
+    { id: 'treads',   w: 'heavy',  name: 'Treads',   perk: 'Tank treads. +30% knockback resistance, +18 Armor', mod: { kbRes: 0.3, armor: 0.09 }, color: 0x4a4f44, type: 'treads' },
+    { id: 'pillar',   w: 'heavy',  name: 'Pillar',   perk: '+18 Armor',                mod: { armor: 0.09 }, color: 0x1f2124, type: 'roller' },
+    { id: 'juggernaut', w: 'heavy', name: 'Juggernaut', perk: '+20 Block, +14 Armor', mod: { blockRed: 0.10, armor: 0.07 }, color: 0x7a4636, type: 'legs', r: 0.22, len: 0.88, armor: true },
   ],
 };
 const WEIGHT_MODS = {
-  top:    { light: { hp: -6, energyRegen: 0.35, blockRed: -0.05, crit: 0.05 }, middle: { hp: 12, energyRegen: 0.1 }, heavy: { hp: 14, energyRegen: -0.3, blockRed: 0.08 } },
-  middle: { light: { powerMul: -0.28, atkSpdMul: 0.3 }, middle: {}, heavy: { powerMul: 0.55, atkSpdMul: -0.25, hp: 6, kbDealt: 0.2 } },
-  bottom: { light: { moveMul: 0.3, dodgeCdMul: -0.4, def: -0.08 }, middle: {}, heavy: { moveMul: -0.25, def: 0.12, kbRes: 0.42, dodgeCdMul: 0.5 } },
+  top:    { light: { armor: -0.04, blockRed: -0.05, acc: 0.05 }, middle: { armor: 0.06 }, heavy: { armor: 0.08, blockRed: 0.08 } },
+  middle: { light: { powerMul: -0.28, atkSpdMul: 0.3 }, middle: {}, heavy: { powerMul: 0.55, atkSpdMul: -0.25, armor: 0.03, kbDealt: 0.2 } },
+  bottom: { light: { moveMul: 0.3, dodgeCdMul: -0.4, armor: -0.05 }, middle: {}, heavy: { moveMul: -0.25, armor: 0.08, kbRes: 0.42, dodgeCdMul: 0.5 } },
 };
 const partById = (sec, id) => PARTS[sec].find(p => p.id === id);
 
@@ -531,6 +533,9 @@ function jumpHeight(build) {
   const base = { sprinter: 1.2, ranger: 1.05, phantom: 0.55 }[B.id] || 0.45;
   return base * (1 - 0.13 * wv[partById('top', build.top).w] - 0.15 * wv[partById('middle', build.middle).w]);
 }
+const MAX_HP = 3000;
+// raw hit damage is scaled so a 3,000-health fight lasts as long as the old health numbers did
+const DMG_SCALE = 40;
 function computeStats(build) {
   const m = {};
   for (const sec of ['top', 'middle', 'bottom']) {
@@ -542,34 +547,35 @@ function computeStats(build) {
   const wv = { light: 0, middle: 1, heavy: 2 };
   const bulk = wv[partById('top', build.top).w] + wv[partById('middle', build.middle).w] + wv[partById('bottom', build.bottom).w];
   return {
-    hp: 110 + g('hp'),
+    // every fighter has the same 3,000 health; armor decides how much of each hit gets through
+    hp: MAX_HP,
+    armor: clamp(0.40 + g('armor'), 0.05, 0.745),
+    acc: clamp(0.5 + g('acc'), 0.2, 0.95),
     power: 10 * (1 + g('powerMul')),
     atkSpd: 1 + g('atkSpdMul'),
     move: 6 * (1 + g('moveMul')),
-    def: clamp(0.12 + g('def'), 0, 0.6),
-    energyRegen: 1 + g('energyRegen'),
     reach: 1.5 + g('reach'),
     kbRes: clamp(g('kbRes'), 0, 0.85),
     kbDealt: 1 + g('kbDealt'),
     dodgeCd: 1.1 * (1 + g('dodgeCdMul')),
     dodgeSpeed: 15 * (1 + g('dodgeSpeedMul')),
     blockRed: clamp(0.6 + g('blockRed'), 0, 0.9),
-    crit: 0.05 + g('crit'),
     heavyMul: 1 + g('heavyMul'),
     radius: 0.46 + bulk * 0.035,
     jump: jumpHeight(build),
     wcdMul: 0.72 + bulk * 0.1,
   };
 }
+const statScore = (S, v) => clamp(Math.round(1 + (v - S.base) / S.unit), 1, 100);
 const STAT_VIEW = [
-  { k: 'hp',     label: 'Health',       min: 80,  max: 185,  fmt: v => Math.round(v) },
-  { k: 'power',  label: 'Power',        min: 6.5, max: 16.5, fmt: v => v.toFixed(1) },
-  { k: 'atkSpd', label: 'Attack speed', min: 0.6, max: 1.6,  fmt: v => '×' + v.toFixed(2) },
-  { k: 'move',   label: 'Move speed',   min: 4.0, max: 8.6,  fmt: v => v.toFixed(1) },
-  { k: 'def',    label: 'Defense',      min: 0,   max: 0.36, fmt: v => Math.round(v * 100) + '%' },
-  { k: 'blockRed', label: 'Guard',      min: 0.45, max: 0.85, fmt: v => Math.round(v * 100) + '%' },
-  { k: 'energyRegen', label: 'Energy',  min: 0.7, max: 1.8,  fmt: v => '×' + v.toFixed(2) },
-  { k: 'jump',   label: 'Jump',         min: 0.15, max: 1.2, fmt: v => v.toFixed(2) + 'm' },
+  // every stat shows as a 1-100 score: score 1 sits at base, and each point is one unit
+  { k: 'armor',  label: 'Armor',    base: 0.25, unit: 0.005 },
+  { k: 'atkSpd', label: 'Speed',    base: 0.6,  unit: 0.01 },
+  { k: 'power',  label: 'Power',    base: 6.2,  unit: 0.12 },
+  { k: 'acc',    label: 'Accuracy', base: 0.35, unit: 0.005 },
+  { k: 'move',   label: 'Mobility', base: 3.6,  unit: 0.06 },
+  { k: 'jump',   label: 'Jump',     base: 0.15, unit: 0.0106 },
+  { k: 'blockRed', label: 'Block',  base: 0.4,  unit: 0.005 },
 ];
 /* weapons: pick up to two. Head and chest weapons each get a numbered button and cooldown; an arm weapon replaces your punches. Grouped by where they mount */
 const WEAPON_GROUPS = [
@@ -2408,7 +2414,7 @@ function renderHeads() {
   const W = $('weights'); W.innerHTML = '';
   WEIGHTS.forEach((w, sz) => {
     const col = document.createElement('div'); col.className = 'wcol'; col.style.setProperty('--wc', WCOLOR[w]);
-    col.innerHTML = `<div class="whead"><h3>${WLABEL[w]}</h3><div class="weffect">${['Quicker, a little less health', 'A small bonus, no drawback', 'Tougher, a little slower'][sz]}</div></div>`;
+    col.innerHTML = `<div class="whead"><h3>${WLABEL[w]}</h3><div class="weffect">${['Quicker, a little less armor', 'A small bonus, no drawback', 'Tougher, a little slower'][sz]}</div></div>`;
     for (const h of HEADS.filter(h => h.size === sz)) {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'part'; b.id = `head-${h.id}`;
       b.setAttribute('aria-pressed', String(build.head === h.id));
@@ -2496,13 +2502,13 @@ function wchips(b) {
 }
 function renderStats(hoverBuild) {
   const s = computeStats(build), h = hoverBuild ? computeStats(hoverBuild) : null;
-  const norm = (v, d) => clamp((v - d.min) / (d.max - d.min), 0.02, 1) * 100;
+  const norm = (v, d) => statScore(d, v);
   $('stats').innerHTML = STAT_VIEW.map(d => {
-    const a = norm(s[d.k], d); let extra = '', val = d.fmt(s[d.k]);
-    if (h && Math.abs(h[d.k] - s[d.k]) > 1e-6) {
+    const a = norm(s[d.k], d); let extra = '', val = a;
+    if (h && norm(h[d.k], d) !== a) {
       const b = norm(h[d.k], d);
       extra = b > a ? `<b class="up" style="left:${a}%;width:${b - a}%"></b>` : `<b class="down" style="left:${b}%;width:${a - b}%"></b>`;
-      val = `<span style="color:${b > a ? 'var(--good)' : 'var(--bad)'}">${d.fmt(h[d.k])}</span>`;
+      val = `<span style="color:${b > a ? 'var(--good)' : 'var(--bad)'}">${b}</span>`;
     }
     return `<div class="stat"><span class="sl">${d.label}</span><div class="bar"><i style="width:${h && norm(h[d.k], d) < a ? norm(h[d.k], d) : a}%"></i>${extra}</div><span class="sv">${val}</span></div>`;
   }).join('');
@@ -2899,7 +2905,7 @@ class Fighter {
     this.dodgeCdT = Math.max(0, this.dodgeCdT - dt);
     this.fortifyT = Math.max(0, this.fortifyT - dt);
     this.flash = Math.max(0, this.flash - dt);
-    if (this.state !== 'ko' && this.state !== 'victory') this.energy = Math.min(100, this.energy + 5.5 * s.energyRegen * dt);
+    if (this.state !== 'ko' && this.state !== 'victory') this.energy = Math.min(100, this.energy + 5.5 * dt);
     for (let i = 0; i < 3; i++) this.wcd[i] = Math.max(0, this.wcd[i] - dt);
     this.abCd = Math.max(0, this.abCd - dt); this.jetT = Math.max(0, this.jetT - dt);
     this.wShieldT = Math.max(0, this.wShieldT - dt); this.slowT = Math.max(0, this.slowT - dt);
@@ -3469,9 +3475,10 @@ const Battle = {
     if (this.shielded(def)) return;
     // weapons hit for a fixed amount so they don't stack on top of a heavy middle's power
     let dmg = (o.weapon ? 10 : att.stats.power) * o.mult * (att.fortifyT > 0 ? 1.2 : 1);
-    const crit = Math.random() < att.stats.crit; if (crit) dmg *= 1.5;
+    const crit = Math.random() < Math.max(0.02, att.stats.acc - 0.45); if (crit) dmg *= 1.5;
     const hg = att.pos.y - def.pos.y > 0.5; if (hg) dmg *= 1.15;
-    dmg *= 1 - def.stats.def * (o.weapon ? 0.3 : 1);
+    // weapons used to slip past most defense, so they carry a bigger multiplier now that armor applies to everything
+    dmg *= DMG_SCALE * (o.weapon ? 1.5 : 1) * (1 - def.stats.armor);
     let kb = o.kb * att.stats.kbDealt, stun = o.stun, blocked = false;
     if (def.state === 'block' && !o.unblockable && this.facing(def, att) > 0.2) {
       blocked = true; dmg *= 1 - def.stats.blockRed * (o.guardBreak ? 0.5 : 1); kb *= 0.35; stun = o.guardBreak ? 0.25 : 0;
@@ -3514,7 +3521,7 @@ const Battle = {
   },
   dot(f, dmg) {
     if (f.state === 'ko' || this.phase !== 'fight' || f.wShieldT > 0) return;
-    f.hp = Math.max(0, f.hp - dmg); this.tally(f, dmg, false);
+    dmg *= DMG_SCALE * (1 - f.stats.armor); f.hp = Math.max(0, f.hp - dmg); this.tally(f, dmg, false);
     if (Math.random() < 0.25) { const p = f.pos.clone(); p.y += f.rig.chestY * rand(0.6, 1.2); this.burst(p, 0xff7a1a, 1, 2.5); }
     if (f.hp <= 0) this.ko(f, f.burnBy || (f === this.p1 ? this.p2 : this.p1));
   },
@@ -3617,7 +3624,10 @@ const Battle = {
   },
   spawnProj(f, opp, W, i) {
     const o = this.originOf(f, W, i), tgt = aimPt(opp);
-    const dir = tgt.clone().sub(o).normalize(), vel = dir.clone().multiplyScalar(W.speed);
+    const dir = tgt.clone().sub(o).normalize();
+    // lower accuracy throws shots a little off line
+    const miss = (1 - f.stats.acc) * 0.18 * rand(-1, 1); dir.applyAxisAngle(new V3(0, 1, 0), miss);
+    const vel = dir.clone().multiplyScalar(W.speed);
     if (W.proj === 'rocket') { const side = new V3(-dir.z, 0, dir.x); vel.multiplyScalar(0.55).addScaledVector(side, (i % 2 ? 1 : -1) * rand(2, 4)).add(new V3(0, rand(3, 5), 0)); }
     if (W.proj === 'bullet') { vel.x += rand(-0.6, 0.6); vel.y += rand(-0.3, 0.3); }
     const mat = W.proj === 'rocket' ? stdMat(0xd80c0c, { metalness: 0.35, roughness: 0.28 }) : new THREE.MeshBasicMaterial({ color: new THREE.Color(W.color).convertSRGBToLinear() });
@@ -3864,6 +3874,7 @@ const Battle = {
     for (const [f, pre] of [[this.p1, 'p1'], [this.p2, 'p2']]) {
       f.hpTrail = f.hpTrail > f.hp ? Math.max(f.hp, f.hpTrail - f.stats.hp * 0.5 * dt) : f.hp;
       $(pre + 'Fill').style.width = (f.hp / f.stats.hp * 100) + '%';
+      $(pre + 'Num').textContent = Math.ceil(f.hp).toLocaleString();
       $(pre + 'Trail').style.width = (f.hpTrail / f.stats.hp * 100) + '%';
       $(pre + 'EnFill').style.width = f.energy + '%';
       $(pre + 'En').classList.toggle('ready', f.energy >= 100);
