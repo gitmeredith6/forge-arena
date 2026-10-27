@@ -584,6 +584,8 @@ const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
 const MAX_WEAPONS = 2;
 // cannons, swords and saws replace a forearm. One of them goes on both arms; two different ones go one per arm
 const ARM_SWAP = ['cannon', 'blades', 'saws'];
+// tabled ideas, kept in the code but switched off
+const FURNACE_JETPACK = false;
 const cleanWeapons = ws => { if (!Array.isArray(ws)) return null; return [...new Set(ws.filter(id => WEAPON[id]))].slice(0, MAX_WEAPONS); };
 // which arm weapon sits on each arm, as [right, left] (the order of rig.arms); the first one picked goes on the left arm (J)
 const armLoadout = ws => { const a = (ws || []).filter(id => ARM_SWAP.includes(id)); return !a.length ? null : a.length === 1 ? [a[0], a[0]] : [a[1], a[0]]; };
@@ -1565,7 +1567,8 @@ function makeFighterModel(build, accent, shOff = 0) {
   else if (M.id === 'anvil') { for (const s of [-1, 1]) mesh(rbox(tw * 0.34, th * 0.26, 0.08, 0.03), midM, body, s * tw * 0.19, chestY + 0.04, chestZ + 0.01); mesh(rbox(0.1, 0.05, 0.03, 0.015), gM, body, 0, chestY - 0.12, chestZ); }
   else { mesh(rbox(0.13, 0.05, 0.03, 0.015), gM, body, 0, chestY, chestZ); halo(body, acM, 0, chestY, chestZ + 0.04, 0.26); if (M.id === 'striker') mesh(rbox(0.05, th * 0.7, 0.03, 0.015), joint, body, tw * 0.12, chestY - 0.05, chestZ - 0.01).rotation.z = 0.5; }
   chestDetail(mw, tw, th, td, torsoBase, faceScale, torsoProf(M, mw));
-  if (M.id === 'furnace') {
+  // TABLED: the Furnace jet pack is switched off for now (Sam). Set FURNACE_JETPACK to true to bring it back
+  if (M.id === 'furnace' && FURNACE_JETPACK) {
     // jet pack: twin fuel tanks on a back plate, a central turbine housing and flared nozzles with live flames
     const bz = -td * 0.5 * Math.max(1, M.taper * 0.97), tz = bz - 0.16, tr = 0.12, tl = th * 0.56, ty = chestY - 0.05;
     mesh(rbox(tw * 0.56, th * 0.62, 0.08, 0.03), dark, body, 0, ty, bz - 0.01);
