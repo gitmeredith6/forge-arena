@@ -1808,7 +1808,8 @@ function makeFighterModel(build, accent, shOff = 0) {
       // collar and a short guard where the blade leaves the housing
       mesh(rbox(vr * 1.2, vr * 0.3, vr * 1.7, vr * 0.1), frameM, wg, 0, y0 + vr * 0.05, 0);
       mesh(rbox(vr * 0.8, vr * 0.18, bw * 1.5, vr * 0.06), joint, wg, 0, y0 - vr * 0.18, 0);
-      const tz = (x, y) => new V3_(0, y, x);   // shape coordinates (x across, y down) to the forearm's (z forward, y down)
+      // shape coordinates (x across, y down) to the forearm's (y down, z mirrored) so the edge and long point face up when the arm swings forward
+      const tz = (x, y) => new V3_(0, y, -x);
       // scimitar: the blade sweeps back as it goes down, the cutting edge bellies out toward the tip, and the back is clipped
       // into a false edge so the point is needle sharp. u runs 0 at the root to 1 at the point
       const ss = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
@@ -1830,7 +1831,7 @@ function makeFighterModel(build, accent, shOff = 0) {
       // taper the thickness: heavy at the root, thinning steadily to a fine tip, and thinner toward the edge than the spine
       const thick = y => lerp(2.0, 0.3, clamp(-y / BL, 0, 1));
       { const P = bg.attributes.position; for (let i = 0; i < P.count; i++) { const u = clamp(-P.getY(i) / BL, 0, 1), x = P.getX(i), w = (x - backX(u)) / Math.max(1e-4, edgeX(Math.min(u, E1)) - backX(u)); P.setZ(i, P.getZ(i) * thick(P.getY(i)) * lerp(1.15, 0.45, clamp(w, 0, 1))); } bg.computeVertexNormals(); }
-      bg.rotateY(-Math.PI / 2);
+      bg.rotateY(Math.PI / 2);
       mesh(bg, bladeM, wg, 0, y0 - vr * 0.2, 0);
       const taper = g => { const P = g.attributes.position; for (let i = 0; i < P.count; i++) P.setX(i, P.getX(i) * thick(P.getY(i) - y0)); g.computeVertexNormals(); return g; };
       const yb = y0 - vr * 0.2, along = (f, u0, u1, r, m) => { const pts = []; for (let k = 0; k <= 10; k++) { const u = lerp(u0, u1, k / 10); pts.push(tz(f(u), yb - BL * u)); } mesh(taper(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, r, 6, false)), m, wg); };
@@ -1838,7 +1839,7 @@ function makeFighterModel(build, accent, shOff = 0) {
       along(u => backX(u) + bw * 0.04, 0.02, B1 - 0.02, t * 1.05, frameM);
       along(u => mid(u) + bw * 0.02, 0.05, 0.74, t * 0.7, gT);
       along(u => edgeX(u) - bw * 0.035, 0.03, E1 - 0.02, t * 0.55, edge);
-      arm.fist.position.set(0, yb - BL * 0.9, mid(0.9));
+      arm.fist.position.set(0, yb - BL * 0.9, -mid(0.9));
     } else {
       const BL = Lw * [1.3, 1.2, 0.95][tw2], bw = vr * 1.45, t = Math.max(0.018, vr * 0.2), y0 = -Lw * 0.42, h = bw / 2;
       // rounded engine housing with glowing rings, an exhaust and a pull handle
