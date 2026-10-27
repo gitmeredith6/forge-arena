@@ -1907,10 +1907,15 @@ function animateRig(rig, f, dt, time) {
     const mv = Math.hypot(mvx, mvz);
     // backing up keeps the tail coiled rather than pushing it out in front
     let want = 0;
-    if (mv > 0.5) { const ta = Math.atan2(-mvx, -mvz); want = clamp(mv / 2.5, 0, 1) * smooth01((0.6 - Math.cos(ta)) / 0.4); if (want > 0.05) S.tdir = (S.tdir || 0) + Math.atan2(Math.sin(ta - (S.tdir || 0)), Math.cos(ta - (S.tdir || 0))) * (1 - Math.exp(-4 * dt)); }
+    if (mv > 0.5) { const ta = Math.atan2(-mvx, -mvz); want = clamp(mv / 2.5, 0, 1) * smooth01((0.6 - Math.cos(ta)) / 0.4); if (want > 0.05) {
+      // angles run 0..2pi with straight behind at pi; keep the target in the back half and ease straight to it,
+      // so swapping sides sweeps the tail round behind the fighter rather than across the front
+      const tb = clamp(ta < 0 ? ta + Math.PI * 2 : ta, Math.PI / 2 - 0.25, Math.PI * 1.5 + 0.25);
+      S.tdir = lerp(S.tdir === undefined ? Math.PI : S.tdir, tb, 1 - Math.exp(-3.5 * dt));
+    } }
     S.trail = lerp(S.trail || 0, want, 1 - Math.exp(-(want > S.trail ? 4 : 1.6) * dt));
     if (S.g0 === undefined) S.g0 = Math.max(0, S.base.findIndex(b => b.ground));
-    const anchor = S.base[S.g0].p, s0g = S.base[S.g0].u * S.len, tdx = Math.sin(S.tdir || 0), tdz = Math.cos(S.tdir || 0);
+    const anchor = S.base[S.g0].p, s0g = S.base[S.g0].u * S.len, tdx = Math.sin(S.tdir === undefined ? Math.PI : S.tdir), tdz = Math.cos(S.tdir === undefined ? Math.PI : S.tdir);
     // tail whip: rear back and up during the wind-up, then lash forward and sweep across the front
     let tl = 0, tf = 0, tsw = 0;
     if (st === 'kick') {
