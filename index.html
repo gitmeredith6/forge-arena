@@ -1529,9 +1529,23 @@ function makeFighterModel(build, accent) {
   // Heavy arms use the big shoulder blocks, middle arms the domes, light arms the tall shoulder shields
   if (has('rockets')) {
     rig.pods = []; rig.mount.rockets = [];
-    const rm = wmat(0xffb547);
+    const rm = wmat(0xffb547), heavyMarks = [];
     for (const s of [-1, 1]) {
       const arm = rig.arms.find(a => a.side === s);
+      if (tw2 === 2) {
+        // heavy arms: the top shoulder block is packed with ten rockets, noses facing forward out of its front
+        const bw = armR * 3.4, bh = armR * 2.1, fz = armR * 1.6, cy = shoulderY + 0.04, sx = bw * 0.18, sy = bh * 0.42, tr = Math.min(sx, sy) * 0.4, marks = [];
+        mesh(rbox(bw * 0.94, bh * 0.88, 0.03, 0.01), dark, body, s * shX, cy, fz - 0.005);
+        for (let r = 0; r < 2; r++) for (let c = 0; c < 5; c++) {
+          const x = s * shX + (c - 2) * sx, y = cy + (r - 0.5) * sy;
+          const tube = mesh(new THREE.CylinderGeometry(tr * 1.18, tr * 1.18, 0.05, 14), joint, body, x, y, fz + 0.012); tube.rotation.x = Math.PI / 2;
+          const rb = mesh(new THREE.CylinderGeometry(tr, tr, 0.05, 14), topM, body, x, y, fz + 0.03); rb.rotation.x = Math.PI / 2;
+          const nose = mesh(new THREE.ConeGeometry(tr, tr * 1.9, 14), rm, body, x, y, fz + 0.055 + tr * 0.95); nose.rotation.x = Math.PI / 2;
+          marks.push(mark(body, x, y, fz + 0.1 + tr * 1.9));
+        }
+        heavyMarks.push(marks);
+        continue;
+      }
       let host, x, top, rw;
       if (tw2 === 2) { host = body; x = s * shX; top = shoulderY + 0.04 + armR * 1.05; rw = armR * 2.0; }
       else if (tw2 === 1) { host = body; x = s * shX; top = shoulderY - 0.04 + armR * 1.65; rw = armR * 1.5; }
@@ -1552,6 +1566,8 @@ function makeFighterModel(build, accent) {
       rack.position.set(x, y0, 0); rack.visible = false;
       rig.pods.push({ g: rack, y0, y1 }); rig.mount.rockets.push(mark(rack, 0, 0, rd * 0.6));
     }
+    // alternate sides so a volley leaves from both shoulders
+    if (heavyMarks.length) for (let i = 0; i < 10; i++) for (const m of heavyMarks) rig.mount.rockets.push(m[i]);
   }
   if (has('frost')) {
     // with rockets in the shoulders, the frost cannon rides on the back of the left shoulder instead
