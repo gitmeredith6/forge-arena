@@ -459,7 +459,7 @@ const WLABEL = { light: 'Light', middle: 'Middle', heavy: 'Heavy' };
 const WCOLOR = { light: 'var(--w-light)', middle: 'var(--w-middle)', heavy: 'var(--w-heavy)' };
 const SECTIONS = {
   top:    { label: 'Arms', desc: 'Your Arms set armor, block strength and accuracy. Their weight class also decides your special move.',
-            effect: { light: 'More accuracy, less armor, weaker block', middle: 'Balanced, with a little extra armor', heavy: 'More armor and a stronger block' } },
+            effect: { light: 'Quick, accurate hands, less armor', middle: 'Balanced, with a little extra armor', heavy: 'Most armor and a stronger block, slower hands' } },
   middle: { label: 'Middle', sub: 'Torso', desc: 'Your Middle trades attack power for attack speed.',
             effect: { light: 'Fast attacks, less power', middle: 'Balanced', heavy: 'Big power, slower attacks' } },
   bottom: { label: 'Bottom', sub: 'Legs', desc: 'Your Bottom trades mobility for armor and stability.',
@@ -468,15 +468,15 @@ const SECTIONS = {
 // any head fits any build. Each gives a small perk: light heads trade a little health for speed or finesse,
 // middle heads are a plain small bonus, heavy heads add protection but slow you slightly
 const HEADS = [
-  { id: 'hawk',     name: 'Kestrel',     size: 0, desc: 'Round dome with a beak and fin',        perk: '+8 Accuracy, -4 Armor', mod: { acc: 0.04, armor: -0.02 } },
-  { id: 'wisp',     name: 'Lumen',     size: 0, desc: 'Tall egg pod with a single round eye',  perk: '+5% roll speed, -4 Armor',         mod: { dodgeSpeedMul: 0.05, armor: -0.02 } },
-  { id: 'viper',    name: 'Shard',    size: 0, desc: 'Angular faceted head with swept fins',  perk: '+4 Speed, -4 Armor',        mod: { atkSpdMul: 0.04, armor: -0.02 } },
-  { id: 'sentinel', name: 'Watcher', size: 1, desc: 'Boxy helmet with ear sensors',          perk: '+4 Mobility',                       mod: { moveMul: 0.04 } },
+  { id: 'hawk',     name: 'Kestrel',     size: 0, desc: 'Round dome with a beak and fin',        perk: '+12 Accuracy, -2 Armor', mod: { acc: 0.06, armor: -0.01 } },
+  { id: 'wisp',     name: 'Lumen',     size: 0, desc: 'Tall egg pod with a single round eye',  perk: '+5% roll speed, +8 Mobility, -2 Armor',         mod: { dodgeSpeedMul: 0.05, moveMul: 0.08, armor: -0.01 } },
+  { id: 'viper',    name: 'Shard',    size: 0, desc: 'Angular faceted head with swept fins',  perk: '+5 Speed, -2 Armor',        mod: { atkSpdMul: 0.05, armor: -0.01 } },
+  { id: 'sentinel', name: 'Watcher', size: 1, desc: 'Boxy helmet with ear sensors',          perk: '+8 Mobility',                       mod: { moveMul: 0.08 } },
   { id: 'ronin',    name: 'Shogun',    size: 1, desc: 'Samurai helmet with a crest',           perk: '+3 Power',                          mod: { powerMul: 0.04 } },
-  { id: 'warden',   name: 'Prism',   size: 1, desc: 'Gem-cut head with twin antennae',       perk: '+8 Block',                          mod: { blockRed: 0.04 } },
-  { id: 'bastion',  name: 'Bulwark',  size: 2, desc: 'Wide armored block with a visor',       perk: '+8 Armor, -3 Mobility',          mod: { armor: 0.04, moveMul: -0.03 } },
-  { id: 'titan',    name: 'Colossus',    size: 2, desc: 'Dome sunk into an armored collar',      perk: '+10 Stability, -3 Mobility', mod: { kbRes: 0.1, moveMul: -0.03 } },
-  { id: 'golem',    name: 'Monolith',    size: 2, desc: 'Low, heavy slab with round eyes',       perk: '+6 Armor, -3 Mobility',        mod: { armor: 0.03, moveMul: -0.03 } },
+  { id: 'warden',   name: 'Prism',   size: 1, desc: 'Gem-cut head with twin antennae',       perk: '+10 Block',                          mod: { blockRed: 0.05 } },
+  { id: 'bastion',  name: 'Bulwark',  size: 2, desc: 'Wide armored block with a visor',       perk: '+4 Armor, -3 Mobility',          mod: { armor: 0.02, moveMul: -0.03 } },
+  { id: 'titan',    name: 'Colossus',    size: 2, desc: 'Dome sunk into an armored collar',      perk: '+15 Stability, -3 Mobility', mod: { kbRes: 0.15, moveMul: -0.03 } },
+  { id: 'golem',    name: 'Monolith',    size: 2, desc: 'Low, heavy slab with round eyes',       perk: '+3 Armor, +8 Block, -3 Mobility',        mod: { armor: 0.015, blockRed: 0.04, moveMul: -0.03 } },
 ];
 const headById = id => HEADS.find(h => h.id === id);
 const SPECIALS = {
@@ -486,43 +486,43 @@ const SPECIALS = {
 };
 const PARTS = {
   top: [
-    { id: 'hawk',     w: 'light',  name: 'Hawk',     perk: '+24 Accuracy',            mod: { acc: 0.12 }, color: 0xe8ecf2 },
-    { id: 'wisp',     w: 'light',  name: 'Wisp',     perk: '+6 Speed, +16 Accuracy', mod: { atkSpdMul: 0.06, acc: 0.08 }, color: 0xbfe3dc },
-    { id: 'viper',    w: 'light',  name: 'Viper',    perk: '+10 Speed',               mod: { atkSpdMul: 0.10 }, color: 0x9fb86a },
-    { id: 'sentinel', w: 'middle', name: 'Sentinel', perk: '+12 Armor',                mod: { armor: 0.06 }, color: 0x5f7fb0 },
-    { id: 'ronin',    w: 'middle', name: 'Ronin',    perk: '+8 Power',               mod: { powerMul: 0.10 }, color: 0xa8483e },
-    { id: 'warden',   w: 'middle', name: 'Warden',   perk: '+20 Block, +12 Armor', mod: { blockRed: 0.10, armor: 0.06 }, color: 0x3f8c8a },
-    { id: 'bastion',  w: 'heavy',  name: 'Bastion',  perk: '+16 Armor',                mod: { armor: 0.08 }, color: 0x5a6272 },
+    { id: 'hawk',     w: 'light',  name: 'Hawk',     perk: '+25 Accuracy',            mod: { acc: 0.125 }, color: 0xe8ecf2 },
+    { id: 'wisp',     w: 'light',  name: 'Wisp',     perk: '+10 Speed', mod: { atkSpdMul: 0.10 }, color: 0xbfe3dc },
+    { id: 'viper',    w: 'light',  name: 'Viper',    perk: '+10 Power',               mod: { powerMul: 0.12 }, color: 0x9fb86a },
+    { id: 'sentinel', w: 'middle', name: 'Sentinel', perk: '+10 Armor',                mod: { armor: 0.05 }, color: 0x5f7fb0 },
+    { id: 'ronin',    w: 'middle', name: 'Ronin',    perk: '+10 Power',               mod: { powerMul: 0.12 }, color: 0xa8483e },
+    { id: 'warden',   w: 'middle', name: 'Warden',   perk: '+30 Block, +4 Armor', mod: { blockRed: 0.15, armor: 0.02 }, color: 0x3f8c8a },
+    { id: 'bastion',  w: 'heavy',  name: 'Bastion',  perk: '+6 Armor',                mod: { armor: 0.03 }, color: 0x5a6272 },
     { id: 'titan',    w: 'heavy',  name: 'Titan',    perk: '+25% double-arm smash damage (huge fists)', mod: { heavyMul: 0.25 }, color: 0xb07a3c },
-    { id: 'golem',    w: 'heavy',  name: 'Golem',    perk: '+8 Armor',                mod: { armor: 0.04 }, color: 0x6f7a55 },
+    { id: 'golem',    w: 'heavy',  name: 'Golem',    perk: '+20 Block, +15 Stability',                mod: { blockRed: 0.10, kbRes: 0.15 }, color: 0x6f7a55 },
   ],
   middle: [
-    { id: 'reed',     w: 'light',  name: 'Reed',     perk: '+7 Speed',                mod: { atkSpdMul: 0.07 }, color: 0xeae6dc, segs: 6, taper: 1.35 },
-    { id: 'swift',    w: 'light',  name: 'Swift',    perk: '+8 Mobility',             mod: { moveMul: 0.08 }, color: 0x7fb6e0, segs: 16, taper: 1.2, prof: 'egg' },
-    { id: 'lancer',   w: 'light',  name: 'Lancer',   perk: '+6 Mobility and Speed', mod: { moveMul: 0.06, atkSpdMul: 0.06 }, color: 0x9a86c8, segs: 4, taper: 1.15 },
-    { id: 'core',     w: 'middle', name: 'Core',     perk: '+6 Armor, +16 Accuracy', mod: { armor: 0.03, acc: 0.08 }, color: 0x4f6a94, segs: 16, taper: 1.15 },
-    { id: 'striker',  w: 'middle', name: 'Striker',  perk: '+7 Power',                mod: { powerMul: 0.08 }, color: 0xc2603a, segs: 6, taper: 1.3 },
-    { id: 'guard',    w: 'middle', name: 'Guard',    perk: '+8 Armor',                mod: { armor: 0.04 }, color: 0x4f7a64, segs: 4, taper: 1.0 },
+    { id: 'reed',     w: 'light',  name: 'Reed',     perk: '+12 Speed',                mod: { atkSpdMul: 0.12 }, color: 0xeae6dc, segs: 6, taper: 1.35 },
+    { id: 'swift',    w: 'light',  name: 'Swift',    perk: '+18 Mobility',             mod: { moveMul: 0.18 }, color: 0x7fb6e0, segs: 16, taper: 1.2, prof: 'egg' },
+    { id: 'lancer',   w: 'light',  name: 'Lancer',   perk: '+10% punch reach', mod: { reach: 0.15 }, color: 0x9a86c8, segs: 4, taper: 1.15 },
+    { id: 'core',     w: 'middle', name: 'Core',     perk: '+30 Accuracy', mod: { acc: 0.15 }, color: 0x4f6a94, segs: 16, taper: 1.15 },
+    { id: 'striker',  w: 'middle', name: 'Striker',  perk: '+14 Power',                mod: { powerMul: 0.17 }, color: 0xc2603a, segs: 6, taper: 1.3 },
+    { id: 'guard',    w: 'middle', name: 'Guard',    perk: '+10 Armor',                mod: { armor: 0.05 }, color: 0x4f7a64, segs: 4, taper: 1.0 },
     { id: 'furnace',  w: 'heavy',  name: 'Furnace',  perk: '+8 Power',               mod: { powerMul: 0.10 }, color: 0x3d3a3a, segs: 8, taper: 1.1 },
-    { id: 'anvil',    w: 'heavy',  name: 'Anvil',    perk: '+12 Armor',                mod: { armor: 0.06 }, color: 0x4d5868, segs: 4, taper: 1.28 },
-    { id: 'brute',    w: 'heavy',  name: 'Brute',    perk: '+40% knockback, +11 Power', mod: { kbDealt: 0.4, powerMul: 0.13 }, color: 0x8a5a3a, segs: 16, taper: 0.95 },
+    { id: 'anvil',    w: 'heavy',  name: 'Anvil',    perk: '+6 Armor',                mod: { armor: 0.03 }, color: 0x4d5868, segs: 4, taper: 1.28 },
+    { id: 'brute',    w: 'heavy',  name: 'Brute',    perk: '+40% knockback, +5 Power', mod: { kbDealt: 0.4, powerMul: 0.06 }, color: 0x8a5a3a, segs: 16, taper: 0.95 },
   ],
   bottom: [
     { id: 'strider',  w: 'light',  name: 'Strider',  perk: 'Rolls on a ball. +20% roll distance', mod: { dodgeSpeedMul: 0.2 }, color: 0xe2e6ea, type: 'ball' },
-    { id: 'sprinter', w: 'light',  name: 'Sprinter', perk: '+10 Mobility',             mod: { moveMul: 0.10 }, color: 0x6fc2b0, type: 'sculpt' },
+    { id: 'sprinter', w: 'light',  name: 'Sprinter', perk: '+14 Mobility',             mod: { moveMul: 0.14 }, color: 0x6fc2b0, type: 'sculpt' },
     { id: 'phantom',  w: 'light',  name: 'Phantom',  perk: 'Hovers. 25% faster roll recharge', mod: { dodgeCdMul: -0.25 }, color: 0xb7b4e6, type: 'hover' },
-    { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+10 Armor. Kicks with a long, sweeping tail whip',               mod: { armor: 0.05 }, color: 0x6f7f96, type: 'snake' },
-    { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+8 Mobility',             mod: { moveMul: 0.08 }, color: 0x6e8a4e, type: 'mech', r: 0.115, len: 1.0, kneeGlow: true },
-    { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+6 Armor. Kicks with a stab from its two front legs', mod: { armor: 0.03 }, color: 0x7a6f9a, type: 'spider' },
-    { id: 'treads',   w: 'heavy',  name: 'Treads',   perk: 'Tank treads. +30 Stability, +18 Armor', mod: { kbRes: 0.3, armor: 0.09 }, color: 0x4a4f44, type: 'treads' },
-    { id: 'pillar',   w: 'heavy',  name: 'Pillar',   perk: '+18 Armor',                mod: { armor: 0.09 }, color: 0x1f2124, type: 'roller' },
-    { id: 'juggernaut', w: 'heavy', name: 'Juggernaut', perk: '+20 Block, +14 Armor', mod: { blockRed: 0.10, armor: 0.07 }, color: 0x7a4636, type: 'legs', r: 0.22, len: 0.88, armor: true },
+    { id: 'trekker',  w: 'middle', name: 'Trekker',  perk: '+8 Armor. Kicks with a long, sweeping tail whip',               mod: { armor: 0.04 }, color: 0x6f7f96, type: 'snake' },
+    { id: 'ranger',   w: 'middle', name: 'Ranger',   perk: '+14 Mobility, +4 Armor',             mod: { moveMul: 0.14, armor: 0.02 }, color: 0x6e8a4e, type: 'mech', r: 0.115, len: 1.0, kneeGlow: true },
+    { id: 'stalwart', w: 'middle', name: 'Stalwart', perk: '+20 Stability. Kicks with a stab from its two front legs', mod: { kbRes: 0.2 }, color: 0x7a6f9a, type: 'spider' },
+    { id: 'treads',   w: 'heavy',  name: 'Treads',   perk: 'Tank treads. +30 Stability, +4 Armor', mod: { kbRes: 0.3, armor: 0.02 }, color: 0x4a4f44, type: 'treads' },
+    { id: 'pillar',   w: 'heavy',  name: 'Pillar',   perk: '+6 Armor',                mod: { armor: 0.03 }, color: 0x1f2124, type: 'roller' },
+    { id: 'juggernaut', w: 'heavy', name: 'Juggernaut', perk: '+20 Block, +6 Armor', mod: { blockRed: 0.10, armor: 0.03 }, color: 0x7a4636, type: 'legs', r: 0.22, len: 0.88, armor: true },
   ],
 };
 const WEIGHT_MODS = {
-  top:    { light: { armor: -0.04, blockRed: -0.05, acc: 0.05 }, middle: { armor: 0.06 }, heavy: { armor: 0.08, blockRed: 0.08 } },
-  middle: { light: { powerMul: -0.28, atkSpdMul: 0.3 }, middle: {}, heavy: { powerMul: 0.55, atkSpdMul: -0.25, armor: 0.03, kbDealt: 0.2 } },
-  bottom: { light: { moveMul: 0.3, dodgeCdMul: -0.4, armor: -0.05, kbRes: -0.15 }, middle: {}, heavy: { moveMul: -0.25, armor: 0.08, kbRes: 0.42, dodgeCdMul: 0.5 } },
+  top:    { light: { acc: 0.10, atkSpdMul: 0.08 }, middle: { armor: 0.05, acc: 0.04, atkSpdMul: 0.04 }, heavy: { armor: 0.06, blockRed: 0.08, atkSpdMul: -0.08 } },
+  middle: { light: { powerMul: -0.2, atkSpdMul: 0.3 }, middle: {}, heavy: { powerMul: 0.42, atkSpdMul: -0.25, armor: 0.02, kbDealt: 0.2 } },
+  bottom: { light: { moveMul: 0.3, dodgeCdMul: -0.4, kbRes: -0.15 }, middle: {}, heavy: { moveMul: -0.25, armor: 0.04, kbRes: 0.42, dodgeCdMul: 0.5 } },
 };
 const partById = (sec, id) => PARTS[sec].find(p => p.id === id);
 
@@ -572,10 +572,10 @@ const STAT_VIEW = [
   { k: 'armor',  label: 'Armor',    base: 0.25, unit: 0.005 },
   { k: 'atkSpd', label: 'Speed',    base: 0.6,  unit: 0.01 },
   { k: 'power',  label: 'Power',    base: 6.2,  unit: 0.12 },
-  { k: 'acc',    label: 'Accuracy', base: 0.35, unit: 0.005 },
+  { k: 'acc',    label: 'Accuracy', base: 0.45, unit: 0.005 },
   { k: 'move',   label: 'Mobility', base: 3.6,  unit: 0.06 },
   { k: 'jump',   label: 'Jump',     base: 0.15, unit: 0.0106 },
-  { k: 'blockRed', label: 'Block',  base: 0.4,  unit: 0.005 },
+  { k: 'blockRed', label: 'Block',  base: 0.41, unit: 0.005 },
   // how little you get knocked back and staggered
   { k: 'kbRes',  label: 'Stability', base: -0.14, unit: 0.01 },
 ];
@@ -586,12 +586,12 @@ const WEAPON_GROUPS = [
   { slot: 'arms',  label: 'Arms',     effect: 'Cannons or saws', color: '#ffb547' },
 ];
 const WEAPONS = [
-  { id: 'laser',   slot: 'head',  name: 'Laser Eyes',      desc: 'Beams fire straight from the eyes and burn the target at long range.', cd: 7,  w: 0.25, a: 0.6,  r: 0.25, move: 0.5,  kind: 'beam',  from: 'eyes',  tick: 0.1,  mult: 0.46, kb: 0.4, range: 14, color: 0xff3b3b },
+  { id: 'laser',   slot: 'head',  name: 'Laser Eyes',      desc: 'Beams fire straight from the eyes and burn the target at long range.', cd: 7,  w: 0.25, a: 0.6,  r: 0.25, move: 0.5,  kind: 'beam',  from: 'eyes',  tick: 0.1,  mult: 0.8, kb: 0.4, range: 14, color: 0xff3b3b },
   { id: 'tesla',   slot: 'head',  name: 'Tesla Coil',      desc: 'Fires an electric pulse that blasts a blue dome out around you (about 10 feet). Anything it catches takes damage and is knocked out by the EMP for a few seconds.', cd: 12, w: 0.35, a: 0.1, r: 0.35, move: 0.2, kind: 'emp', radius: 3.05, mult: 1.2, kb: 2, emp: 2.5, color: 0x3fa9ff },
-  { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 0.7, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
-  { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 0.68, kb: 4, homing: 2.4, color: 0xffb547 },
-  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Forearm cannons. J or K fires that arm as fast as you can press; both together charge up a powerful double blast.', cd: 6, w: 0.45, a: 0.04, r: 0.35, move: 1, kind: 'proj', proj: 'shell', count: 2, speed: 22, mult: 1.15, kb: 13, stun: 0.45, color: 0xffd27a },
-  { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Forearm chainsaws. J or K jabs with that arm; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.24, stun: 0.18, color: 0xff9f43 },
+  { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 1.4, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
+  { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 1.0, kb: 4, homing: 2.4, color: 0xffb547 },
+  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Forearm cannons. J or K fires that arm as fast as you can press; both together charge up a powerful double blast.', cd: 6, w: 0.45, a: 0.04, r: 0.35, move: 1, kind: 'proj', proj: 'shell', count: 2, speed: 22, mult: 0.9, kb: 13, stun: 0.45, color: 0xffd27a },
+  { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Forearm chainsaws. J or K jabs with that arm; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.11, stun: 0.12, color: 0xff9f43 },
 ];
 const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
 const MAX_WEAPONS = 2;
@@ -622,8 +622,8 @@ const armLoadout = ws => { const a = (ws || []).filter(id => ARM_SWAP.includes(i
 // arm weapons are not on a numbered button: they replace your punches. One arm's button uses that arm's lighter version
 // (side 1 = left, 0 = right, matching punchSide); both buttons use the full double-arm version
 const ARM_SINGLE = {
-  cannon: { count: 1, w: 0.03, a: 0.02, r: 0.12, mult: 0.45, kb: 3, stun: 0 },
-  saws:   { w: 0.1, a: 0.32, r: 0.2, mult: 0.2, stun: 0.08 },
+  cannon: { count: 1, w: 0.03, a: 0.02, r: 0.12, mult: 0.3, kb: 3, stun: 0 },
+  saws:   { w: 0.1, a: 0.32, r: 0.2, mult: 0.12, stun: 0.08 },
 };
 const armVariant = (W, side) => side < 0 ? W : Object.assign({}, W, ARM_SINGLE[W.id], { side });
 // the key shown for a weapon: arm weapons use J and K, the rest are numbered in the order they were added
