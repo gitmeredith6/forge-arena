@@ -474,7 +474,7 @@ const HEADS = [
   { id: 'sentinel', name: 'Watcher', size: 1, desc: 'Boxy helmet with ear sensors',          perk: '+8 Mobility',                       mod: { moveMul: 0.08 } },
   { id: 'ronin',    name: 'Shogun',    size: 1, desc: 'Samurai helmet with a crest',           perk: '+3 Power',                          mod: { powerMul: 0.04 } },
   { id: 'warden',   name: 'Prism',   size: 1, desc: 'Gem-cut head with twin antennae',       perk: '+10 Block',                          mod: { blockRed: 0.05 } },
-  { id: 'bastion',  name: 'Bulwark',  size: 2, desc: 'Wide armored block with a visor',       perk: '+4 Armor, -3 Mobility',          mod: { armor: 0.02, moveMul: -0.03 } },
+  { id: 'bastion',  name: 'Bulwark',  size: 2, desc: 'Wide armored block with a visor',       perk: '+3 Armor, -3 Mobility',          mod: { armor: 0.015, moveMul: -0.03 } },
   { id: 'titan',    name: 'Colossus',    size: 2, desc: 'Dome sunk into an armored collar',      perk: '+15 Stability, -3 Mobility', mod: { kbRes: 0.15, moveMul: -0.03 } },
   { id: 'golem',    name: 'Monolith',    size: 2, desc: 'Low, heavy slab with round eyes',       perk: '+3 Armor, +8 Block, -3 Mobility',        mod: { armor: 0.015, blockRed: 0.04, moveMul: -0.03 } },
 ];
@@ -489,22 +489,22 @@ const PARTS = {
     { id: 'hawk',     w: 'light',  name: 'Hawk',     perk: '+25 Accuracy',            mod: { acc: 0.125 }, color: 0xe8ecf2 },
     { id: 'wisp',     w: 'light',  name: 'Wisp',     perk: '+10 Speed', mod: { atkSpdMul: 0.10 }, color: 0xbfe3dc },
     { id: 'viper',    w: 'light',  name: 'Viper',    perk: '+10 Power',               mod: { powerMul: 0.12 }, color: 0x9fb86a },
-    { id: 'sentinel', w: 'middle', name: 'Sentinel', perk: '+10 Armor',                mod: { armor: 0.05 }, color: 0x5f7fb0 },
+    { id: 'sentinel', w: 'middle', name: 'Sentinel', perk: '+6 Armor, +10 Accuracy',                mod: { armor: 0.03, acc: 0.05 }, color: 0x5f7fb0 },
     { id: 'ronin',    w: 'middle', name: 'Ronin',    perk: '+10 Power',               mod: { powerMul: 0.12 }, color: 0xa8483e },
     { id: 'warden',   w: 'middle', name: 'Warden',   perk: '+30 Block, +4 Armor', mod: { blockRed: 0.15, armor: 0.02 }, color: 0x3f8c8a },
-    { id: 'bastion',  w: 'heavy',  name: 'Bastion',  perk: '+6 Armor',                mod: { armor: 0.03 }, color: 0x5a6272 },
+    { id: 'bastion',  w: 'heavy',  name: 'Bastion',  perk: '+8 Armor',                mod: { armor: 0.04 }, color: 0x5a6272 },
     { id: 'titan',    w: 'heavy',  name: 'Titan',    perk: '+25% double-arm smash damage (huge fists)', mod: { heavyMul: 0.25 }, color: 0xb07a3c },
     { id: 'golem',    w: 'heavy',  name: 'Golem',    perk: '+20 Block, +15 Stability',                mod: { blockRed: 0.10, kbRes: 0.15 }, color: 0x6f7a55 },
   ],
   middle: [
     { id: 'reed',     w: 'light',  name: 'Reed',     perk: '+12 Speed',                mod: { atkSpdMul: 0.12 }, color: 0xeae6dc, segs: 6, taper: 1.35 },
-    { id: 'swift',    w: 'light',  name: 'Swift',    perk: '+18 Mobility',             mod: { moveMul: 0.18 }, color: 0x7fb6e0, segs: 16, taper: 1.2, prof: 'egg' },
+    { id: 'swift',    w: 'light',  name: 'Swift',    perk: '+22 Mobility',             mod: { moveMul: 0.22 }, color: 0x7fb6e0, segs: 16, taper: 1.2, prof: 'egg' },
     { id: 'lancer',   w: 'light',  name: 'Lancer',   perk: '+10% punch reach', mod: { reach: 0.15 }, color: 0x9a86c8, segs: 4, taper: 1.15 },
     { id: 'core',     w: 'middle', name: 'Core',     perk: '+30 Accuracy', mod: { acc: 0.15 }, color: 0x4f6a94, segs: 16, taper: 1.15 },
     { id: 'striker',  w: 'middle', name: 'Striker',  perk: '+14 Power',                mod: { powerMul: 0.17 }, color: 0xc2603a, segs: 6, taper: 1.3 },
     { id: 'guard',    w: 'middle', name: 'Guard',    perk: '+10 Armor',                mod: { armor: 0.05 }, color: 0x4f7a64, segs: 4, taper: 1.0 },
     { id: 'furnace',  w: 'heavy',  name: 'Furnace',  perk: '+8 Power',               mod: { powerMul: 0.10 }, color: 0x3d3a3a, segs: 8, taper: 1.1 },
-    { id: 'anvil',    w: 'heavy',  name: 'Anvil',    perk: '+6 Armor',                mod: { armor: 0.03 }, color: 0x4d5868, segs: 4, taper: 1.28 },
+    { id: 'anvil',    w: 'heavy',  name: 'Anvil',    perk: '+8 Armor',                mod: { armor: 0.04 }, color: 0x4d5868, segs: 4, taper: 1.28 },
     { id: 'brute',    w: 'heavy',  name: 'Brute',    perk: '+40% knockback, +5 Power', mod: { kbDealt: 0.4, powerMul: 0.06 }, color: 0x8a5a3a, segs: 16, taper: 0.95 },
   ],
   bottom: [
@@ -520,7 +520,7 @@ const PARTS = {
   ],
 };
 const WEIGHT_MODS = {
-  top:    { light: { acc: 0.10, atkSpdMul: 0.08 }, middle: { armor: 0.05, acc: 0.04, atkSpdMul: 0.04 }, heavy: { armor: 0.06, blockRed: 0.08, atkSpdMul: -0.08 } },
+  top:    { light: { acc: 0.10, atkSpdMul: 0.08 }, middle: { armor: 0.05, acc: 0.04, atkSpdMul: 0.04 }, heavy: { armor: 0.05, blockRed: 0.10, atkSpdMul: -0.08 } },
   middle: { light: { powerMul: -0.2, atkSpdMul: 0.3 }, middle: {}, heavy: { powerMul: 0.42, atkSpdMul: -0.25, armor: 0.02, kbDealt: 0.2 } },
   bottom: { light: { moveMul: 0.3, dodgeCdMul: -0.4, kbRes: -0.15 }, middle: {}, heavy: { moveMul: -0.25, armor: 0.04, kbRes: 0.42, dodgeCdMul: 0.5 } },
 };
@@ -588,8 +588,8 @@ const WEAPON_GROUPS = [
 const WEAPONS = [
   { id: 'laser',   slot: 'head',  name: 'Laser Eyes',      desc: 'Beams fire straight from the eyes and burn the target at long range.', cd: 7,  w: 0.25, a: 0.6,  r: 0.25, move: 0.5,  kind: 'beam',  from: 'eyes',  tick: 0.1,  mult: 0.8, kb: 0.4, range: 14, color: 0xff3b3b },
   { id: 'tesla',   slot: 'head',  name: 'Tesla Coil',      desc: 'Fires an electric pulse that blasts a blue dome out around you (about 10 feet). Anything it catches takes damage and is knocked out by the EMP for a few seconds.', cd: 12, w: 0.35, a: 0.1, r: 0.35, move: 0.2, kind: 'emp', radius: 3.05, mult: 1.2, kb: 2, emp: 2.5, color: 0x3fa9ff },
-  { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 1.4, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
-  { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 1.0, kb: 4, homing: 2.4, color: 0xffb547 },
+  { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 1.5, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
+  { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 1.1, kb: 4, homing: 2.4, color: 0xffb547 },
   { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Forearm cannons. J or K fires that arm as fast as you can press; both together charge up a powerful double blast.', cd: 6, w: 0.45, a: 0.04, r: 0.35, move: 1, kind: 'proj', proj: 'shell', count: 2, speed: 22, mult: 0.9, kb: 13, stun: 0.45, color: 0xffd27a },
   { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Forearm chainsaws. J or K jabs with that arm; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.11, stun: 0.12, color: 0xff9f43 },
 ];
@@ -622,7 +622,7 @@ const armLoadout = ws => { const a = (ws || []).filter(id => ARM_SWAP.includes(i
 // arm weapons are not on a numbered button: they replace your punches. One arm's button uses that arm's lighter version
 // (side 1 = left, 0 = right, matching punchSide); both buttons use the full double-arm version
 const ARM_SINGLE = {
-  cannon: { count: 1, w: 0.03, a: 0.02, r: 0.12, mult: 0.3, kb: 3, stun: 0 },
+  cannon: { count: 1, w: 0.03, a: 0.02, r: 0.12, mult: 0.27, kb: 3, stun: 0 },
   saws:   { w: 0.1, a: 0.32, r: 0.2, mult: 0.12, stun: 0.08 },
 };
 const armVariant = (W, side) => side < 0 ? W : Object.assign({}, W, ARM_SINGLE[W.id], { side });
@@ -1979,7 +1979,7 @@ function makeTrail(scene, color) {
   };
 }
 function smooth01(x) { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); }
-function newPose() { return { aR: { x: 0, z: 0, e: 0, r: 1 }, aL: { x: 0, z: 0, e: 0, r: 1 }, lR: { x: 0, k: 0 }, lL: { x: 0, k: 0 }, bx: 0, bz: 0, by: 0, tw: 0 }; }
+function newPose() { return { aR: { x: 0, z: 0, e: 0, r: 1 }, aL: { x: 0, z: 0, e: 0, r: 1 }, lR: { x: 0, y: 0, z: 0, k: 0 }, lL: { x: 0, y: 0, z: 0, k: 0 }, bx: 0, bz: 0, by: 0, tw: 0 }; }
 function disposeObj(o) { o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) { for (const k of ['map', 'bumpMap']) { const t = c.material[k]; if (t && t !== HALO_TEX && (!DETAIL || (t !== DETAIL.map && t !== DETAIL.bump))) t.dispose(); } c.material.dispose(); } }); }
 
 /* procedural animation — computes a target pose from fighter state, eases toward it */
@@ -2020,11 +2020,24 @@ function animateRig(rig, f, dt, time) {
   const w = rig.walk;
   // locomotion
   if (!rig.treads && !rig.hover) {
-    P.lR.x = Math.sin(w) * 0.65 * sp; P.lL.x = -Math.sin(w) * 0.65 * sp;
-    P.lR.k = Math.max(0, Math.sin(w + 1.6)) * 0.9 * sp; P.lL.k = Math.max(0, -Math.sin(w + 1.6)) * 0.9 * sp;
+    // legs step along the actual direction of travel (in the fighter's own frame, +z forward, +x its left):
+    // forward and back swing the thighs, strafing swings them out to the side, and the hips turn toward the side being stepped to
+    let lx = 0, lz = 1;
+    if (f) { const yaw = rig.root.rotation.y, c = Math.cos(yaw), sn = Math.sin(yaw), vx = f.moveVel.x * c - f.moveVel.z * sn, vz = f.moveVel.x * sn + f.moveVel.z * c, v = Math.hypot(vx, vz); if (v > 0.3) { lx = vx / v; lz = vz / v; } }
+    const gd = rig.gaitDir = rig.gaitDir || { x: 0, z: 1 }, gk = 1 - Math.exp(-10 * dt);
+    gd.x = lerp(gd.x, lx, gk); gd.z = lerp(gd.z, lz, gk);
+    // g > 0: the right foot is ahead along the line of travel. Each leg lifts its knee while it swings toward the travel direction
+    const g = Math.sin(w), A = 0.65 * sp, side = 0.42 * sp;
+    P.lR.x = -g * A * gd.z; P.lL.x = g * A * gd.z;
+    P.lR.k = Math.max(0, Math.cos(w)) * 0.9 * sp; P.lL.k = Math.max(0, -Math.cos(w)) * 0.9 * sp;
+    // side-steps: the leading leg reaches out and the trailing leg closes in behind it, never crossing under the body
+    P.lR.z = clamp(g * side * gd.x, -0.6, 0.06) - 0.07 * sp * Math.abs(gd.x);
+    P.lL.z = clamp(-g * side * gd.x, -0.06, 0.6) + 0.07 * sp * Math.abs(gd.x);
+    P.lR.y = P.lL.y = gd.x * (gd.z < -0.3 ? -1 : 1) * 0.4 * Math.min(1, sp * 1.5);
   }
   // resting guard: upper arms down and slightly out, elbows at 90 degrees, fists held forward clear of the body
-  P.aR.x = -0.1 - Math.sin(w) * 0.25 * sp; P.aL.x = -0.1 + Math.sin(w) * 0.25 * sp;
+  const az = rig.gaitDir ? rig.gaitDir.z : 1; // arms swing with forward and back steps, not side-steps
+  P.aR.x = -0.1 - Math.sin(w) * 0.25 * sp * az; P.aL.x = -0.1 + Math.sin(w) * 0.25 * sp * az;
   P.aR.e = P.aL.e = -Math.PI / 2;
   P.aR.z = -rig.armSplay; P.aL.z = rig.armSplay;
   P.by = Math.sin(time * 2.2) * 0.012 + (rig.hover ? Math.sin(time * 3) * 0.06 + 0.08 : 0);
@@ -2121,7 +2134,7 @@ function animateRig(rig, f, dt, time) {
   // ease toward target
   const k = 1 - Math.exp(-rate * dt), cur = rig.pose;
   for (const a of ['aR', 'aL']) for (const j of ['x', 'z', 'e', 'r']) cur[a][j] = lerp(cur[a][j], P[a][j], k);
-  for (const l of ['lR', 'lL']) for (const j of ['x', 'k']) cur[l][j] = lerp(cur[l][j], P[l][j], k);
+  for (const l of ['lR', 'lL']) for (const j of ['x', 'y', 'z', 'k']) cur[l][j] = lerp(cur[l][j], P[l][j], k);
   for (const j of ['bx', 'bz', 'by', 'tw']) cur[j] = lerp(cur[j], P[j], k);
   // apply. arms[0] is at -x = the fighter's right
   const [ar, al] = rig.arms;
@@ -2131,8 +2144,8 @@ function animateRig(rig, f, dt, time) {
   ar.fist.rotation.y = cur.aR.r * ar.side * Math.PI / 2; al.fist.rotation.y = cur.aL.r * al.side * Math.PI / 2;
   if (rig.legs.length) {
     const [lr, ll] = rig.legs;
-    lr.pivot.rotation.x = cur.lR.x; lr.knee.rotation.x = cur.lR.k;
-    ll.pivot.rotation.x = cur.lL.x; ll.knee.rotation.x = cur.lL.k;
+    lr.pivot.rotation.set(cur.lR.x, cur.lR.y, cur.lR.z, 'YXZ'); lr.knee.rotation.x = cur.lR.k;
+    ll.pivot.rotation.set(cur.lL.x, cur.lL.y, cur.lL.z, 'YXZ'); ll.knee.rotation.x = cur.lL.k;
   }
   rig.body.rotation.set(cur.bx, cur.tw, cur.bz);
   rig.body.position.y = cur.by;
@@ -2867,7 +2880,7 @@ class Fighter {
     this.state = 'weapon'; this.t = 0; this.hitDone = false; this.tickT = 0; this.shots = 0; this.attackId++; this.wpn2 = null;
     if (side >= 0) this.wpn = armVariant(this.armW[side], side);
     else if (!mixed) this.wpn = Wl;
-    else { const up = W => Object.assign(W, { mult: W.mult * 1.5, kb: W.kb * 1.5, both: true }); this.wpn = up(armVariant(Wl, 1)); this.wpn2 = up(armVariant(Wr, 0)); this.s2 = { hitDone: false, tickT: 0, shots: 0 }; }
+    else { const up = W => Object.assign(W, { mult: W.mult * 1.2, kb: W.kb * 1.5, both: true }); this.wpn = up(armVariant(Wl, 1)); this.wpn2 = up(armVariant(Wr, 0)); this.s2 = { hitDone: false, tickT: 0, shots: 0 }; }
   }
   tryAction(a, wish, fwd, right, game) {
     // inside the bubble shield you can move, block, dodge and jump, but not attack, so it's a safe breather rather than a free 10 seconds of hits
