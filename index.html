@@ -2020,23 +2020,24 @@ function animateRig(rig, f, dt, time) {
   const w = rig.walk;
   // locomotion
   if (!rig.treads && !rig.hover) {
-    // legs step along the actual direction of travel (in the fighter's own frame, +z forward, +x its left):
-    // forward and back swing the thighs, strafing swings them out to the side, and the hips turn toward the side being stepped to
+    // the hips swivel to face the way the fighter is running (in its own frame, +z forward, +x its left) and the legs take an
+    // ordinary running stride that way, while the upper body keeps facing the opponent. Heading mostly backwards is a backpedal
     let lx = 0, lz = 1;
     if (f) { const yaw = rig.root.rotation.y, c = Math.cos(yaw), sn = Math.sin(yaw), vx = f.moveVel.x * c - f.moveVel.z * sn, vz = f.moveVel.x * sn + f.moveVel.z * c, v = Math.hypot(vx, vz); if (v > 0.3) { lx = vx / v; lz = vz / v; } }
     const gd = rig.gaitDir = rig.gaitDir || { x: 0, z: 1 }, gk = 1 - Math.exp(-10 * dt);
     gd.x = lerp(gd.x, lx, gk); gd.z = lerp(gd.z, lz, gk);
+    if (rig.back ? gd.z > -0.4 : gd.z < -0.6) rig.back = !rig.back;   // a little hysteresis so the hips don't flip back and forth
+    const free = sp > 0.12 && st !== 'kick' && !(f && f.air);
+    const want = free ? clamp(rig.back ? Math.atan2(-gd.x, -gd.z) : Math.atan2(gd.x, gd.z), -1.8, 1.8) : 0;
+    rig.hipYaw = lerp(rig.hipYaw || 0, want, 1 - Math.exp(-9 * dt));
     // g > 0: the right foot is ahead along the line of travel. Each leg lifts its knee while it swings toward the travel direction
-    const g = Math.sin(w), A = 0.65 * sp, side = 0.42 * sp;
-    P.lR.x = -g * A * gd.z; P.lL.x = g * A * gd.z;
+    const g = Math.sin(w), A = 0.65 * sp * (rig.back ? -1 : 1);
+    P.lR.x = -g * A; P.lL.x = g * A;
     P.lR.k = Math.max(0, Math.cos(w)) * 0.9 * sp; P.lL.k = Math.max(0, -Math.cos(w)) * 0.9 * sp;
-    // side-steps: the leading leg reaches out and the trailing leg closes in behind it, never crossing under the body
-    P.lR.z = clamp(g * side * gd.x, -0.6, 0.06) - 0.07 * sp * Math.abs(gd.x);
-    P.lL.z = clamp(-g * side * gd.x, -0.06, 0.6) + 0.07 * sp * Math.abs(gd.x);
-    P.lR.y = P.lL.y = gd.x * (gd.z < -0.3 ? -1 : 1) * 0.4 * Math.min(1, sp * 1.5);
+    P.lR.y = P.lL.y = rig.hipYaw;
   }
   // resting guard: upper arms down and slightly out, elbows at 90 degrees, fists held forward clear of the body
-  const az = rig.gaitDir ? rig.gaitDir.z : 1; // arms swing with forward and back steps, not side-steps
+  const az = rig.back ? -1 : 1; // arms swing with the stride
   P.aR.x = -0.1 - Math.sin(w) * 0.25 * sp * az; P.aL.x = -0.1 + Math.sin(w) * 0.25 * sp * az;
   P.aR.e = P.aL.e = -Math.PI / 2;
   P.aR.z = -rig.armSplay; P.aL.z = rig.armSplay;
@@ -2144,8 +2145,12 @@ function animateRig(rig, f, dt, time) {
   ar.fist.rotation.y = cur.aR.r * ar.side * Math.PI / 2; al.fist.rotation.y = cur.aL.r * al.side * Math.PI / 2;
   if (rig.legs.length) {
     const [lr, ll] = rig.legs;
-    lr.pivot.rotation.set(cur.lR.x, cur.lR.y, cur.lR.z, 'YXZ'); lr.knee.rotation.x = cur.lR.k;
-    ll.pivot.rotation.set(cur.lL.x, cur.lL.y, cur.lL.z, 'YXZ'); ll.knee.rotation.x = cur.lL.k;
+    for (const [L, c] of [[lr, cur.lR], [ll, cur.lL]]) {
+      // swivel the hip joints around the body's centre along with the legs, so the legs stay side by side as the hips turn
+      if (L.hx === undefined) { L.hx = L.pivot.position.x; L.hz = L.pivot.position.z; }
+      L.pivot.position.x = L.hx * Math.cos(c.y); L.pivot.position.z = L.hz - L.hx * Math.sin(c.y);
+      L.pivot.rotation.set(c.x, c.y, c.z, 'YXZ'); L.knee.rotation.x = c.k;
+    }
   }
   rig.body.rotation.set(cur.bx, cur.tw, cur.bz);
   rig.body.position.y = cur.by;
