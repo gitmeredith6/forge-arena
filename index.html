@@ -128,7 +128,22 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
   .ar-fight { align-self: stretch; }
 }
 @keyframes ringSpin { to { transform: rotateX(72deg) rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .home-glow i, .home-begin { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .home-glow i, .home-begin, #home .home-logo span { animation: none; } }
+/* title screen, cream and metal look: polished black FORGE, polished blue ARENA, silver rings and button */
+#home { background: radial-gradient(ellipse at 50% 38%, #fffdf7 0%, #f6efe0 55%, #e7dcc5 100%); }
+#home .home-kicker, #home .home-sub { color: #6f6656; }
+#home .home-logo { text-shadow: none; filter: drop-shadow(0 3px 2px #0000002e) drop-shadow(0 10px 18px #0000001f); }
+#home .home-logo span { background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; animation: metalShine 6s ease-in-out infinite; }
+#home .m-black { background-image: linear-gradient(100deg, #0a0b0d 0%, #2c3036 18%, #0d0e11 30%, #5d636d 42%, #e6e9ee 48%, #6a707a 54%, #121317 66%, #3a3f47 82%, #0a0b0d 100%); }
+#home .m-blue { background-image: linear-gradient(100deg, #062a6e 0%, #1d5fd1 18%, #0a3384 30%, #3f8cff 42%, #d9ecff 48%, #4f97ff 54%, #0b3a94 66%, #2a73e6 82%, #062a6e 100%); }
+@keyframes metalShine { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0 0; } }
+#home .home-glow i { border-width: 3px; border-color: #9aa1abb3; box-shadow: 0 0 0 1px #ffffff99 inset, 0 1px 0 #ffffffcc; }
+#home .home-glow i:nth-child(2) { border-color: #b9bfc8aa; }
+#home .home-glow i:nth-child(3) { border-color: #8a919bb3; }
+#home .home-begin { font-size: 46px; padding: 16px 72px 9px; border-radius: 14px; background: linear-gradient(180deg, #fbfbfc 0%, #d9dce1 38%, #b3b8bf 52%, #e2e5e9 100%); color: #262a31; border: 1px solid #8e949c;
+  box-shadow: inset 0 1px 0 #ffffff, inset 0 -2px 0 #9399a2, 0 4px 10px #0000002e; text-shadow: 0 1px 0 #ffffffb3; animation: silverPulse 2.2s ease-in-out infinite; }
+#home .home-begin:hover { filter: brightness(1.05); border-color: #6f757e; }
+@keyframes silverPulse { 0%, 100% { box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 #9399a2, 0 4px 10px #0000002e, 0 0 0 0 #a4abb566; } 50% { box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 #9399a2, 0 4px 10px #0000002e, 0 0 0 14px #a4abb500; } }
 .tagline { color: var(--muted); margin: 0; max-width: 60ch; }
 .b-grid { display: grid; grid-template-columns: minmax(340px, 1fr) minmax(0, 1.35fr) minmax(250px, 0.72fr); gap: 14px; flex: 1; min-height: 0; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
@@ -362,7 +377,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   <div class="home-glow" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="home-in">
     <p class="home-kicker">Build · Arm · Battle</p>
-    <h1 class="home-logo">FORGE <span>ARENA</span></h1>
+    <h1 class="home-logo"><span class="m-black">FORGE</span> <span class="m-blue">ARENA</span></h1>
     <p class="home-sub">Forge a fighter from heads, arms, torsos, legs and weapons, then take it into the arena.</p>
     <button type="button" class="btn btn-go home-begin" id="beginBtn">BEGIN</button>
   </div>
