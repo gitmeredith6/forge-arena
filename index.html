@@ -2554,7 +2554,23 @@ const SFX = {
   beep(hi) { this.tone(hi ? 880 : 440, hi ? 880 : 440, hi ? 0.35 : 0.12, 'triangle', 0.12); },
   // recorded anvil strikes for title / menu clicks
   anvilEls: null, anvilLast: -1,
-  anvil() { if (this.muted) return; try { this.anvilEls = this.anvilEls || ANVIL_SET.map(src => new Audio(src)); let i; do i = Math.floor(Math.random() * ANVIL_SET.length); while (i === this.anvilLast && ANVIL_SET.length > 1); this.anvilLast = i; const a = this.anvilEls[i].cloneNode(); a.volume = 0.8; a.play().catch(() => {}); } catch (e) {} },
+  // shuffle bag: all 7 clips play once in random order before any repeats (and never back-to-back across bags)
+  anvilBag: [],
+  anvil() {
+    if (this.muted) return;
+    try {
+      this.anvilEls = this.anvilEls || ANVIL_SET.map(src => { const a = new Audio(src); a.preload = 'auto'; return a; });
+      if (!this.anvilBag.length) {
+        const bag = ANVIL_SET.map((_, i) => i);
+        for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; }
+        if (bag[bag.length - 1] === this.anvilLast) [bag[0], bag[bag.length - 1]] = [bag[bag.length - 1], bag[0]];
+        this.anvilBag = bag;
+      }
+      const i = this.anvilBag.pop(); this.anvilLast = i;
+      const a = this.anvilEls[i].cloneNode(); a.volume = 0.8;
+      a.play().catch(() => {});
+    } catch (e) {}
+  },
 };
 // anvil / hammer strikes for title and menu clicks; one is picked at random each click
 const ANVIL_SET = [
