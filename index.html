@@ -461,7 +461,6 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <span><kbd>1</kbd> <kbd>2</kbd> fire your head and chest weapons (arm weapons fire with <kbd>J</kbd> and <kbd>K</kbd>)</span>
     <span><kbd>Space</kbd> dodge</span>
     <span><kbd>F</kbd> jump (legs jump highest, other bottoms hop)</span>
-    <span><kbd>E</kbd> special (when energy is full)</span>
     <span><kbd>R</kbd> use your ability</span>
     <span><kbd>Esc</kbd> pause</span>
   </div>
@@ -486,8 +485,6 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <div class="hp-side">
       <div class="hp-name" id="p1Name"></div>
       <div class="hpbar" style="--c: var(--p1)"><div class="trail" id="p1Trail"></div><div class="fill" id="p1Fill"></div><span class="hpnum" id="p1Num"></span></div>
-      <div class="enbar" id="p1En"><div class="fill" id="p1EnFill"></div></div>
-      <div class="en-label" id="p1EnLbl"></div>
       <div class="wslots" id="p1W"></div>
     </div>
     <div class="center-hud">
@@ -498,7 +495,6 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <div class="hp-side r">
       <div class="hp-name" id="p2Name"></div>
       <div class="hpbar" style="--c: var(--p2)"><div class="trail" id="p2Trail"></div><div class="fill" id="p2Fill"></div><span class="hpnum" id="p2Num"></span></div>
-      <div class="enbar" id="p2En"><div class="fill" id="p2EnFill"></div></div>
     </div>
   </div>
   <div class="banner"><div id="banner"></div></div>
@@ -506,7 +502,6 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <div class="stick" id="stick"><i id="stickKnob"></i></div>
     <div class="wbtns" id="wbtns"></div>
     <div class="tbtns">
-      <button type="button" data-a="special" class="sp">SPECIAL</button>
       <button type="button" data-a="block">BLOCK</button>
       <button type="button" data-a="dodge">DODGE</button>
       <button type="button" data-a="left" class="big">L ARM</button>
@@ -515,7 +510,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       <button type="button" data-a="jump" class="jp">JUMP</button>
     </div>
   </div>
-  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click left arm</span><span><kbd>K</kbd>/right-click right arm</span><span><kbd>J</kbd>+<kbd>K</kbd> smash</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>F</kbd> jump</span><span><kbd>E</kbd> special</span><span><kbd>R</kbd> ability</span></div>
+  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click left arm</span><span><kbd>K</kbd>/right-click right arm</span><span><kbd>J</kbd>+<kbd>K</kbd> smash</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>F</kbd> jump</span><span><kbd>R</kbd> ability</span></div>
   <div class="vs" id="vs" hidden>
     <div class="side"><div class="who" style="color: var(--p1)">You</div><div class="nm" id="vsP1"></div><div class="vsw" id="vsP1w"></div></div>
     <div class="mid">VS<small id="vsArena"></small></div>
@@ -547,7 +542,7 @@ const WEIGHTS = ['light', 'middle', 'heavy'];
 const WLABEL = { light: 'Light', middle: 'Middle', heavy: 'Heavy' };
 const WCOLOR = { light: 'var(--w-light)', middle: 'var(--w-middle)', heavy: 'var(--w-heavy)' };
 const SECTIONS = {
-  top:    { label: 'Arms', desc: 'Your Arms set armor, block strength and accuracy. Their weight class also decides your special move.',
+  top:    { label: 'Arms', desc: 'Your Arms set armor, block strength and accuracy.',
             effect: { light: 'Quick, accurate hands, less armor', middle: 'Balanced, with a little extra armor', heavy: 'Most armor and a stronger block, slower hands' } },
   middle: { label: 'Middle', sub: 'Torso', desc: 'Your Middle trades attack power for attack speed.',
             effect: { light: 'Fast attacks, less power', middle: 'Balanced', heavy: 'Big power, slower attacks' } },
@@ -2649,9 +2644,7 @@ function renderStats(hoverBuild) {
     }
     return `<div class="stat"><span class="sl">${d.label}</span><div class="bar"><i style="width:${h && norm(h[d.k], d) < a ? norm(h[d.k], d) : a}%"></i>${extra}</div><span class="sv">${val}</span></div>`;
   }).join('');
-  const sp = SPECIALS[partById('top', (hoverBuild || build).top).w];
-  $('special').innerHTML = `<div class="sk">Special move (from your Arms)</div><div class="sn">${sp.name}</div><p>${sp.desc}</p>`
-    + `<div class="sk" style="margin-top:8px">${build.ability ? 'Ability and weapons' : 'Weapons'}</div><div class="wlist">${build.ability ? `<span><kbd>R</kbd>${ABILITY[build.ability].name}</span>` : ''}${build.weapons.length ? build.weapons.map(id => `<span><kbd>${weaponKey(build.weapons, id)}</kbd>${WEAPON[id].name}</span>`).join('') : '<span>None yet. Click Weapons to add some.</span>'}</div>`;
+  $('special').innerHTML = `<div class="sk">${build.ability ? 'Ability and weapons' : 'Weapons'}</div><div class="wlist">${build.ability ? `<span><kbd>R</kbd>${ABILITY[build.ability].name}</span>` : ''}${build.weapons.length ? build.weapons.map(id => `<span><kbd>${weaponKey(build.weapons, id)}</kbd>${WEAPON[id].name}</span>`).join('') : '<span>None yet. Click Weapons to add some.</span>'}</div>`;
 }
 function renderAll() {
   renderTabs(); renderParts(); renderStats();
@@ -3105,7 +3098,7 @@ class Fighter {
       this.wcd[i] = W.cd * this.stats.wcdMul; game.onWeaponStart(this, W); return true;
     }
     if (a === 'special') {
-      if (this.energy < 100) return false;
+      return false; // parts no longer come with special moves; weapons and abilities do that job
       this.energy = 0; this.state = 'special'; this.t = 0; this.hitDone = false; this.attackId++; game.onSpecialStart(this); return true;
     }
     return false;
@@ -3115,7 +3108,6 @@ class Fighter {
     this.dodgeCdT = Math.max(0, this.dodgeCdT - dt);
     this.fortifyT = Math.max(0, this.fortifyT - dt);
     this.flash = Math.max(0, this.flash - dt);
-    if (this.state !== 'ko' && this.state !== 'victory') this.energy = Math.min(100, this.energy + 5.5 * dt);
     for (let i = 0; i < 3; i++) this.wcd[i] = Math.max(0, this.wcd[i] - dt);
     this.abCd = Math.max(0, this.abCd - dt); this.jetT = Math.max(0, this.jetT - dt);
     this.wShieldT = Math.max(0, this.wShieldT - dt); this.slowT = Math.max(0, this.slowT - dt);
@@ -3289,7 +3281,7 @@ class AIController {
       this.next = this.clock + L.think * rand(0.7, 1.3);
       const range = me.stats.reach + opp.radius * 0.6;
       if (Math.random() < 0.25) this.strafe *= -1;
-      if (me.energy >= 100 && Math.random() < 0.7) {
+      if (false) { // special moves were removed
         const id = me.special.id;
         if ((id === 'blink' && dist > 2.8 && dist < 8.5) || (id === 'pulse' && dist < 3.4) || (id === 'fortify' && dist < 5)) inp.special = true;
       }
@@ -3386,7 +3378,7 @@ const Input = {
       w1: p.has('Digit1') || p.has('Numpad1') || p.has('t-w1'), w2: p.has('Digit2') || p.has('Numpad2') || p.has('t-w2'), w3: p.has('Digit3') || p.has('Numpad3') || p.has('t-w3'),
       dodge: p.has('Space') || p.has('t-dodge'),
       jump: p.has('KeyF') || p.has('t-jump'),
-      special: p.has('KeyE') || p.has('KeyI') || p.has('t-special'),
+      special: false, // parts no longer come with special moves
       ability: p.has('KeyR') || p.has('t-ability'),
       block: h.has('KeyL') || h.has('ShiftLeft') || h.has('ShiftRight') || h.has('mouse1') || this.touchHeld.has('block'),
     };
@@ -4105,12 +4097,7 @@ const Battle = {
       $(pre + 'Fill').style.width = (f.hp / f.stats.hp * 100) + '%';
       $(pre + 'Num').textContent = Math.ceil(f.hp).toLocaleString();
       $(pre + 'Trail').style.width = (f.hpTrail / f.stats.hp * 100) + '%';
-      $(pre + 'EnFill').style.width = f.energy + '%';
-      $(pre + 'En').classList.toggle('ready', f.energy >= 100);
     }
-    const ready = this.p1.energy >= 100;
-    const lbl = $('p1EnLbl'); lbl.classList.toggle('ready', ready);
-    lbl.textContent = ready ? `${this.p1.special.name} ready · E` : this.p1.special.name;
     $('timer').textContent = Math.ceil(this.timeLeft);
     const wb = $('wbtns').children;
     this.p1.weapons.forEach((W, i) => {
