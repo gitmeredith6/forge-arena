@@ -135,7 +135,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 #home .home-sub { color: #3f444d; }
 #home .home-logo { text-shadow: 0 2px 0 #ffffff66, 0 8px 22px #00000026; }
 #home .home-kicker { font-family: 'Bungee', var(--f-display); font-weight: 400; font-size: 18px; letter-spacing: 0.22em; }
-#home .home-logo { font-family: 'Black Ops One', var(--f-display); font-weight: 400; font-size: clamp(54px, 13.5vw, 150px); line-height: 0.98; letter-spacing: 0.01em; text-shadow: none; filter: drop-shadow(0 2px 0 #ffffff80) drop-shadow(0 8px 18px #00000030); }
+#home .home-logo { font-family: 'Black Ops One', var(--f-display); font-weight: 400; font-size: clamp(54px, 16vw, 150px); line-height: 0.98; letter-spacing: 0.01em; text-shadow: none; filter: drop-shadow(0 2px 0 #ffffff80) drop-shadow(0 8px 18px #00000030); }
 /* battle-worn texture: speckled noise mask punched through the letters */
 #home .home-logo b { font-weight: inherit; display: inline-block; position: relative; -webkit-mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='520' height='520'><filter id='n' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.3' numOctaves='4' seed='7' result='f'/><feTurbulence type='fractalNoise' baseFrequency='0.018' numOctaves='2' seed='3' result='c'/><feComposite in='f' in2='c' operator='arithmetic' k2='0.6' k3='0.9'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -24 21.3'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='520' height='520'><filter id='n' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.3' numOctaves='4' seed='7' result='f'/><feTurbulence type='fractalNoise' baseFrequency='0.018' numOctaves='2' seed='3' result='c'/><feComposite in='f' in2='c' operator='arithmetic' k2='0.6' k3='0.9'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -24 21.3'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); -webkit-mask-size: 520px; mask-size: 520px; }
 /* solid backdrop-coloured copy under each worn word so the rings never show through the chips */
@@ -150,7 +150,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 /* dark matte gray plate behind the logo; the tagline sits above it */
 /* dark matte gray backdrop: light tagline/blurb so they read on it */
 #home .home-logo { filter: drop-shadow(0 8px 18px #00000055); }
-#home .home-kicker { color: #e3e6ea; background: linear-gradient(180deg, #ffffff 0%, #d9dce1 40%, #9fa4ac 58%, #e3e6ea 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 1px 1px #00000080); border-bottom: 3px solid #0c0c10; padding: 0 0 6px 0.22em; }
+#home .home-kicker { color: #e3e6ea; background: linear-gradient(180deg, #ffffff 0%, #d9dce1 40%, #9fa4ac 58%, #e3e6ea 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 1px 1px #00000080); border-bottom: 3px solid #0c0c10; padding: 0 0 6px; display: flex; justify-content: space-between; box-sizing: border-box; }
+/* words spread across the width of FORGE (set in fitKicker); cancel each word's trailing letter-spacing */
+#home .home-kicker span { margin-right: -0.22em; }
 #home .home-sub { color: #c4c7cd; }
 /* sits just below the outer ring (900px ring tilted 72deg -> ~139px vertical radius around top 56%) */
 #home .home-begin { position: absolute; left: 50%; top: calc(56% + 162px); transform: translateX(-50%); margin: 0; font-size: 46px; padding: 16px 72px 9px; border-radius: 14px; background: linear-gradient(180deg, #ffffff 0%, #d9dce1 38%, #a9aeb6 55%, #e3e6ea 100%); color: #15171b; border: 1px solid #7d828a;
@@ -389,7 +391,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 <section id="home" aria-label="Home">
   <div class="home-glow" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="home-in">
-    <p class="home-kicker">Build · Arm · Battle</p>
+    <p class="home-kicker" id="homeKicker"><span>Build</span><span>·</span><span>Arm</span><span>·</span><span>Battle</span></p>
     <h1 class="home-logo"><span class="m-black" data-t="FORGE"><b>FORGE</b></span> <span class="m-blue" data-t="ARENA"><b>ARENA</b></span></h1>
   </div>
   <button type="button" class="btn btn-go home-begin" id="beginBtn">BEGIN</button>
@@ -2701,6 +2703,9 @@ $('arFight').onclick = () => { SFX.init(); Battle.start(); };
 addEventListener('resize', () => { if (!$('arenas').hidden) renderArenas(); });
 $('fightBtn').onclick = () => { SFX.init(); showArenas(); };
 $('beginBtn').onclick = () => { SFX.init(); goMenu(); };
+// stretch the tagline to the width of the FORGE word
+function fitKicker() { const f = document.querySelector('#home .m-black'); if (!f) return; const w = f.getBoundingClientRect().width, k = $('homeKicker'); k.style.width = w + 'px'; k.style.fontSize = Math.max(10, Math.min(18, w / 26)) + 'px'; }
+fitKicker(); addEventListener('resize', fitKicker); if (document.fonts) document.fonts.ready.then(fitKicker);
 const SCREENS = ['home', 'menu', 'builder', 'arenas', 'career', 'settings', 'multi'];
 function showScreen(id) { for (const k of SCREENS) $(k).hidden = k !== id; if (id === 'builder') Preview.resize(); }
 function goMenu() {
