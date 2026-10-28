@@ -52,6 +52,50 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .home-begin { margin-top: 18px; font-size: 40px; padding: 14px 56px 8px; border-radius: 12px; box-shadow: 0 0 0 0 #ffb54766; animation: beginPulse 2.2s ease-in-out infinite; }
 @keyframes beginPulse { 50% { box-shadow: 0 0 0 14px #ffb54700; } }
 .home-glow { position: absolute; inset: 0; pointer-events: none; }
+#menu { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; overflow: hidden auto; padding: 24px 16px;
+  background: radial-gradient(ellipse at 50% 120%, #ffb54726 0%, transparent 55%), radial-gradient(ellipse at 50% 30%, #1c2a46 0%, #070a12 72%); }
+.menu-in { position: relative; width: min(460px, 100%); display: flex; flex-direction: column; align-items: stretch; gap: 22px; }
+.menu-logo { margin: 0; text-align: center; font-family: var(--f-display); font-weight: 700; font-size: clamp(56px, 13vw, 96px); line-height: 0.8; letter-spacing: 0.02em; }
+.menu-logo span { color: var(--p1); }
+.menu-list { display: flex; flex-direction: column; gap: 10px; }
+.menu-btn { text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 14px 18px 12px; border-radius: 12px; border: 1px solid var(--line); background: #121926e6; color: var(--fg); transition: border-color .12s, transform .12s, background .12s; }
+.menu-btn b { font-family: var(--f-display); font-weight: 600; font-size: 34px; line-height: 0.9; letter-spacing: 0.04em; text-transform: uppercase; }
+.menu-btn span { color: var(--muted); font-size: 14px; }
+.menu-btn:hover, .menu-btn:focus-visible { border-color: #ffffff40; transform: translateX(3px); }
+.menu-btn.go { border-color: var(--p1); background: linear-gradient(90deg, #ffb54726, #121926e6 70%); }
+.menu-btn.go b { color: var(--p1); }
+.menu-record { margin: 0; text-align: center; color: var(--muted); font-size: 14px; min-height: 1em; }
+.page { position: fixed; inset: 0; z-index: 30; overflow-y: auto; padding: 24px 16px; background: radial-gradient(1200px 500px at 50% -10%, #1b2740 0%, transparent 70%), var(--bg); }
+.pg-in { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.set-list { display: flex; flex-direction: column; gap: 8px; max-width: 560px; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.set-txt { display: flex; flex-direction: column; gap: 2px; } .set-txt b { font-size: 18px; } .set-txt span { color: var(--muted); font-size: 14px; }
+.toggle { position: relative; flex: none; width: 56px; height: 30px; border-radius: 15px; border: 1px solid var(--line); background: #0c111b; padding: 0; transition: background .15s; }
+.toggle i { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
+.toggle[aria-checked="true"] { background: #ffb54733; border-color: var(--p1); }
+.toggle[aria-checked="true"] i { transform: translateX(26px); background: var(--p1); }
+.cr-kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.cr-kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cr-kpi .k { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.cr-kpi .v { font-family: var(--f-display); font-weight: 600; font-size: 40px; line-height: 0.95; font-variant-numeric: tabular-nums; }
+.cr-kpi .v small { font-size: 22px; color: var(--muted); }
+.cr-kpi .s { font-size: 13px; color: var(--muted); }
+.cr-h { margin: 10px 0 -4px; line-height: 1.1; font-family: var(--f-display); font-weight: 600; font-size: 26px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.cr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.cr-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cr-card .k { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.cr-fav { font-family: var(--f-display); font-weight: 600; font-size: 32px; line-height: 0.9; color: var(--p1); overflow-wrap: anywhere; }
+.cr-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; font-size: 14px; }
+.cr-row .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-row .m { color: var(--muted); font-variant-numeric: tabular-nums; }
+.cr-row .bar { grid-column: 1 / -1; height: 5px; }
+.cr-empty { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 28px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--muted); }
+.cr-foot { display: flex; justify-content: flex-end; }
+.cr-wide { grid-column: 1 / -1; }
+.seg.two { grid-template-columns: 1fr 1fr; }
+.seg.who { grid-template-columns: 1fr 1fr; min-width: 260px; }
+.seg.who button[data-w="opp"][aria-pressed="true"] { color: var(--p2); box-shadow: inset 0 0 0 1px var(--p2); }
+#builder.opp .b-preview { box-shadow: inset 0 0 0 1px #ff4d6d66; }
 .home-glow i { position: absolute; left: 50%; top: 56%; width: 900px; height: 900px; margin: -450px 0 0 -450px; border-radius: 50%; border: 2px solid #ffb54726; transform: rotateX(72deg); animation: ringSpin 14s linear infinite; }
 .home-glow i:nth-child(2) { width: 620px; height: 620px; margin: -310px 0 0 -310px; border-color: #ff4d6d2a; animation-duration: 10s; animation-direction: reverse; }
 .home-glow i:nth-child(3) { width: 360px; height: 360px; margin: -180px 0 0 -180px; border: 3px dashed #ffb54740; animation-duration: 7s; }
@@ -320,9 +364,48 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   </div>
 </section>
 
+<section id="menu" aria-label="Main menu" hidden>
+  <div class="home-glow" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="menu-in">
+    <h1 class="menu-logo">FORGE <span>ARENA</span></h1>
+    <nav class="menu-list" aria-label="Main menu">
+      <button type="button" class="menu-btn go" id="mFight"><b>Play now</b><span>Build your fighter and your opponent, then pick an arena</span></button>
+      <button type="button" class="menu-btn" id="mMulti"><b>Multiplayer</b><span>Online matchmaking, coming soon</span></button>
+      <button type="button" class="menu-btn" id="mStats"><b>Stats</b><span>Your career record and favourite parts</span></button>
+      <button type="button" class="menu-btn" id="mSettings"><b>Gameplay settings</b><span>Sound</span></button>
+    </nav>
+    <p class="menu-record" id="menuRecord"></p>
+  </div>
+</section>
+
+<section id="career" class="page" aria-label="Career stats" hidden>
+  <div class="pg-in">
+    <div class="ar-head"><button type="button" class="btn" data-menu>Main menu</button><h2 class="ar-title">CAREER <span>STATS</span></h2></div>
+    <div id="careerBody"></div>
+  </div>
+</section>
+
+<section id="multi" class="page" aria-label="Multiplayer" hidden>
+  <div class="pg-in">
+    <div class="ar-head"><button type="button" class="btn" data-menu>Main menu</button><h2 class="ar-title">MULTI<span>PLAYER</span></h2></div>
+    <div class="cr-empty"><p><b style="color:var(--fg);font-size:18px">Online matchmaking is coming soon.</b><br>You'll be able to take your fighter online and battle other players' builds.</p><button type="button" class="btn btn-go" id="mpPlay">PLAY NOW AGAINST THE CPU</button></div>
+  </div>
+</section>
+
+<section id="settings" class="page" aria-label="Gameplay settings" hidden>
+  <div class="pg-in">
+    <div class="ar-head"><button type="button" class="btn" data-menu>Main menu</button><h2 class="ar-title">GAMEPLAY <span>SETTINGS</span></h2></div>
+    <div class="set-list">
+      <div class="set-row"><div class="set-txt"><b>Sound</b><span>Hits, blocks, weapons and announcer tones</span></div><button type="button" class="toggle" id="soundToggle" role="switch" aria-checked="true" aria-label="Sound"><i></i></button></div>
+    </div>
+  </div>
+</section>
+
 <section id="builder" aria-label="Fighter builder" hidden>
   <div class="top-bar">
+    <button type="button" class="btn" id="bMenu">Menu</button>
     <h1 class="logo">FORGE <span>ARENA</span></h1>
+    <div class="seg who" id="who" role="group" aria-label="Which fighter you are building"><button type="button" data-w="me">Your fighter</button><button type="button" data-w="opp">Opponent</button></div>
     <p class="tagline">Click any part of your fighter to change it. Arms, Middle and Bottom each come in Light, Middle or Heavy, and you can add two weapons.</p>
   </div>
   <div class="b-grid">
@@ -349,7 +432,9 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       <div class="stats" id="stats"></div>
       <div class="special" id="special"></div>
       <div>
-        <div class="lbl">Opponent</div>
+        <div class="lbl">Opponent build</div>
+        <div class="seg two" id="oppMode"><button type="button" data-m="random">Random each fight</button><button type="button" data-m="custom">Custom</button></div>
+        <div class="lbl" style="margin-top:10px">Opponent skill</div>
         <div class="seg" id="diff">
           <button type="button" id="diff-easy" data-d="easy" aria-pressed="false">Easy</button>
           <button type="button" id="diff-normal" data-d="normal" aria-pressed="true">Normal</button>
@@ -2344,7 +2429,7 @@ function animateRig(rig, f, dt, time) {
 
 /* ======================= SOUND (tiny synth) ======================= */
 const SFX = {
-  ctx: null, noiseBuf: null,
+  ctx: null, noiseBuf: null, muted: false,
   init() {
     try {
       if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); const n = this.ctx.sampleRate * 0.5; this.noiseBuf = this.ctx.createBuffer(1, n, this.ctx.sampleRate); const d = this.noiseBuf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; }
@@ -2352,8 +2437,8 @@ const SFX = {
     } catch (e) { this.ctx = null; }
   },
   env(node, gain, dur) { const g = this.ctx.createGain(); const t = this.ctx.currentTime; g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); node.connect(g); g.connect(this.ctx.destination); return t; },
-  noise(dur, freq, gain) { if (!this.ctx) return; const s = this.ctx.createBufferSource(); s.buffer = this.noiseBuf; const f = this.ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.8; s.connect(f); const t = this.env(f, gain, dur); s.start(t); s.stop(t + dur); },
-  tone(f1, f2, dur, type, gain) { if (!this.ctx) return; const o = this.ctx.createOscillator(); o.type = type; const t = this.env(o, gain, dur); o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur); o.start(t); o.stop(t + dur); },
+  noise(dur, freq, gain) { if (!this.ctx || this.muted) return; const s = this.ctx.createBufferSource(); s.buffer = this.noiseBuf; const f = this.ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.8; s.connect(f); const t = this.env(f, gain, dur); s.start(t); s.stop(t + dur); },
+  tone(f1, f2, dur, type, gain) { if (!this.ctx || this.muted) return; const o = this.ctx.createOscillator(); o.type = type; const t = this.env(o, gain, dur); o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur); o.start(t); o.stop(t + dur); },
   hit(heavy) { this.noise(heavy ? 0.22 : 0.1, heavy ? 500 : 1300, heavy ? 0.55 : 0.32); this.tone(heavy ? 150 : 240, 50, heavy ? 0.25 : 0.12, 'sine', 0.45); },
   block() { this.tone(1800, 900, 0.08, 'square', 0.07); this.noise(0.06, 3000, 0.15); },
   whoosh() { this.noise(0.18, 700, 0.12); },
@@ -2368,9 +2453,25 @@ let curSec = null;
 let difficulty = 'normal';
 let arenaId = 'guerrilla';
 try { const a = localStorage.getItem('forge-arena-map'); if (['classic', 'guerrilla', 'citadel'].includes(a)) arenaId = a; } catch (e) {}
-try { const s = JSON.parse(localStorage.getItem('forge-arena-build') || 'null'); if (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) build = Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons, ability: cleanAbility(s.ability) || (s.ability === undefined && (s.weapons || []).find(id => ABILITY[id])) || null, head: headById(s.head) ? s.head : s.top, colors: cleanColors(s.colors), lights: Object.fromEntries(Object.entries(cleanColors(s.lights)).map(([k, c]) => [k, OLD_LIGHTS[c] || c])) }); } catch (e) {}
+// fills in anything an older save is missing, or returns null when the save is unusable
+const fixBuild = s => (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) ? Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons, ability: cleanAbility(s.ability) || (s.ability === undefined && (s.weapons || []).find(id => ABILITY[id])) || null, head: headById(s.head) ? s.head : s.top, colors: cleanColors(s.colors), lights: Object.fromEntries(Object.entries(cleanColors(s.lights)).map(([k, c]) => [k, OLD_LIGHTS[c] || c])) }) : null;
+try { const s = fixBuild(JSON.parse(localStorage.getItem('forge-arena-build') || 'null')); if (s) build = s; } catch (e) {}
+// the opponent: random each fight unless you build a custom one. `build` is whichever fighter the builder is editing
+let myBuild = build, oppBuild = null, oppCustom = false, editing = 'me';
+try { const o = JSON.parse(localStorage.getItem('forge-arena-opp') || 'null'); if (o) { oppBuild = fixBuild(o.build); oppCustom = !!(o.custom && oppBuild); } } catch (e) {}
+try { SFX.muted = localStorage.getItem('forge-arena-sound') === 'off'; } catch (e) {}
 try { const d = localStorage.getItem('forge-arena-diff'); if (['easy', 'normal', 'hard'].includes(d)) difficulty = d; } catch (e) {}
-const save = () => { try { localStorage.setItem('forge-arena-build', JSON.stringify(build)); localStorage.setItem('forge-arena-diff', difficulty); } catch (e) {} };
+const save = () => {
+  if (editing === 'opp') { if (build !== oppBuild) oppCustom = true; oppBuild = build; } else myBuild = build;
+  try { localStorage.setItem('forge-arena-build', JSON.stringify(myBuild)); localStorage.setItem('forge-arena-opp', JSON.stringify({ build: oppBuild, custom: oppCustom })); localStorage.setItem('forge-arena-diff', difficulty); } catch (e) {}
+};
+function setEditing(w) {
+  if (w === editing) return;
+  save(); editing = w;
+  build = w === 'opp' ? (oppBuild || (oppBuild = randomBuild())) : myBuild;
+  renderAll();
+}
+const editAccent = () => editing === 'opp' ? ACCENT.p2 : ACCENT.p1;
 
 // the left panel: a list of the fighter's sections, or, once one is picked (here or by clicking the model), that section's options
 const secName = sec => sec === 'head' ? 'Head' : sec === 'weapons' ? 'Weapons' : sec === 'abilities' ? 'Abilities' : SECTIONS[sec].label;
@@ -2385,7 +2486,7 @@ function secPick(sec) {
 function openSec(sec) { curSec = sec; renderTabs(); renderParts(); Preview.select(sec); if (sec && matchMedia('(max-width: 720px)').matches) $('tabs').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
 function renderTabs() {
   const H = $('tabs');
-  if (!curSec) { H.innerHTML = '<h2>Your parts</h2>'; return; }
+  if (!curSec) { H.innerHTML = `<h2>${editing === 'opp' ? 'Opponent parts' : 'Your parts'}</h2>`; return; }
   H.innerHTML = `<button type="button" class="sec-back" id="secBack">‹ All parts</button><div class="sec-title"><span class="t-sec">${secName(curSec)}${secSub(curSec)}</span>${secPick(curSec)}</div>`;
   $('secBack').onclick = () => openSec(null);
 }
@@ -2465,7 +2566,7 @@ function renderPaint() {
   P.hidden = !PAINT_SECS.includes(sec); if (P.hidden) return;
   const lights = paintMode === 'lights', key = lights ? 'lights' : 'colors', list = lights ? LIGHTS : PAINTS;
   const name = sec === 'head' ? 'Head' : SECTIONS[sec].label, part = sec === 'head' ? headById(build.head).name : partById(sec, build[sec]).name;
-  const cur = (build[key] || {})[sec], def = lights ? ACCENT.p1 : partColor(Object.assign({}, build, { colors: {} }), sec);
+  const cur = (build[key] || {})[sec], def = lights ? editAccent() : partColor(Object.assign({}, build, { colors: {} }), sec);
   const named = list.find(p => p[1] === cur);
   const same = PAINT_SECS.every(s2 => (build[key] || {})[s2] === cur);
   P.innerHTML = `<div class="paint-tabs" role="tablist" aria-label="Colour type">
@@ -2551,11 +2652,16 @@ function renderAll() {
   renderTabs(); renderParts(); renderStats();
   $('pvAbility').innerHTML = build.ability ? `${abilityIcon(build.ability, 'pv-ab-ico')}<span>${ABILITY[build.ability].name}</span>` : '';
   $('pvAbility').hidden = !build.ability;
-  $('pvName').innerHTML = `<small>Your fighter</small>${buildName(build)}`;
+  $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' + (oppCustom ? '' : ' (not in use: random is on)') : 'Your fighter'}</small>${buildName(build)}`;
+  for (const b of $('who').children) b.setAttribute('aria-pressed', String(b.dataset.w === editing));
+  for (const b of $('oppMode').children) b.setAttribute('aria-pressed', String((b.dataset.m === 'custom') === oppCustom));
+  $('builder').classList.toggle('opp', editing === 'opp');
   $('pvChips').innerHTML = wchips(build);
   Preview.setBuild(build);
   for (const b of $('diff').children) b.setAttribute('aria-pressed', String(b.dataset.d === difficulty));
 }
+$('who').onclick = e => { const b = e.target.closest('button'); if (b) setEditing(b.dataset.w); };
+$('oppMode').onclick = e => { const b = e.target.closest('button'); if (!b) return; oppCustom = b.dataset.m === 'custom'; if (oppCustom) { if (!oppBuild) oppBuild = randomBuild(); setEditing('opp'); } save(); renderAll(); };
 $('diff').onclick = e => { const d = e.target.closest('button'); if (!d) return; difficulty = d.dataset.d; save(); renderAll(); };
 $('randomBtn').onclick = () => { build = randomBuild(); save(); renderAll(); };
 function renderArenas() {
@@ -2563,15 +2669,79 @@ function renderArenas() {
   G.innerHTML = ARENAS.map(A => `<button type="button" class="ar-card" data-a="${A.id}" aria-pressed="${A.id === arenaId}"><canvas aria-hidden="true"></canvas><div class="ar-tag">${A.tag}</div><div class="ar-name">${A.name}</div><p class="ar-desc">${A.desc}</p></button>`).join('');
   [...G.children].forEach((b, i) => drawArenaMap(b.querySelector('canvas'), ARENAS[i]));
 }
-function showArenas() { $('builder').hidden = true; $('home').hidden = true; $('arenas').hidden = false; renderArenas(); }
+function showArenas() { showScreen('arenas'); renderArenas(); }
 $('arGrid').onclick = e => { const b = e.target.closest('.ar-card'); if (!b) return; arenaId = b.dataset.a; try { localStorage.setItem('forge-arena-map', arenaId); } catch (err) {} for (const c of $('arGrid').children) c.setAttribute('aria-pressed', String(c === b)); };
 $('arGrid').ondblclick = e => { if (e.target.closest('.ar-card')) $('arFight').click(); };
-$('arBack').onclick = () => { $('arenas').hidden = true; $('builder').hidden = false; Preview.resize(); };
+$('arBack').onclick = () => showScreen('builder');
 $('arFight').onclick = () => { SFX.init(); Battle.start(); };
 addEventListener('resize', () => { if (!$('arenas').hidden) renderArenas(); });
 $('fightBtn').onclick = () => { SFX.init(); showArenas(); };
-$('beginBtn').onclick = () => { SFX.init(); $('home').hidden = true; $('builder').hidden = false; Preview.resize(); };
-function goHome() { $('builder').hidden = true; $('arenas').hidden = true; $('home').hidden = false; }
+$('beginBtn').onclick = () => { SFX.init(); goMenu(); };
+const SCREENS = ['home', 'menu', 'builder', 'arenas', 'career', 'settings', 'multi'];
+function showScreen(id) { for (const k of SCREENS) $(k).hidden = k !== id; if (id === 'builder') Preview.resize(); }
+function goMenu() {
+  const C = Career.get();
+  $('menuRecord').textContent = C.m ? `Career record: ${C.w} wins, ${C.l} losses` : '';
+  showScreen('menu');
+}
+$('mFight').onclick = () => { SFX.init(); showScreen('builder'); };
+$('mMulti').onclick = () => showScreen('multi');
+$('mpPlay').onclick = () => $('mFight').click();
+$('mStats').onclick = () => { renderCareer(); showScreen('career'); };
+$('mSettings').onclick = () => { renderSettings(); showScreen('settings'); };
+$('bMenu').onclick = () => goMenu();
+for (const b of document.querySelectorAll('[data-menu]')) b.onclick = () => goMenu();
+function renderSettings() { $('soundToggle').setAttribute('aria-checked', String(!SFX.muted)); }
+$('soundToggle').onclick = () => { SFX.muted = !SFX.muted; try { localStorage.setItem('forge-arena-sound', SFX.muted ? 'off' : 'on'); } catch (e) {} renderSettings(); if (!SFX.muted) { SFX.init(); SFX.tone(660, 990, 0.12, 'triangle', 0.15); } };
+
+/* ---------- career stats: kept in this browser, one entry per finished match ---------- */
+const Career = {
+  key: 'forge-arena-career',
+  get() {
+    let c = null; try { c = JSON.parse(localStorage.getItem(this.key) || 'null'); } catch (e) {}
+    return Object.assign({ m: 0, w: 0, l: 0, rw: 0, rl: 0, ko: 0, dd: 0, dt: 0, time: 0, streak: 0, best: 0, diff: {}, use: {} }, c || {});
+  },
+  record(r) {
+    const c = this.get(), won = r.won ? 1 : 0;
+    c.m++; c.w += won; c.l += 1 - won; c.rw += r.rw; c.rl += r.rl; c.ko += r.ko; c.dd += r.dd; c.dt += r.dt; c.time += r.time;
+    c.streak = won ? Math.max(1, c.streak + 1) : Math.min(-1, c.streak - 1); c.best = Math.max(c.best, c.streak);
+    const d = c.diff[r.diff] = c.diff[r.diff] || [0, 0]; d[won ? 0 : 1]++;
+    const B = r.build, use = (k, id) => { if (!id) return; const u = c.use[k + ':' + id] = c.use[k + ':' + id] || [0, 0]; u[0]++; u[1] += won; };
+    for (const sec of ['head', 'top', 'middle', 'bottom']) use(sec, B[sec]);
+    for (const id of B.weapons || []) use('weapon', id);
+    use('ability', B.ability); use('arena', r.arena); use('body', [B.head, B.top, B.middle, B.bottom].join('|'));
+    try { localStorage.setItem(this.key, JSON.stringify(c)); } catch (e) {}
+  },
+  reset() { try { localStorage.removeItem(this.key); } catch (e) {} },
+};
+function renderCareer() {
+  const C = Career.get(), el = $('careerBody');
+  if (!C.m) { el.innerHTML = `<div class="cr-empty"><p>No matches yet. Finish a match, win or lose, and your record starts here.</p><button type="button" class="btn btn-go" id="crGo">FIGHT</button></div>`; $('crGo').onclick = () => $('mFight').click(); return; }
+  const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–', num = n => Math.round(n).toLocaleString();
+  const mins = Math.round(C.time / 60), tm = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${Math.max(1, mins)}m`;
+  const kpi = (k, v, sub) => `<div class="cr-kpi"><span class="k">${k}</span><span class="v">${v}</span>${sub ? `<span class="s">${sub}</span>` : ''}</div>`;
+  const streak = C.streak > 0 ? `${C.streak} win${C.streak > 1 ? 's' : ''}` : `${-C.streak} loss${C.streak < -1 ? 'es' : ''}`;
+  const dif = ['easy', 'normal', 'hard'].map(d => { const x = C.diff[d] || [0, 0]; return `<span style="white-space:nowrap">${d[0].toUpperCase() + d.slice(1)} ${x[0]}–${x[1]}</span>`; }).join(' · ');
+  let h = `<div class="cr-kpis">${kpi('Matches', C.m)}${kpi('Record', `${C.w}<small>W</small> ${C.l}<small>L</small>`, dif)}${kpi('Win rate', pct(C.w, C.m))}`
+    + `${kpi('Best streak', C.best, `Current: ${streak}`)}${kpi('Rounds', `${C.rw}<small>–</small>${C.rl}`, `${C.ko} won by K.O.`)}`
+    + `${kpi('Damage dealt', num(C.dd), `${num(C.dd / C.m)} a match`)}${kpi('Damage taken', num(C.dt), `${num(C.dt / C.m)} a match`)}${kpi('Time fighting', tm)}</div>`;
+  const nameOf = (k, id) => k === 'head' ? headById(id).name : k === 'weapon' ? WEAPON[id].name : k === 'ability' ? ABILITY[id].name : k === 'arena' ? ARENAS.find(a => a.id === id).name
+    : k === 'body' ? (() => { const [hd, t, m, b] = id.split('|'); return `${headById(hd).name} · ${partById('top', t).name} · ${partById('middle', m).name} · ${partById('bottom', b).name}`; })() : partById(k, id).name;
+  const ranked = k => Object.entries(C.use).filter(([key]) => key.startsWith(k + ':')).map(([key, [n, w]]) => ({ id: key.slice(k.length + 1), n, w }))
+    .filter(x => { try { return !!nameOf(k, x.id); } catch (e) { return false; } }).sort((a, b) => b.n - a.n || b.w - a.w);
+  const card = (title, k, total) => {
+    const r = ranked(k); if (!r.length) return '';
+    const top = r[0], rows = r.slice(0, 3).map(x => `<div class="cr-row"><span class="n">${nameOf(k, x.id)}</span><span class="m">${x.n} · ${pct(x.w, x.n)} wins</span><div class="bar"><i style="width:${x.n / total * 100}%"></i></div></div>`).join('');
+    return `<div class="cr-card"><span class="k">${title}</span><div class="cr-fav">${nameOf(k, top.id)}</div>${rows}</div>`;
+  };
+  h += `<h3 class="cr-h">Favourite parts</h3><div class="cr-grid">${card('Head', 'head', C.m)}${card('Arms', 'top', C.m)}${card('Middle', 'middle', C.m)}${card('Bottom', 'bottom', C.m)}</div>`;
+  h += `<h3 class="cr-h">Favourite loadout</h3><div class="cr-grid">${card('Weapons', 'weapon', C.m)}${card('Ability', 'ability', C.m)}${card('Arena', 'arena', C.m)}</div>`;
+  const sig = ranked('body')[0];
+  if (sig) h += `<h3 class="cr-h">Signature build</h3><div class="cr-grid"><div class="cr-card cr-wide"><span class="k">Most played body</span><div class="cr-fav" style="font-size:28px">${nameOf('body', sig.id)}</div><div class="cr-row"><span class="n">${sig.n} match${sig.n > 1 ? 'es' : ''}</span><span class="m">${pct(sig.w, sig.n)} wins</span></div></div></div>`;
+  h += `<div class="cr-foot"><button type="button" class="btn" id="crReset">Reset stats</button></div>`;
+  el.innerHTML = h;
+  $('crReset').onclick = () => { if (confirm('Reset all career stats? This cannot be undone.')) { Career.reset(); renderCareer(); } };
+}
 
 /* ---------- preview renderer ---------- */
 const Preview = (() => {
@@ -2600,7 +2770,7 @@ const Preview = (() => {
   function setBuild(b) {
     if (rig) { rig.root.traverse(o => { if (o.userData.m0) { o.material = o.userData.m0; o.userData.m0 = null; } }); scene.remove(rig.root); disposeObj(rig.root); }
     for (const m of hlCache.values()) m.dispose(); hlCache.clear();
-    rig = makeFighterModel(b, ACCENT.p1); scene.add(rig.root); pop = 1; fitT = 0.35;
+    rig = makeFighterModel(b, editAccent()); scene.add(rig.root); pop = 1; fitT = 0.35;
     // show the bubble shield around the preview when it's one of the chosen weapons
     rig.bubble.visible = b.ability === 'bubble';
     if (hoverSec) { const h = hoverSec; hoverSec = null; hover(h); }
@@ -3424,12 +3594,13 @@ const Battle = {
     this.active = true; this.paused = false; $('overlay').hidden = true;
     this.clearWeapons();
     for (const f of [this.p1, this.p2]) if (f) { this.scene.remove(f.rig.root); disposeObj(f.rig.root); f.trails.forEach(t => t.dispose()); if (f.fx) { for (const m of [...f.fx.beams, f.fx.cone, f.fx.bolt]) { this.scene.remove(m); m.geometry.dispose(); m.material.dispose(); } } }
-    this.enemyBuild = randomBuild();
-    this.p1 = new Fighter(build, ACCENT.p1, this.scene);
+    this.enemyBuild = oppCustom && oppBuild ? oppBuild : randomBuild();
+    this.p1 = new Fighter(myBuild, ACCENT.p1, this.scene);
     this.p2 = new Fighter(this.enemyBuild, ACCENT.p2, this.scene);
     this.ai = new AIController(difficulty);
     this.wins = [0, 0]; this.round = 0;
-    $('p1Name').innerHTML = `${buildName(build)}<small>YOU</small>`;
+    this.mStats = { dd: 0, dt: 0, ko: 0, time: 0 };
+    $('p1Name').innerHTML = `${buildName(myBuild)}<small>YOU</small>`;
     const AB = this.p1.ability;
     $('p1W').innerHTML = (AB ? `<div class="ws" id="wsA"><b>R</b>${AB.name}<i></i></div>` : '') + this.p1.weapons.map((W, i) => `<div class="ws" id="ws${i}"><b>${i + 1}</b>${W.name}<i></i></div>`).join('') + (this.p1.armW ? [...new Set([...this.p1.armW].reverse())].map(W => `<div class="ws"><b>${weaponKey(this.p1.build.weapons, W.id)}</b>${W.name}</div>`).join('') : '');
     $('wbtns').innerHTML = this.p1.weapons.map((W, i) => `<button type="button" data-w="${i + 1}">${W.name}<i></i></button>`).join('') + (AB ? `<button type="button" data-w="A" id="wbA">${AB.name}<i></i></button>` : '');
@@ -3459,7 +3630,7 @@ const Battle = {
   togglePause() {
     if (!this.active || this.phase === 'over') return;
     this.paused = !this.paused;
-    if (this.paused) this.showOverlay('Paused', 'Take a breather.', [['Resume', () => this.togglePause(), true], ['Restart match', () => this.start()], ['Back to builder', () => this.exit()], ['Home screen', () => { this.exit(); goHome(); }]]);
+    if (this.paused) this.showOverlay('Paused', 'Take a breather.', [['Resume', () => this.togglePause(), true], ['Restart match', () => this.start()], ['Back to builder', () => this.exit()], ['Main menu', () => { this.exit(); goMenu(); }]]);
     else $('overlay').hidden = true;
   },
   showOverlay(title, text, actions) {
@@ -3517,7 +3688,7 @@ const Battle = {
     if (def.fortifyT > 0) { dmg *= 0.6; kb *= 0.25; stun = 0; }
     kb *= 1 - def.stats.kbRes;
     if (!o.weapon) stun *= 1 - def.stats.kbRes * 0.5;
-    def.hp = Math.max(0, def.hp - dmg);
+    def.hp = Math.max(0, def.hp - dmg); this.track(def, dmg);
     const n = new V3(def.pos.x - att.pos.x, 0, def.pos.z - att.pos.z).normalize();
     def.knock.addScaledVector(n, kb);
     if (stun > 0) { def.state = 'stun'; def.t = 0; def.stunDur = stun; def.buffer = null; def.invuln = false; }
@@ -3550,9 +3721,10 @@ const Battle = {
     if (!f._accT || now - f._accT > 320) { if (f._acc >= 0.5) this.popAt(f, Math.round(f._acc) + (blocked ? ' BLOCKED' : ''), blocked ? 'blk' : 'tick', 0.6); f._acc = 0; f._accT = now; }
     if (!f._sfxT || now - f._sfxT > 140) { f._sfxT = now; this.sfx(blocked ? 'block' : 'hit', false); }
   },
+  track(def, dmg) { if (this.mStats && this.phase === 'fight') this.mStats[def === this.p2 ? 'dd' : 'dt'] += dmg; },
   dot(f, dmg) {
     if (f.state === 'ko' || this.phase !== 'fight' || f.wShieldT > 0) return;
-    dmg *= DMG_SCALE * (1 - f.stats.armor); f.hp = Math.max(0, f.hp - dmg); this.tally(f, dmg, false);
+    dmg *= DMG_SCALE * (1 - f.stats.armor); f.hp = Math.max(0, f.hp - dmg); this.track(f, dmg); this.tally(f, dmg, false);
     if (Math.random() < 0.25) { const p = f.pos.clone(); p.y += f.rig.chestY * rand(0.6, 1.2); this.burst(p, 0xff7a1a, 1, 2.5); }
     if (f.hp <= 0) this.ko(f, f.burnBy || (f === this.p1 ? this.p2 : this.p1));
   },
@@ -3759,6 +3931,7 @@ const Battle = {
     this.phase = 'ko'; this.phaseT = 0; this.slow = 0.25;
     this.sfx('ko'); this.banner('K.O.');
     this.wins[winner === this.p1 ? 0 : 1]++; this.updatePips();
+    if (this.mStats && winner === this.p1) this.mStats.ko++;
     this.koWinner = winner;
   },
   timeOut() {
@@ -3842,6 +4015,7 @@ const Battle = {
     if (!this.active) return;
     let dt = this.paused ? 0 : rawDt;
     this.phaseT += dt;
+    if (this.mStats && this.phase === 'fight') this.mStats.time += dt;
     if (this.phase === 'vs' && this.phaseT > 2.3) { $('vs').hidden = true; this.startRound(); }
     if (this.phase === 'count') {
       const n = Math.floor(this.phaseT);
@@ -3925,9 +4099,11 @@ const Battle = {
   matchOver() {
     this.phase = 'over';
     const won = this.wins[0] >= 2;
+    if (this.mStats) Career.record(Object.assign({ won, rw: this.wins[0], rl: this.wins[1], build: myBuild, diff: difficulty, arena: arenaId }, this.mStats));
+    this.mStats = null;
     this.banner('');
     this.showOverlay(won ? 'Victory' : 'Defeat', `${this.wins[0]} – ${this.wins[1]} against ${buildName(this.enemyBuild)}.`,
-      [['Rematch', () => this.start(), true], ['Change arena', () => this.toArenas()], ['Change build', () => this.exit()], ['Home screen', () => { this.exit(); goHome(); }]]);
+      [['Rematch', () => this.start(), true], ['Change arena', () => this.toArenas()], ['Change build', () => this.exit()], ['Main menu', () => { this.exit(); goMenu(); }]]);
   },
 };
 
@@ -3940,10 +4116,10 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 function boot(data) {
-  if (data && data.build && partById('top', data.build.top)) build = Object.assign({}, data.build, { weapons: cleanWeapons(data.build.weapons) || build.weapons, head: headById(data.build.head) ? data.build.head : data.build.top });
+  if (data && data.build && partById('top', data.build.top)) myBuild = build = Object.assign({}, data.build, { weapons: cleanWeapons(data.build.weapons) || build.weapons, head: headById(data.build.head) ? data.build.head : data.build.top });
   renderAll(); requestAnimationFrame(loop);
 }
-window.claude?.hot?.snapshot?.(() => ({ build }));
+window.claude?.hot?.snapshot?.(() => ({ build: myBuild }));
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
 window.__forge = { Battle, World, ARENAS, computeStats, PARTS, get build() { return build; } };
 })();
