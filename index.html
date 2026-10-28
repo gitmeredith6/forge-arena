@@ -2786,8 +2786,8 @@ $('arFight').onclick = () => { SFX.init(); Battle.start(); };
 addEventListener('resize', () => { if (!$('arenas').hidden) renderArenas(); });
 $('fightBtn').onclick = () => { SFX.init(); showArenas(); };
 $('beginBtn').onclick = () => { SFX.init(); goMenu(); };
-// every button click on every page rings the anvil (in-fight touch controls excluded)
-document.addEventListener('click', (e) => { const t = e.target.closest('button, .sw label'); if (t && !t.closest('#touch') && !t.disabled) SFX.anvil(); }, true);
+// button clicks on the title screen and main menu ring the anvil
+document.addEventListener('click', (e) => { const t = e.target.closest('button'); if (t && t.closest('#home, #menu') && !t.disabled) SFX.anvil(); }, true);
 // stretch the tagline to the width of the FORGE word
 function fitKicker() { const f = document.querySelector('#home .m-black'); if (!f) return; const w = f.getBoundingClientRect().width, k = $('homeKicker'); k.style.width = w + 'px'; k.style.fontSize = Math.max(10, Math.min(18, w / 26)) + 'px'; }
 fitKicker(); addEventListener('resize', fitKicker); if (document.fonts) document.fonts.ready.then(fitKicker);
