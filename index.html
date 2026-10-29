@@ -402,8 +402,8 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 #home .home-in { margin-top: -12vh; gap: 10px; }
 /* plain plate behind the logo and tagline: the same steel and vignette as the backdrop minus the diamonds, fixed so it lines up seamlessly */
 #home .home-in { width: max-content; max-width: calc(100vw - 24px); z-index: 1; }
-/* placed by fitHomePlate(): centred on the lettering, sized in whole diamond steps, and the diamond grid is shifted so both edges fall in the clear strip between diamond columns and rows */
-#home .home-plate { position: absolute; z-index: 0; pointer-events: none; border-radius: 2px; background: radial-gradient(ellipse at 50% 42%, #00000000 0%, #00000038 55%, #000000a0 100%), linear-gradient(115deg, #5d6167 0%, #6a6e75 30%, #55595f 55%, #666a71 80%, #585c62 100%); background-attachment: fixed; }
+/* a rectangular punch pressed into the plate (inner shadow on the top and left walls, lit lip along the bottom), placed by fitHomePlate(): centred on the lettering, sized in whole diamond steps, and the diamond grid is shifted so both edges fall in the clear strip between diamond columns and rows */
+#home .home-plate { position: absolute; z-index: 0; pointer-events: none; border-radius: 5px; box-shadow: inset 6px 8px 12px #000000c8, inset 2px 3px 2px #000000a0, inset -2px -2px 1px #ffffff45, inset -4px -5px 8px #ffffff14, 0 -1px 0 1px #00000070, 0 1px 0 1px #ffffff55, 0 3px 4px 1px #00000038; background: radial-gradient(ellipse at 50% 42%, #00000000 0%, #00000038 55%, #000000a0 100%), linear-gradient(115deg, #5d6167 0%, #6a6e75 30%, #55595f 55%, #666a71 80%, #585c62 100%); background-attachment: fixed; }
 #home .home-logo span::before, #menu .home-logo span::before { content: none; }
 #home .home-logo > span, #menu .home-logo > span { display: block; }
 
@@ -2856,8 +2856,12 @@ function fitHomePlate() {
   let plate = home.querySelector('.home-plate'); if (!plate) { plate = document.createElement('div'); plate.className = 'home-plate'; home.prepend(plate); }
   // the lettering's own extent (text ranges, not the full-width blocks), plus the tagline and its rule
   const rs = [...home.querySelectorAll('.home-logo b')].map(b => { const r = document.createRange(); r.selectNodeContents(b); return r.getBoundingClientRect(); }).concat($('homeKicker').getBoundingClientRect());
-  const L = Math.min(...rs.map(r => r.left)), R = Math.max(...rs.map(r => r.right)), T = Math.min(...rs.map(r => r.top)), B = Math.max(...rs.map(r => r.bottom));
-  const step = 56, W = Math.ceil((R - L + 48) / step) * step, H = Math.ceil((B - T + 28) / step) * step;
+  const L = Math.min(...rs.map(r => r.left)), R = Math.max(...rs.map(r => r.right)), B = Math.max(...rs.map(r => r.bottom));
+  // the text box's top sits above the capitals by the font's ascender room; measure the real ink top so the space above matches the space below
+  const fb = home.querySelector('.home-logo b'), cs = getComputedStyle(fb), cx = (fitHomePlate.cv || (fitHomePlate.cv = document.createElement('canvas'))).getContext('2d');
+  cx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; const mt = cx.measureText(fb.textContent);
+  const T = rs[0].top + Math.max(0, (mt.fontBoundingBoxAscent || 0) - (mt.actualBoundingBoxAscent || 0));
+  const step = 56, W = Math.ceil((R - L + 48) / step) * step, H = Math.ceil((B - T + 40) / step) * step;
   const left = Math.round((L + R) / 2 - W / 2), top = Math.round((T + B) / 2 - H / 2);
   Object.assign(plate.style, { left: left + 'px', top: top + 'px', width: W + 'px', height: H + 'px' });
   home.style.setProperty('--dpx', (((left % step) + step) % step) + 'px'); home.style.setProperty('--dpy', (((top % step) + step) % step) + 'px');
