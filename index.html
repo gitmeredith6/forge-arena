@@ -3054,7 +3054,9 @@ function bunkerRing(R, door, hub, arm, h, d) {
   const gap = door / 2 / R, span = Math.PI / 4 - 2 * gap, out = [];
   for (let i = 0; i < 8; i++) {
     const phi = i * Math.PI / 4 + Math.PI / 8;
-    out.push({ type: 'box', kind: 'barrier', x: R * Math.cos(span / 2) * Math.cos(phi), z: R * Math.cos(span / 2) * Math.sin(phi), w: 2 * R * Math.sin(span / 2), d, h, rot: Math.PI / 2 - phi });
+    const piece = { type: 'box', kind: 'barrier', x: R * Math.cos(span / 2) * Math.cos(phi), z: R * Math.cos(span / 2) * Math.sin(phi), w: 2 * R * Math.sin(span / 2), d, h, rot: Math.PI / 2 - phi };
+    if (i % 2) piece.move = { T: 14, phase: 0, legs: [6, 2, 4] }; // every other piece: up 6 s, sink 2 s, down 4 s, rise 2 s
+    out.push(piece);
   }
   for (let q = 0; q < 4; q++) {
     const phi = q * Math.PI / 2 + Math.PI / 4, r = (hub + arm) / 2;
@@ -3096,7 +3098,7 @@ const ARENAS = [
   // platform at each end with ramps off both sides, a broken line of tall dividers in front of each platform, six tall
   // pillars down the flanks, and a broken ring of walls with an X inside it in the middle; it plays like a maze
   { id: 'bunker', name: 'Bunker', tag: 'Concrete maze', desc: 'Start up on your platform, take a ramp down, then work through tall walls and pillars to find your rival.',
-    r: 41, box: { x: 25.05, z: 31.15 }, spawn: { z: 29.6, y: 1.1 }, noPeek: true,
+    r: 41, box: { x: 25.05, z: 31.15 }, roof: 8.0, spawn: { z: 29.6, y: 1.1 }, noPeek: true,
     theme: { floor: ['#4a4b4d', '#353638', '#232425'], line: '#d9dce1', l1: 0xdfe2e7, l2: 0xff4d6d, fog: 0x0b0c0e, rim: 0x2c2d30, glow: 0xdfe2e7,
       steel: 0x4a4d52, concrete: 0x8a8781, crate: 0x6e6a5a, plat: 0x5a5c60 },
     solids: mirrorLayout([
@@ -3118,8 +3120,18 @@ const ARENAS = [
 const arenaById = id => ARENAS.find(a => a.id === id);
 
 const World = {
-  solids: [], plats: [], ramps: [], box: null,
+  solids: [], plats: [], ramps: [], movers: [], box: null,
   // inside the playable area with margin m: the arena's rectangle (arena.box, half sizes to the wall faces) or its ring
+  // walls with a move cycle sink into the floor and rise again: up, sink, down, rise, over move.T seconds.
+  // Height feeds collision, line of sight and cover directly, and anyone standing on top rides it
+  tick(t) {
+    for (const s of this.movers) {
+      const M = s.move, u = ((t + M.phase) % M.T + M.T) % M.T, [up, sink, down] = M.legs;
+      const f = u < up ? 1 : u < up + sink ? 1 - (u - up) / sink : u < up + sink + down ? 0 : (u - up - sink - down) / (M.T - up - sink - down);
+      const e = f * f * (3 - 2 * f); s.h = s.top = s.fullH * e;
+      if (s.group) { s.group.position.y = s.h - s.fullH; s.group.visible = s.h > 0.02; }
+    }
+  },
   inBounds(x, z, m = 0) { return this.box ? Math.abs(x) < this.box.x - m && Math.abs(z) < this.box.z - m : Math.hypot(x, z) < ARENA_R - m; },
   set(arena) {
     this.arena = arena; ARENA_R = arena.r || ARENA_R0; this.box = arena.box || null;
@@ -3129,6 +3141,7 @@ const World = {
       if (s.type === 'cyl') { s.br = s.r; s.top = s.h; } else { s.hw = s.w / 2; s.hd = s.d / 2; s.br = Math.hypot(s.hw, s.hd); s.top = s.type === 'ramp' ? Math.max(s.h0, s.h1) : s.h; }
       return s;
     });
+    this.movers = this.solids.filter(s => s.move); for (const s of this.movers) s.fullH = s.h;
     this.plats = this.solids.filter(s => s.kind === 'plat'); this.ramps = this.solids.filter(s => s.type === 'ramp');
     for (const P of this.plats) P.ramps = [];
     for (const R of this.ramps) {
@@ -3662,6 +3675,19 @@ function hazardTex() {
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping; return (HAZARD_TEX = t);
 }
 // the meshes for one solid, built at its spot with its own materials so the camera can fade it
+// a flat steel roof over a rectangular arena: deck plate, cross girders every 6 m, three long beams and strip lights.
+// It never casts shadows (the sun still lights the floor as if through skylights) and isn't a solid: the camera,
+// fighters and shots are held under it in their own code
+function buildRoof(A, th) {
+  const g = new THREE.Group(), y = A.roof, W = A.box.x * 2 + 18, D = A.box.z * 2 + 18; // overhangs the walls so a camera behind a wall still sees roof
+  const deck = stdMat(0x1c1e22, { metalness: 0.5, roughness: 0.7, envMapIntensity: 0.3 }), steel = stdMat(th.steel || 0x3a4152, { metalness: 0.6, roughness: 0.45, envMapIntensity: 0.5 }), glow = glowMat(th.glow);
+  mesh(new THREE.BoxGeometry(W, 0.3, D), deck, g, 0, y + 0.15, 0);
+  for (let z = -A.box.z - 6; z < A.box.z + 7; z += 6) { mesh(new THREE.BoxGeometry(W, 0.6, 0.35), steel, g, 0, y - 0.3, z); mesh(new THREE.BoxGeometry(W, 0.08, 0.7), steel, g, 0, y - 0.62, z); }
+  for (const x of [-A.box.x / 2, 0, A.box.x / 2]) mesh(new THREE.BoxGeometry(0.4, 0.4, D), steel, g, x, y - 0.2, 0);
+  for (const x of [-A.box.x * 0.75, -A.box.x * 0.25, A.box.x * 0.25, A.box.x * 0.75]) mesh(new THREE.BoxGeometry(0.3, 0.06, A.box.z * 2 - 2), glow, g, x, y - 0.03, 0);
+  g.traverse(o => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } });
+  return g;
+}
 function buildSolidMesh(s, th) {
   const g = new THREE.Group(); g.position.set(s.x, 0, s.z); g.rotation.y = s.rot;
   const steel = stdMat(th.steel || 0x3a4152, { metalness: 0.6, roughness: 0.45, envMapIntensity: 0.5 });
@@ -3793,6 +3819,7 @@ const Battle = {
     if (this.arenaGroup) { this.scene.remove(this.arenaGroup); disposeObj(this.arenaGroup); }
     const th = A.theme, G = this.arenaGroup = new THREE.Group();
     for (const s of World.solids) G.add(buildSolidMesh(s, th));
+    if (A.roof && A.box) G.add(buildRoof(A, th));
     this.scene.add(G);
     const fm = this.floor.material; fm.map = this.floorTex[A.id] || (this.floorTex[A.id] = makeFloorTexture(th)); fm.needsUpdate = true;
     this.l1.color.setHex(th.l1); this.l2.color.setHex(th.l2);
@@ -3809,7 +3836,7 @@ const Battle = {
     if (!World.solids.length) return;
     const c = this.cam.position, a = new V3(this.p1.pos.x, this.p1.pos.y + this.p1.rig.chestY, this.p1.pos.z), b = new V3(this.p2.pos.x, this.p2.pos.y + this.p2.rig.chestY, this.p2.pos.z);
     for (const s of World.solids) {
-      const want = World.segHits(s, c, a) ? 0.22 : World.segHits(s, c, b) && !World.arena.noPeek ? 0.45 : 1;
+      const want = World.segHits(s, c, a) ? (s.h > 6 ? 0.06 : 0.22) : World.segHits(s, c, b) && !World.arena.noPeek ? 0.45 : 1;
       s.fade += (want - s.fade) * (1 - Math.exp(-10 * dt));
       const on = s.fade < 0.985;
       for (const q of s.mats) { q.m.transparent = on || q.op < 1; q.m.opacity = q.op * s.fade; q.m.depthWrite = !on; }
@@ -3850,7 +3877,7 @@ const Battle = {
   },
   startRound() {
     $('vs').hidden = true;
-    this.round++; this.placeFighters(); this.snapCamera();
+    this.round++; this.arenaT = 0; World.tick(0); this.placeFighters(); this.snapCamera();
     this.phase = 'count'; this.phaseT = 0; this.lastBeep = -1;
     this.banner(`<small>ROUND ${this.round}</small>READY`);
   },
@@ -4096,7 +4123,7 @@ const Battle = {
         if (W.proj === 'rocket' || W.proj === 'shell') this.burst(P.pos, W.color, 10, 5);
         this.killProj(i); continue;
       }
-      if (P.life <= 0 || P.pos.y < 0 || !World.inBounds(P.pos.x, P.pos.z, -1)) { if (P.pos.y < 0.1) this.burst(P.pos, W.color, 5, 3); this.killProj(i); }
+      if (P.life <= 0 || P.pos.y < 0 || !World.inBounds(P.pos.x, P.pos.z, -1) || (World.arena.roof && P.pos.y > World.arena.roof)) { if (P.pos.y < 0.1) this.burst(P.pos, W.color, 5, 3); this.killProj(i); }
     }
   },
   clearWeapons() {
@@ -4220,12 +4247,14 @@ const Battle = {
     const p = this.p1.pos, e = this.p2.pos;
     const dir = new V3(p.x - e.x, 0, p.z - e.z); const dist = dir.length(); if (dist > 1e-3) dir.divideScalar(dist); else dir.set(0, 0, -1);
     const side = new V3(dir.z, 0, -dir.x);
-    const far = Math.max(0, dist - 7), C = CAM_VIEWS[this.camView] || CAM_VIEWS.shoulder;
+    const far = Math.min(Math.max(0, dist - 7), World.box ? 10 : 99), C = CAM_VIEWS[this.camView] || CAM_VIEWS.shoulder;
     const want = new V3(p.x, 0, p.z).addScaledVector(dir, C.back + far * C.backK).addScaledVector(side, -C.side - far * (C.sideK || 0)); want.y = C.up + far * C.upK + p.y * 0.8;
     const look = new V3().lerpVectors(p, e, C.lookT); look.y = C.lookY + (p.y + e.y) * 0.5;
     if (C.mid) { // broadcast: orbit the midpoint of the two fighters, off to the player's side
       const m = new V3().lerpVectors(p, e, 0.5); want.set(m.x, 0, m.z).addScaledVector(dir, C.back + dist * C.backK).addScaledVector(side, -(C.side + dist * C.sideK)); want.y = C.up + dist * C.upK + p.y * 0.4;
     }
+    if (World.box) { want.x = clamp(want.x, -World.box.x - 7, World.box.x + 7); want.z = clamp(want.z, -World.box.z - 7, World.box.z + 7); } // stay under the roof's overhang
+    if (World.arena && World.arena.roof) { want.y = Math.min(want.y, World.arena.roof - 0.8); look.y = Math.min(look.y, World.arena.roof - 1.5); }
     const k = snap ? 1 : 1 - Math.exp(-6 * dt);
     this.cam.position.lerp(want, k); this.camLook.lerp(look, k);
     if (this.shake > 0) { this.cam.position.x += rand(-1, 1) * this.shake * 0.3; this.cam.position.y += rand(-1, 1) * this.shake * 0.3; }
@@ -4253,6 +4282,8 @@ const Battle = {
       if (World.box) {
         // rectangular arenas: hold each axis inside the walls at any height, so jetpacks and knockback can't carry you out
         for (const ax of ['x', 'z']) { const max = World.box[ax] - f.radius; if (Math.abs(f.pos[ax]) > max) { const sg = Math.sign(f.pos[ax]); f.pos[ax] = sg * max; if (f.knock[ax] * sg > 0) f.knock[ax] *= -0.5; } }
+        // and under the roof
+        if (World.arena.roof) { const top = World.arena.roof - f.rig.height - 0.1; if (f.pos.y > top) { f.pos.y = top; if (f.vy > 0) f.vy = 0; } }
       }
       const r = Math.hypot(f.pos.x, f.pos.z), max = ARENA_R - f.radius;
       if (r > max) { f.pos.x *= max / r; f.pos.z *= max / r; const nx = f.pos.x / r, nz = f.pos.z / r; const kn = f.knock.x * nx + f.knock.z * nz; if (kn > 0) { f.knock.x -= 1.5 * kn * nx; f.knock.z -= 1.5 * kn * nz; } }
@@ -4284,6 +4315,7 @@ const Battle = {
     const roam = this.phase === 'ko' && this.p1.state !== 'ko';
     const pin = fighting ? Input.player() : roam ? { ...Input.player(), heavy: false, left: false, right: false, kick: false, w1: false, w2: false, w3: false, ability: Input.player().ability && ROAM_ABILITIES.has(this.p1.ability && this.p1.ability.id), block: false } : null;
     const ain = fighting ? this.ai.input(simDt, this.p2, this.p1) : null;
+    if (simDt > 0 && fighting) World.tick(this.arenaT = (this.arenaT || 0) + simDt);
     if (simDt > 0) {
       this.p1.update(simDt, this.p2, pin, this);
       this.p2.update(simDt, this.p1, ain, this);
