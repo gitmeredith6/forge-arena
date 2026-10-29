@@ -2453,6 +2453,10 @@ function animateRig(rig, f, dt, time) {
     let st0 = 0, st1 = 0;
     if (kick) { const tm = f.timing('kick'), t = f.t; if (t < tm.w) st0 = t / tm.w; else if (t < tm.w + tm.a + tm.r * 0.5) st1 = 1; }
     S.stab = lerp(S.stab, st1, 1 - Math.exp(-(st1 ? 40 : 10) * dt)); S.cock = lerp(S.cock || 0, st0, 1 - Math.exp(-20 * dt));
+    // airborne (jetpack, jump, knocked up): the legs let go of the gait and hang limp under the hub, swaying a little out of step
+    // with each other and trailing lower while rising
+    S.air = lerp(S.air || 0, f && f.air && !kick ? 1 : 0, 1 - Math.exp(-(f && f.air ? 5 : 10) * dt));
+    const trail = f ? clamp(f.vy * 0.025, -0.08, 0.12) : 0;
     for (const L of rig.spiderLegs) {
       const p = (((S.phase / (Math.PI * 2) + L.grp * 0.5) % 1) + 1) % 1, SL = 0.19 * Math.min(1, gs);
       let lift, stride;
@@ -2463,6 +2467,11 @@ function animateRig(rig, f, dt, time) {
       if (L.front && (S.stab > 0.01 || S.cock > 0.01)) {
         const up = new V3(Math.sin(L.th) * 0.45, 1.05, 0.55), out = new V3(Math.sin(L.th) * 0.25, 0.8, 1.55);
         foot.lerp(up, S.cock * (1 - S.stab)).lerp(out, S.stab);
+      }
+      if (S.air > 0.01) {
+        const sw = Math.sin(time * 2.1 + L.th * 2.3) * 0.08, sw2 = Math.cos(time * 1.6 + L.th * 1.3) * 0.06, r = (L.front ? 0.5 : 0.42) + sw2;
+        const hang = new V3(Math.sin(L.th) * r + sw * Math.cos(L.th), L.hip.y - (L.L1 + L.L2) * (0.84 + trail), Math.cos(L.th) * r - sw * Math.sin(L.th) * 0.6);
+        foot.lerp(hang, S.air);
       }
       // two-bone IK in the vertical plane through the hip and foot, with the knee bending upward
       const H = L.hip, d3 = foot.clone().sub(H), horiz = new V3(d3.x, 0, d3.z), hl = Math.max(1e-4, horiz.length());
