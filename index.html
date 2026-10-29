@@ -3092,26 +3092,28 @@ const ARENAS = [
       { type: 'box', kind: 'barrier', x: 0, z: 9.0, w: 3.2, d: 0.6, h: 1.45 },
       { type: 'box', kind: 'barrier', x: 9.6, z: -2.6, w: 2.4, d: 0.6, h: 1.45, rot: Math.PI / 2 },
     ])) },
-  // built from Sam's sky-view sketch: a big walled concrete yard (about twice the size of the ring arenas), a start
+  // built from Sam's sky-view sketch: a big walled concrete yard (about three times the size of the ring arenas), a start
   // platform at each end with ramps off both sides, a broken line of tall dividers in front of each platform, six tall
   // pillars down the flanks, and a broken ring of walls with an X inside it in the middle; it plays like a maze
   { id: 'bunker', name: 'Bunker', tag: 'Concrete maze', desc: 'Start up on your platform, take a ramp down, then work through tall walls and pillars to find your rival.',
-    r: 27, spawn: { z: 18.8, y: 1.1 }, noPeek: true,
+    r: 41, spawn: { z: 29.6, y: 1.1 }, noPeek: true,
     theme: { floor: ['#4a4b4d', '#353638', '#232425'], line: '#d9dce1', l1: 0xdfe2e7, l2: 0xff4d6d, fog: 0x0b0c0e, rim: 0x2c2d30, glow: 0xdfe2e7,
       steel: 0x4a4d52, concrete: 0x8a8781, crate: 0x6e6a5a, plat: 0x5a5c60 },
     solids: mirrorLayout([
-      { type: 'box', kind: 'plat', x: 0, z: 18.2, w: 12, d: 4.4, h: 1.1 },
-      { type: 'ramp', kind: 'ramp', x: 7.35, z: 18.2, w: 2.6, d: 2.7, h0: 0, h1: 1.1, rot: -Math.PI / 2 },
-      { type: 'ramp', kind: 'ramp', x: -7.35, z: 18.2, w: 2.6, d: 2.7, h0: 0, h1: 1.1, rot: Math.PI / 2 },
-      { type: 'box', kind: 'barrier', x: -7.8, z: 12.6, w: 4.0, d: 0.9, h: 5.2 },
-      { type: 'box', kind: 'barrier', x: 0, z: 12.6, w: 4.4, d: 0.9, h: 5.2 },
-      { type: 'box', kind: 'barrier', x: 7.8, z: 12.6, w: 4.0, d: 0.9, h: 5.2 },
-      { type: 'cyl', kind: 'pillar', x: 10.6, z: 9.6, r: 1.0, h: 6.5 },
-      { type: 'cyl', kind: 'pillar', x: -10.6, z: 9.6, r: 1.0, h: 6.5 },
-      { type: 'cyl', kind: 'pillar', x: 11.8, z: 0, r: 1.0, h: 6.5 },
-      { type: 'box', kind: 'wall', x: 0, z: 20.6, w: 33.4, d: 0.5, h: 2.1 },
-      { type: 'box', kind: 'wall', x: 16.45, z: 0, w: 0.5, d: 40.7, h: 2.1 },
-    ]).concat(bunkerRing(7.2, 2.6, 2.4, 5.4, 5.2, 0.9)) },
+      // start platform against the back wall, with a ramp the full length of each open side
+      { type: 'box', kind: 'plat', x: 0, z: 28.95, w: 12, d: 4.4, h: 1.1 },
+      { type: 'ramp', kind: 'ramp', x: 0, z: 25.4, w: 12, d: 2.7, h0: 0, h1: 1.1 },
+      { type: 'ramp', kind: 'ramp', x: 7.35, z: 28.95, w: 4.4, d: 2.7, h0: 0, h1: 1.1, rot: -Math.PI / 2 },
+      { type: 'ramp', kind: 'ramp', x: -7.35, z: 28.95, w: 4.4, d: 2.7, h0: 0, h1: 1.1, rot: Math.PI / 2 },
+      { type: 'box', kind: 'barrier', x: -11.4, z: 20.4, w: 4.0, d: 0.9, h: 5.2 },
+      { type: 'box', kind: 'barrier', x: 0, z: 20.4, w: 4.4, d: 0.9, h: 5.2 },
+      { type: 'box', kind: 'barrier', x: 11.4, z: 20.4, w: 4.0, d: 0.9, h: 5.2 },
+      { type: 'cyl', kind: 'pillar', x: 16.0, z: 14.0, r: 1.0, h: 6.5 },
+      { type: 'cyl', kind: 'pillar', x: -16.0, z: 14.0, r: 1.0, h: 6.5 },
+      { type: 'cyl', kind: 'pillar', x: 18.25, z: 0, r: 1.0, h: 6.5 },
+      { type: 'box', kind: 'wall', x: 0, z: 31.4, w: 51.1, d: 0.5, h: 2.1 },
+      { type: 'box', kind: 'wall', x: 25.3, z: 0, w: 0.5, d: 63.3, h: 2.1 },
+    ]).concat(bunkerRing(10.5, 5.2, 4.8, 7.35, 5.2, 0.9)) },
 ];
 const arenaById = id => ARENAS.find(a => a.id === id);
 
