@@ -846,10 +846,10 @@ const ARM_SWAP = ['cannon', 'saws'];
 const FURNACE_JETPACK = false;
 /* abilities: pick one. Used with R in a fight, each on its own cooldown. They run through the weapon state like a weapon would */
 const ABILITIES = [
-  { id: 'jetpack',  name: 'Jetpack',       desc: 'Twin fuel tanks strapped to your back. Press R to blast off and R again to cut the engines; you get 3 seconds of flight in total, so you can save the rest for later. You can move and fire while flying.', cd: 10, dur: 3, toggle: true, w: 0.06, a: 0.1, r: 0.12, move: 1, kind: 'jet', color: 0xffb547 },
+  { id: 'jetpack',  name: 'Jetpack',       desc: 'Twin fuel tanks strapped to your back. Press R to blast off and R again to cut the engines. The tank holds 5 seconds of flight and slowly refills while the engines are off; run it dry and it has to refill halfway before it will light again. You can move and fire while flying.', cd: 10, dur: 5, toggle: true, w: 0.06, a: 0.1, r: 0.12, move: 1, kind: 'jet', color: 0xffb547 },
   { id: 'teleport', name: 'Teleport',      desc: 'Press R to vanish in a flash and reappear right behind your opponent.', cd: 9, w: 0.2, a: 0.05, r: 0.15, move: 0, kind: 'blink', color: 0xb57bff },
   { id: 'tractor',  name: 'Tractor Beam',  desc: 'Press R and a green beam from an emitter on your brow locks on and drags the opponent right up to you.', cd: 9, w: 0.2, a: 0.9, r: 0.3, move: 0.2, kind: 'beam', from: 'brow', tick: 0.1, mult: 0.08, kb: 0, pull: 9, stun: 0.15, range: 10, color: 0x4dff88, beamR: 0.05 },
-  { id: 'bubble',   name: 'Bubble Shield', desc: 'Press R to raise a magenta bubble and R again to drop it; it lasts 10 seconds in total, so you can save what is left. Nothing can hurt you and it bounces away anyone who bumps into it, but you cannot attack while it is up.', cd: 30, toggle: true, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 10, color: 0xff3dd8 },
+  { id: 'bubble',   name: 'Bubble Shield', desc: 'Press R to raise a magenta bubble and R again to drop it. It holds 10 seconds and slowly recharges while down; run it dry and it has to recharge halfway before it will go up again. Nothing can hurt you and it bounces away anyone who bumps into it, but you cannot attack while it is up.', cd: 30, toggle: true, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 10, color: 0xff3dd8 },
 ];
 const ABILITY = Object.fromEntries(ABILITIES.map(a => [a.id, a]));
 // movement / defensive abilities still work while you roam after a K.O. (the tractor beam does not)
@@ -3352,7 +3352,7 @@ class Fighter {
     this.state = 'idle'; this.t = 0; this.knock.set(0, 0, 0); this.moveVel.set(0, 0, 0); this.vy = 0; this.air = false;
     this.dodgeCdT = 0; this.fortifyT = 0; this.buffer = null; this.invuln = false; this.attackId = 0; this.punchSide = 0;
     this.hitDone = false; this.blockHeld = false; this.flash = 0; this.speedNow = 0; this.stunDur = 0;
-    this.wcd = [0, 0, 0]; this.abCd = 0; this.abOn = false; this.abFuel = this.ability ? this.ability.dur || 0 : 0; this.jetT = 0; this.empField = null; this.wpn = null; this.burnT = 0; this.burnDps = 0; this.burnBy = null; this.slowT = 0; this.wShieldT = 0; this.tickT = 0; this.shots = 0;
+    this.wcd = [0, 0, 0]; this.abCd = 0; this.abOn = false; this.abDry = false; this.abFuel = this.ability ? this.ability.dur || 0 : 0; this.jetT = 0; this.empField = null; this.wpn = null; this.burnT = 0; this.burnDps = 0; this.burnBy = null; this.slowT = 0; this.wShieldT = 0; this.tickT = 0; this.shots = 0;
     this.rig.root.rotation.y = yaw; this.rig.shield.visible = false; this.rig.bubble.visible = false;
   }
   timing(kind) { if (kind === 'kick') return this.kick; const s = (this.slowT > 0 ? 1.3 : 1) / this.stats.atkSpd; return kind === 'light' ? { w: 0.15 * s, a: 0.08 * s, r: 0.22 * s } : { w: 0.48 * s, a: 0.1 * s, r: 0.42 * s }; }
@@ -3371,7 +3371,7 @@ class Fighter {
   abilityOff(empty) {
     const A = this.ability; this.abOn = false;
     if (A.kind === 'jet') this.jetT = 0; else this.wShieldT = 0;
-    if (empty) { this.abFuel = A.dur; this.abCd = A.cd; }
+    if (empty) { this.abFuel = 0; this.abDry = true; }
   }
   tryAction(a, wish, fwd, right, game) {
     // inside the bubble shield you can move, block, dodge and jump, but not attack, so it's a safe breather rather than a free 10 seconds of hits
@@ -3390,7 +3390,7 @@ class Fighter {
     // punchSide 1 throws with the left arm, 0 with the right
     if (a === 'left' || a === 'right') { this.startAttack('light', a === 'left' ? 1 : 0); return true; }
     if (a === 'ability') {
-      const A = this.ability; if (!A || this.abCd > 0 || this.abOn) return false;
+      const A = this.ability; if (!A || this.abCd > 0 || this.abOn || this.abDry || (A.toggle && this.abFuel <= 0.05)) return false;
       if (game.abilityLocked && game.abilityLocked()) { if (this === game.p1) game.lockedNote(); return false; }
       this.state = 'weapon'; this.wpn = A; this.wpn2 = null; this.t = 0; this.hitDone = false; this.tickT = 0; this.shots = 0; this.attackId++;
       if (!A.toggle) this.abCd = A.cd; this.abDir = wish.lengthSq() > 0.01 ? wish.clone().normalize() : fwd.clone(); game.onWeaponStart(this, A); return true;
@@ -3417,7 +3417,12 @@ class Fighter {
     this.wShieldT = Math.max(0, this.wShieldT - dt); this.slowT = Math.max(0, this.slowT - dt);
     if (this.burnT > 0) { this.burnT -= dt; game.dot(this, this.burnDps * dt); }
     // a switched-on ability (jetpack, bubble) burns its fuel while on; pressing R again switches it off and keeps what is left.
-    // Only once the fuel runs dry does the cooldown start, after which the tank is full again
+    // While off the tank refills slowly (empty to full over the ability's cd); run it dry and it stays dead until it is back to half
+    const AT = this.ability;
+    if (AT && AT.toggle && !this.abOn && this.abFuel < AT.dur) {
+      this.abFuel = Math.min(AT.dur, this.abFuel + dt * AT.dur / AT.cd);
+      if (this.abDry && this.abFuel >= AT.dur * 0.5) this.abDry = false;
+    }
     if (this.abOn) {
       this.abFuel -= dt;
       if (this.ability.kind === 'jet') this.jetT = Math.max(this.jetT, 0.05); else this.wShieldT = Math.max(0, this.abFuel);
@@ -3640,7 +3645,7 @@ class AIController {
       if (opp.state === 'stun' && dist < range + 0.6) { inp.light = true; }
       // abilities: bubble when hurt or under fire, teleport or jet in from a distance, tractor to haul a runner in
       const A = me.ability;
-      if (A && me.abCd <= 0 && !me.abOn && opp.state !== 'ko' && Math.random() < L.weapon) {
+      if (A && me.abCd <= 0 && !me.abOn && !me.abDry && (!A.toggle || me.abFuel > A.dur * 0.5) && opp.state !== 'ko' && Math.random() < L.weapon) {
         if (A.kind === 'shield' ? opp.state === 'weapon' || me.hp < me.stats.hp * 0.45 : A.kind === 'beam' ? dist > 3.5 && dist < A.range && clear : dist > 6) inp.ability = true;
       }
     }
@@ -4470,10 +4475,10 @@ const Battle = {
     if (this.p1.ability) {
       // the R slot: counts down the opening lock, shows the fuel left while switched on, then the cooldown once the tank is empty
       const f = this.p1, A = f.ability, lockT = this.abilityLocked() ? ABILITY_LOCK - (this.arenaT || 0) : 0;
-      const k = lockT > 0 ? lockT / ABILITY_LOCK : f.abCd > 0 ? f.abCd / A.cd : A.toggle ? 1 - f.abFuel / A.dur : 0;
+      const k = lockT > 0 ? lockT / ABILITY_LOCK : A.toggle ? 1 - f.abFuel / A.dur : f.abCd > 0 ? f.abCd / A.cd : 0;
       if (this.phase === 'fight' && lockT <= 0 && this._wasLocked) this.popAt(f, 'ABILITY READY', 'note', 0.9);
       this._wasLocked = lockT > 0;
-      for (const el of [$('wsA'), $('wbA')]) if (el) { el.classList.toggle('ready', lockT <= 0 && f.abCd <= 0); el.classList.toggle('on', f.abOn); el.classList.toggle('locked', lockT > 0); el.lastChild.style.height = (k * 100) + '%'; }
+      for (const el of [$('wsA'), $('wbA')]) if (el) { el.classList.toggle('ready', lockT <= 0 && f.abCd <= 0 && !f.abDry); el.classList.toggle('on', f.abOn); el.classList.toggle('locked', lockT > 0); el.lastChild.style.height = (k * 100) + '%'; }
     }
   },
   matchOver() {
