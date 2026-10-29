@@ -390,6 +390,8 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 .ws b { font-family: var(--f-body); font-size: 11px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
 .ws.ready { border-color: color-mix(in srgb, var(--p1) 70%, transparent); }
 .ws.ready b { background: var(--p1); color: #0a0e16; border-color: var(--p1); }
+.ws.on, .wbtns button.on { border-color: #ffffff; box-shadow: 0 0 10px #ffffff70; }
+.ws.locked, .wbtns button.locked { opacity: 0.6; }
 .touch.on ~ .hint { display: none; }
 @media (max-width: 720px) {
   .hp-name { font-size: 17px; }
@@ -844,14 +846,16 @@ const ARM_SWAP = ['cannon', 'saws'];
 const FURNACE_JETPACK = false;
 /* abilities: pick one. Used with R in a fight, each on its own cooldown. They run through the weapon state like a weapon would */
 const ABILITIES = [
-  { id: 'jetpack',  name: 'Jetpack',       desc: 'Twin fuel tanks strapped to your back. Press R to blast off and fly for about 3 seconds. You can move and fire while flying.', cd: 10, w: 0.06, a: 0.1, r: 0.12, move: 1, kind: 'jet', color: 0xffb547 },
+  { id: 'jetpack',  name: 'Jetpack',       desc: 'Twin fuel tanks strapped to your back. Press R to blast off and R again to cut the engines; you get 3 seconds of flight in total, so you can save the rest for later. You can move and fire while flying.', cd: 10, dur: 3, toggle: true, w: 0.06, a: 0.1, r: 0.12, move: 1, kind: 'jet', color: 0xffb547 },
   { id: 'teleport', name: 'Teleport',      desc: 'Press R to vanish in a flash and reappear right behind your opponent.', cd: 9, w: 0.2, a: 0.05, r: 0.15, move: 0, kind: 'blink', color: 0xb57bff },
   { id: 'tractor',  name: 'Tractor Beam',  desc: 'Press R and a green beam from an emitter on your brow locks on and drags the opponent right up to you.', cd: 9, w: 0.2, a: 0.9, r: 0.3, move: 0.2, kind: 'beam', from: 'brow', tick: 0.1, mult: 0.08, kb: 0, pull: 9, stun: 0.15, range: 10, color: 0x4dff88, beamR: 0.05 },
-  { id: 'bubble',   name: 'Bubble Shield', desc: 'A magenta bubble surrounds you for 10 seconds. Nothing can hurt you and it bounces away anyone who bumps into it, but you cannot attack until it pops.', cd: 30, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 10, color: 0xff3dd8 },
+  { id: 'bubble',   name: 'Bubble Shield', desc: 'Press R to raise a magenta bubble and R again to drop it; it lasts 10 seconds in total, so you can save what is left. Nothing can hurt you and it bounces away anyone who bumps into it, but you cannot attack while it is up.', cd: 30, toggle: true, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 10, color: 0xff3dd8 },
 ];
 const ABILITY = Object.fromEntries(ABILITIES.map(a => [a.id, a]));
 // movement / defensive abilities still work while you roam after a K.O. (the tractor beam does not)
 const ROAM_ABILITIES = new Set(['jetpack', 'teleport', 'bubble']);
+// no abilities for the first seconds of each round
+const ABILITY_LOCK = 10;
 const cleanAbility = id => ABILITY[id] ? id : null;
 // simple line icons, drawn in currentColor so they take the colour of wherever they sit
 const ABILITY_ICON = {
@@ -3348,7 +3352,7 @@ class Fighter {
     this.state = 'idle'; this.t = 0; this.knock.set(0, 0, 0); this.moveVel.set(0, 0, 0); this.vy = 0; this.air = false;
     this.dodgeCdT = 0; this.fortifyT = 0; this.buffer = null; this.invuln = false; this.attackId = 0; this.punchSide = 0;
     this.hitDone = false; this.blockHeld = false; this.flash = 0; this.speedNow = 0; this.stunDur = 0;
-    this.wcd = [0, 0, 0]; this.abCd = 0; this.jetT = 0; this.empField = null; this.wpn = null; this.burnT = 0; this.burnDps = 0; this.burnBy = null; this.slowT = 0; this.wShieldT = 0; this.tickT = 0; this.shots = 0;
+    this.wcd = [0, 0, 0]; this.abCd = 0; this.abOn = false; this.abFuel = this.ability ? this.ability.dur || 0 : 0; this.jetT = 0; this.empField = null; this.wpn = null; this.burnT = 0; this.burnDps = 0; this.burnBy = null; this.slowT = 0; this.wShieldT = 0; this.tickT = 0; this.shots = 0;
     this.rig.root.rotation.y = yaw; this.rig.shield.visible = false; this.rig.bubble.visible = false;
   }
   timing(kind) { if (kind === 'kick') return this.kick; const s = (this.slowT > 0 ? 1.3 : 1) / this.stats.atkSpd; return kind === 'light' ? { w: 0.15 * s, a: 0.08 * s, r: 0.22 * s } : { w: 0.48 * s, a: 0.1 * s, r: 0.42 * s }; }
@@ -3363,6 +3367,11 @@ class Fighter {
     if (side >= 0) this.wpn = armVariant(this.armW[side], side);
     else if (!mixed) this.wpn = Wl;
     else { const up = W => Object.assign(W, { mult: W.mult * 1.2, kb: W.kb * 1.5, both: true }); this.wpn = up(armVariant(Wl, 1)); this.wpn2 = up(armVariant(Wr, 0)); this.s2 = { hitDone: false, tickT: 0, shots: 0 }; }
+  }
+  abilityOff(empty) {
+    const A = this.ability; this.abOn = false;
+    if (A.kind === 'jet') this.jetT = 0; else this.wShieldT = 0;
+    if (empty) { this.abFuel = A.dur; this.abCd = A.cd; }
   }
   tryAction(a, wish, fwd, right, game) {
     // inside the bubble shield you can move, block, dodge and jump, but not attack, so it's a safe breather rather than a free 10 seconds of hits
@@ -3381,9 +3390,10 @@ class Fighter {
     // punchSide 1 throws with the left arm, 0 with the right
     if (a === 'left' || a === 'right') { this.startAttack('light', a === 'left' ? 1 : 0); return true; }
     if (a === 'ability') {
-      const A = this.ability; if (!A || this.abCd > 0) return false;
+      const A = this.ability; if (!A || this.abCd > 0 || this.abOn) return false;
+      if (game.abilityLocked && game.abilityLocked()) { if (this === game.p1) game.lockedNote(); return false; }
       this.state = 'weapon'; this.wpn = A; this.wpn2 = null; this.t = 0; this.hitDone = false; this.tickT = 0; this.shots = 0; this.attackId++;
-      this.abCd = A.cd; this.abDir = wish.lengthSq() > 0.01 ? wish.clone().normalize() : fwd.clone(); game.onWeaponStart(this, A); return true;
+      if (!A.toggle) this.abCd = A.cd; this.abDir = wish.lengthSq() > 0.01 ? wish.clone().normalize() : fwd.clone(); game.onWeaponStart(this, A); return true;
     }
     if (a[0] === 'w') {
       const i = +a[1] - 1, W = this.weapons[i];
@@ -3406,6 +3416,14 @@ class Fighter {
     this.abCd = Math.max(0, this.abCd - dt); this.jetT = Math.max(0, this.jetT - dt);
     this.wShieldT = Math.max(0, this.wShieldT - dt); this.slowT = Math.max(0, this.slowT - dt);
     if (this.burnT > 0) { this.burnT -= dt; game.dot(this, this.burnDps * dt); }
+    // a switched-on ability (jetpack, bubble) burns its fuel while on; pressing R again switches it off and keeps what is left.
+    // Only once the fuel runs dry does the cooldown start, after which the tank is full again
+    if (this.abOn) {
+      this.abFuel -= dt;
+      if (this.ability.kind === 'jet') this.jetT = Math.max(this.jetT, 0.05); else this.wShieldT = Math.max(0, this.abFuel);
+      if (this.abFuel <= 0) this.abilityOff(true);
+      else if (inp && inp.ability) { this.abilityOff(false); inp = Object.assign({}, inp, { ability: false }); }
+    }
     if (inp) {
       for (const a of ['dodge', 'special', 'ability', 'w1', 'w2', 'w3', 'heavy', 'kick', 'light', 'left', 'right']) if (inp[a]) { this.buffer = { a, t: 0.25 }; break; }
       this.blockHeld = !!inp.block;
@@ -3622,7 +3640,7 @@ class AIController {
       if (opp.state === 'stun' && dist < range + 0.6) { inp.light = true; }
       // abilities: bubble when hurt or under fire, teleport or jet in from a distance, tractor to haul a runner in
       const A = me.ability;
-      if (A && me.abCd <= 0 && opp.state !== 'ko' && Math.random() < L.weapon) {
+      if (A && me.abCd <= 0 && !me.abOn && opp.state !== 'ko' && Math.random() < L.weapon) {
         if (A.kind === 'shield' ? opp.state === 'weapon' || me.hp < me.stats.hp * 0.45 : A.kind === 'beam' ? dist > 3.5 && dist < A.range && clear : dist > 6) inp.ability = true;
       }
     }
@@ -4119,11 +4137,14 @@ const Battle = {
     } else if (W.kind === 'melee') {
       if (d <= f.stats.reach + W.reach + opp.radius && this.facing(f, opp) >= W.arc) this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.kb, stun: W.stun, stop: 0.09, heavy: true });
       else this.sfx('whoosh');
-    } else if (W.kind === 'shield') { f.wShieldT = W.dur; fitToPose(f.rig); f.bubFitT = 0.25; this.sfx('special'); }
+    } else if (W.kind === 'shield') { f.abOn = true; f.wShieldT = f.abFuel; fitToPose(f.rig); f.bubFitT = 0.25; this.sfx('special'); }
     else if (W.kind === 'jet') {
       // blast up and along the stick (or straight at the opponent), flames roaring for a moment
-      f.vy = Math.sqrt(2 * 26 * 2.0); f.air = true; f.pos.y += 0.02; f.jumpT = 0.35; f.jetT = 2.8;
-      f.knock.addScaledVector(f.abDir, 11); this.burst(f.pos.clone(), W.color, 14, 4); this.sfx('whoosh');
+      // from the ground it's a full launch; relit in mid-air it just catches you and climbs back to hover height
+      f.abOn = true; f.jetT = 0.05; f.jumpT = 0.35;
+      if (!f.air) { f.vy = Math.sqrt(2 * 26 * 2.0); f.air = true; f.pos.y += 0.02; f.knock.addScaledVector(f.abDir, 11); }
+      else f.vy = Math.max(f.vy, 4);
+      this.burst(f.pos.clone(), W.color, 14, 4); this.sfx('whoosh');
     } else if (W.kind === 'blink') {
       // reappear just behind the opponent, or beside them if that spot is outside the ring or inside cover
       const n = new V3(opp.pos.x - f.pos.x, 0, opp.pos.z - f.pos.z); if (n.lengthSq() < 1e-4) n.set(0, 0, 1); n.normalize();
@@ -4303,6 +4324,8 @@ const Battle = {
     const m = new THREE.Mesh(new THREE.TorusGeometry(1, 0.08, 8, 48), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 }));
     m.rotation.x = Math.PI / 2; m.position.set(p.x, 0.6, p.z); this.scene.add(m); this.rings.push({ m, t: 0 });
   },
+  abilityLocked() { return this.phase === 'fight' && (this.arenaT || 0) < ABILITY_LOCK; }, // arenaT: fight time this round
+  lockedNote() { const now = performance.now(); if (now - (this._lockN || 0) < 900) return; this._lockN = now; this.popAt(this.p1, 'ABILITY IN ' + Math.ceil(ABILITY_LOCK - (this.arenaT || 0)) + 's', 'note', 0.7); },
   popAt(f, text, cls, life) {
     const v = f.pos.clone(); v.y += f.rig.height + 0.3; v.project(this.cam);
     if (v.z > 1) return;
@@ -4444,7 +4467,14 @@ const Battle = {
       if (el) { el.classList.toggle('ready', k <= 0); el.lastChild.style.height = (k * 100) + '%'; }
       if (wb[i]) wb[i].lastChild.style.height = (k * 100) + '%';
     });
-    if (this.p1.ability) { const k = this.p1.abCd / this.p1.ability.cd; for (const el of [$('wsA'), $('wbA')]) if (el) { el.classList.toggle('ready', k <= 0); el.lastChild.style.height = (k * 100) + '%'; } }
+    if (this.p1.ability) {
+      // the R slot: counts down the opening lock, shows the fuel left while switched on, then the cooldown once the tank is empty
+      const f = this.p1, A = f.ability, lockT = this.abilityLocked() ? ABILITY_LOCK - (this.arenaT || 0) : 0;
+      const k = lockT > 0 ? lockT / ABILITY_LOCK : f.abCd > 0 ? f.abCd / A.cd : A.toggle ? 1 - f.abFuel / A.dur : 0;
+      if (this.phase === 'fight' && lockT <= 0 && this._wasLocked) this.popAt(f, 'ABILITY READY', 'note', 0.9);
+      this._wasLocked = lockT > 0;
+      for (const el of [$('wsA'), $('wbA')]) if (el) { el.classList.toggle('ready', lockT <= 0 && f.abCd <= 0); el.classList.toggle('on', f.abOn); el.classList.toggle('locked', lockT > 0); el.lastChild.style.height = (k * 100) + '%'; }
+    }
   },
   matchOver() {
     this.phase = 'over';
