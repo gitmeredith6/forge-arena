@@ -138,27 +138,27 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 #home { background: radial-gradient(ellipse at 50% 42%, #00000000 0%, #00000038 55%, #000000a0 100%), url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2NCcgaGVpZ2h0PSc2NCcgdmlld0JveD0nMCAwIDY0IDY0Jz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2cnIHgxPScwJyB5MT0nMCcgeDI9JzAnIHkyPScxJz48c3RvcCBvZmZzZXQ9JzAnIHN0b3AtY29sb3I9JyNlNGU3ZWInLz48c3RvcCBvZmZzZXQ9JzAuNCcgc3RvcC1jb2xvcj0nI2EzYThhZicvPjxzdG9wIG9mZnNldD0nMC41Nicgc3RvcC1jb2xvcj0nIzVhNWU2NCcvPjxzdG9wIG9mZnNldD0nMScgc3RvcC1jb2xvcj0nIzNhM2Q0MicvPjwvbGluZWFyR3JhZGllbnQ+PHBhdGggaWQ9J2QnIGQ9J00tMTMuNSAwIFEtNCAtNCAwIC00LjMgUTQgLTQgMTMuNSAwIFE0IDQgMCA0LjMgUS00IDQgLTEzLjUgMFonLz48L2RlZnM+PGcgdHJhbnNmb3JtPSd0cmFuc2xhdGUoMTYgMTYpIHJvdGF0ZSgtNDUpJz48dXNlIGhyZWY9JyNkJyBmaWxsPScjMDAwJyBvcGFjaXR5PScwLjM1JyB0cmFuc2Zvcm09J3RyYW5zbGF0ZSgxLjIgMS42KScvPjx1c2UgaHJlZj0nI2QnIGZpbGw9J3VybCgjZyknLz48L2c+PGcgdHJhbnNmb3JtPSd0cmFuc2xhdGUoNDggNDgpIHJvdGF0ZSgtNDUpJz48dXNlIGhyZWY9JyNkJyBmaWxsPScjMDAwJyBvcGFjaXR5PScwLjM1JyB0cmFuc2Zvcm09J3RyYW5zbGF0ZSgxLjIgMS42KScvPjx1c2UgaHJlZj0nI2QnIGZpbGw9J3VybCgjZyknLz48L2c+PGcgdHJhbnNmb3JtPSd0cmFuc2xhdGUoNDggMTYpIHJvdGF0ZSg0NSknPjx1c2UgaHJlZj0nI2QnIGZpbGw9JyMwMDAnIG9wYWNpdHk9JzAuMzUnIHRyYW5zZm9ybT0ndHJhbnNsYXRlKDEuMiAxLjYpJy8+PHVzZSBocmVmPScjZCcgZmlsbD0ndXJsKCNnKScvPjwvZz48ZyB0cmFuc2Zvcm09J3RyYW5zbGF0ZSgxNiA0OCkgcm90YXRlKDQ1KSc+PHVzZSBocmVmPScjZCcgZmlsbD0nIzAwMCcgb3BhY2l0eT0nMC4zNScgdHJhbnNmb3JtPSd0cmFuc2xhdGUoMS4yIDEuNiknLz48dXNlIGhyZWY9JyNkJyBmaWxsPSd1cmwoI2cpJy8+PC9nPjwvc3ZnPg==") 0 0 / 112px 112px repeat, linear-gradient(115deg, #5d6167 0%, #6a6e75 30%, #55595f 55%, #666a71 80%, #585c62 100%); background-color: #5d6167; }
 #home .home-kicker { color: #1f2228; font-size: 17px; font-weight: 800; letter-spacing: 0.3em; }
 #home .home-sub { color: #3f444d; }
-#home .home-logo { text-shadow: 0 2px 0 #ffffff66, 0 8px 22px #00000026; }
+#home .home-logo, #menu .home-logo { text-shadow: 0 2px 0 #ffffff66, 0 8px 22px #00000026; }
 #home .home-kicker { font-family: 'Bungee', var(--f-display); font-weight: 400; font-size: 18px; letter-spacing: 0.22em; }
-#home .home-logo { font-family: 'Black Ops One', var(--f-display); font-weight: 400; font-size: clamp(54px, 16vw, 150px); line-height: 0.98; letter-spacing: 0.01em; text-shadow: none; filter: drop-shadow(0 2px 0 #ffffff80) drop-shadow(0 8px 18px #00000030); }
+#home .home-logo, #menu .home-logo { font-family: 'Black Ops One', var(--f-display); font-weight: 400; font-size: clamp(54px, 16vw, 150px); line-height: 0.98; letter-spacing: 0.01em; text-shadow: none; filter: drop-shadow(0 2px 0 #ffffff80) drop-shadow(0 8px 18px #00000030); }
 /* battle-worn texture: speckled noise mask punched through the letters */
-#home .home-logo b { font-weight: inherit; display: inline-block; position: relative; -webkit-mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='520' height='520'><filter id='n' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.3' numOctaves='4' seed='7' result='f'/><feTurbulence type='fractalNoise' baseFrequency='0.018' numOctaves='2' seed='3' result='c'/><feComposite in='f' in2='c' operator='arithmetic' k2='0.6' k3='0.9'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -24 21.3'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='520' height='520'><filter id='n' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.3' numOctaves='4' seed='7' result='f'/><feTurbulence type='fractalNoise' baseFrequency='0.018' numOctaves='2' seed='3' result='c'/><feComposite in='f' in2='c' operator='arithmetic' k2='0.6' k3='0.9'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -24 21.3'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); -webkit-mask-size: 520px; mask-size: 520px; }
+#home .home-logo b, #menu .home-logo b { font-weight: inherit; display: inline-block; position: relative; -webkit-mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='520' height='520'><filter id='n' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.3' numOctaves='4' seed='7' result='f'/><feTurbulence type='fractalNoise' baseFrequency='0.018' numOctaves='2' seed='3' result='c'/><feComposite in='f' in2='c' operator='arithmetic' k2='0.6' k3='0.9'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -24 21.3'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='520' height='520'><filter id='n' color-interpolation-filters='sRGB'><feTurbulence type='fractalNoise' baseFrequency='0.3' numOctaves='4' seed='7' result='f'/><feTurbulence type='fractalNoise' baseFrequency='0.018' numOctaves='2' seed='3' result='c'/><feComposite in='f' in2='c' operator='arithmetic' k2='0.6' k3='0.9'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -24 21.3'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); -webkit-mask-size: 520px; mask-size: 520px; }
 /* solid backdrop-coloured copy under each worn word so the rings never show through the chips */
-#home .home-logo span { display: inline-block; position: relative; }
-#home .home-logo span::before { content: attr(data-t); position: absolute; inset: 0; color: #474a50; }
-#home .m-black { color: #0c0c10; }
-#home .m-black b { -webkit-mask-position: 350px 160px; mask-position: 350px 160px; } /* offset chosen so the final E stays legible */
-#home .m-blue { color: #8a9cb5; }
+#home .home-logo span, #menu .home-logo span { display: inline-block; position: relative; }
+#home .home-logo span::before, #menu .home-logo span::before { content: attr(data-t); position: absolute; inset: 0; color: #474a50; }
+#home .m-black, #menu .m-black { color: #0c0c10; }
+#home .m-black b, #menu .m-black b { -webkit-mask-position: 350px 160px; mask-position: 350px 160px; } /* offset chosen so the final E stays legible */
+#home .m-blue, #menu .m-blue { color: #8a9cb5; }
 #home .home-glow i { border-width: 3px; border-color: #0c0c10d9; }
 #home .home-glow i:nth-child(2) { border-color: #0c0c10b3; }
 #home .home-glow i:nth-child(3) { border-color: #0c0c10cc; }
 /* dark matte gray plate behind the logo; the tagline sits above it */
 /* dark matte gray backdrop: light tagline/blurb so they read on it */
-#home .home-logo { filter: none; }
+#home .home-logo, #menu .home-logo { filter: none; }
 /* FORGE and ARENA are stamped into the plate (unmasked ::before = the recess): dark rim along the top/left edges where the recess falls into shadow, a bright lip along the bottom/right where it catches the light */
-#home .home-logo .m-blue::before { content: attr(data-t); color: #343c48; text-shadow: -1px -2px 1px #000000a8, 1px 2px 0 #ffffff45, 2px 3px 1px #ffffff1c; }
-#home .home-logo .m-black::before { content: attr(data-t); color: #2b2e33; text-shadow: -1px -2px 1px #000000a8, 1px 2px 0 #ffffff45, 2px 3px 1px #ffffff1c; }
-#home .m-black b { color: #0c0c10; } /* worn black paint in the recess; the chips show the recess floor underneath */
+#home .home-logo .m-blue::before, #menu .home-logo .m-blue::before { content: attr(data-t); color: #343c48; text-shadow: -1px -2px 1px #000000a8, 1px 2px 0 #ffffff45, 2px 3px 1px #ffffff1c; }
+#home .home-logo .m-black::before, #menu .home-logo .m-black::before { content: attr(data-t); color: #2b2e33; text-shadow: -1px -2px 1px #000000a8, 1px 2px 0 #ffffff45, 2px 3px 1px #ffffff1c; }
+#home .m-black b, #menu .m-black b { color: #0c0c10; } /* worn black paint in the recess; the chips show the recess floor underneath */
 #home .home-kicker { color: #e3e6ea; background: linear-gradient(180deg, #ffffff 0%, #d9dce1 40%, #9fa4ac 58%, #e3e6ea 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(-1px -2px 0.5px #000000c0) drop-shadow(1px 2px 0 #ffffff60); /* stamped: dark upper rim, light lower lip */ border-bottom: 3px solid #0c0c10; padding: 0 0 6px; display: flex; justify-content: space-evenly; box-sizing: border-box; }
 /* words spread across the width of FORGE (set in fitKicker); cancel each word's trailing letter-spacing */
 #home .home-kicker span { margin-right: -0.22em; }
@@ -402,12 +402,22 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 #home .home-in { margin-top: -12vh; gap: 10px; }
 /* plain plate behind the logo and tagline: the same steel and vignette as the backdrop minus the diamonds, fixed so it lines up seamlessly */
 #home .home-in { width: max-content; max-width: calc(100vw - 24px); padding: 0 1px 6px 6px; border-radius: 3px; background: radial-gradient(ellipse at 50% 42%, #00000000 0%, #00000038 55%, #000000a0 100%), linear-gradient(115deg, #5d6167 0%, #6a6e75 30%, #55595f 55%, #666a71 80%, #585c62 100%); background-attachment: fixed; }
-#home .home-logo span::before { content: none; }
-#home .home-logo > span { display: block; }
+#home .home-logo span::before, #menu .home-logo span::before { content: none; }
+#home .home-logo > span, #menu .home-logo > span { display: block; }
 
 /* ======== title-screen look on every page: matte gray, obsidian + steel titles, silver buttons, black rings ======== */
 #builder, .page, #arenas { background: radial-gradient(ellipse at 50% 30%, #50535a 0%, #45484d 55%, #383b40 100%); background-attachment: fixed; }
-#menu { background: radial-gradient(ellipse at 50% 38%, #50535a 0%, #45484d 55%, #383b40 100%); }
+/* main menu shares the title's diamond plate, stamped logo and silver stamped buttons */
+#menu { background: radial-gradient(ellipse at 50% 42%, #00000000 0%, #00000038 55%, #000000a0 100%), url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc2NCcgaGVpZ2h0PSc2NCcgdmlld0JveD0nMCAwIDY0IDY0Jz48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9J2cnIHgxPScwJyB5MT0nMCcgeDI9JzAnIHkyPScxJz48c3RvcCBvZmZzZXQ9JzAnIHN0b3AtY29sb3I9JyNlNGU3ZWInLz48c3RvcCBvZmZzZXQ9JzAuNCcgc3RvcC1jb2xvcj0nI2EzYThhZicvPjxzdG9wIG9mZnNldD0nMC41Nicgc3RvcC1jb2xvcj0nIzVhNWU2NCcvPjxzdG9wIG9mZnNldD0nMScgc3RvcC1jb2xvcj0nIzNhM2Q0MicvPjwvbGluZWFyR3JhZGllbnQ+PHBhdGggaWQ9J2QnIGQ9J00tMTMuNSAwIFEtNCAtNCAwIC00LjMgUTQgLTQgMTMuNSAwIFE0IDQgMCA0LjMgUS00IDQgLTEzLjUgMFonLz48L2RlZnM+PGcgdHJhbnNmb3JtPSd0cmFuc2xhdGUoMTYgMTYpIHJvdGF0ZSgtNDUpJz48dXNlIGhyZWY9JyNkJyBmaWxsPScjMDAwJyBvcGFjaXR5PScwLjM1JyB0cmFuc2Zvcm09J3RyYW5zbGF0ZSgxLjIgMS42KScvPjx1c2UgaHJlZj0nI2QnIGZpbGw9J3VybCgjZyknLz48L2c+PGcgdHJhbnNmb3JtPSd0cmFuc2xhdGUoNDggNDgpIHJvdGF0ZSgtNDUpJz48dXNlIGhyZWY9JyNkJyBmaWxsPScjMDAwJyBvcGFjaXR5PScwLjM1JyB0cmFuc2Zvcm09J3RyYW5zbGF0ZSgxLjIgMS42KScvPjx1c2UgaHJlZj0nI2QnIGZpbGw9J3VybCgjZyknLz48L2c+PGcgdHJhbnNmb3JtPSd0cmFuc2xhdGUoNDggMTYpIHJvdGF0ZSg0NSknPjx1c2UgaHJlZj0nI2QnIGZpbGw9JyMwMDAnIG9wYWNpdHk9JzAuMzUnIHRyYW5zZm9ybT0ndHJhbnNsYXRlKDEuMiAxLjYpJy8+PHVzZSBocmVmPScjZCcgZmlsbD0ndXJsKCNnKScvPjwvZz48ZyB0cmFuc2Zvcm09J3RyYW5zbGF0ZSgxNiA0OCkgcm90YXRlKDQ1KSc+PHVzZSBocmVmPScjZCcgZmlsbD0nIzAwMCcgb3BhY2l0eT0nMC4zNScgdHJhbnNmb3JtPSd0cmFuc2xhdGUoMS4yIDEuNiknLz48dXNlIGhyZWY9JyNkJyBmaWxsPSd1cmwoI2cpJy8+PC9nPjwvc3ZnPg==") 0 0 / 112px 112px repeat, linear-gradient(115deg, #5d6167 0%, #6a6e75 30%, #55595f 55%, #666a71 80%, #585c62 100%); background-color: #5d6167; }
+.menu-plate { align-self: center; width: max-content; max-width: 100%; padding: 0 1px 4px 6px; border-radius: 3px; background: radial-gradient(ellipse at 50% 42%, #00000000 0%, #00000038 55%, #000000a0 100%), linear-gradient(115deg, #5d6167 0%, #6a6e75 30%, #55595f 55%, #666a71 80%, #585c62 100%); background-attachment: fixed; }
+#menu .home-logo { font-size: clamp(46px, 12vw, 92px); }
+#menu .home-logo > span { display: block; }
+#menu .menu-btn { background: #7d828a; box-shadow: none; }
+#menu .menu-btn::before { background: var(--silver); }
+#menu .menu-btn b { color: #0c0c10; text-shadow: 0 -2px 1px #00000070, 0 2px 0 #ffffffd9, 0 3px 1px #ffffff60; }
+#menu .menu-btn:hover, #menu .menu-btn:focus-visible { background: #4d5157; filter: brightness(1.06); }
+#menu .menu-btn.go { background: #3b3e43; }
+#menu .menu-record { color: #e3e6ea; text-shadow: 0 1px 2px #000c; }
 #menu .home-glow i { border-width: 3px; border-color: #0c0c10d9; }
 #menu .home-glow i:nth-child(2) { border-color: #0c0c10b3; }
 #menu .home-glow i:nth-child(3) { border-color: #0c0c10cc; }
@@ -494,7 +504,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 
 <section id="menu" aria-label="Main menu" hidden>
   <div class="menu-in">
-    <h1 class="menu-logo">FORGE <span>ARENA</span></h1>
+    <div class="menu-plate"><h1 class="home-logo"><span class="m-black" data-t="FORGE"><b>FORGE</b></span> <span class="m-blue" data-t="ARENA"><b>ARENA</b></span></h1></div>
     <nav class="menu-list" aria-label="Main menu">
       <button type="button" class="menu-btn go" id="mFight"><b>Play now</b></button>
       <button type="button" class="menu-btn" id="mMulti"><b>Multiplayer</b></button>
