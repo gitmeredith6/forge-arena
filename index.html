@@ -3040,7 +3040,7 @@ const KICKS = {
   whip:   { w: 0.3,  a: 0.14, r: 0.4,  mult: 1.5,  kb: 10, stun: 0.42, reach: 0.9,  arc: -0.1, name: 'Tail whip' },
 };
 function kickFor(build) { const b = partById('bottom', build.bottom); return b.type === 'snake' ? KICKS.whip : b.type === 'spider' ? KICKS.stab : KICKS[b.w]; }
-const ARENA_R = 13;
+const ARENA_R0 = 13; let ARENA_R = ARENA_R0; // ARENA_R follows the current arena's size (arena.r)
 const ROUND_TIME = 90;
 /* ---------- arenas ----------
    Solids stand on the floor: 'box' (w along local x, d along local z, rotated by rot about y), 'ramp' (a box whose top rises
@@ -3048,18 +3048,18 @@ const ROUND_TIME = 90;
    Layouts are point-symmetric (x, z -> -x, -z) so both spawns get the same cover. */
 const STEP = 0.35;
 const mirrorLayout = list => list.concat(list.map(s => Object.assign({}, s, { x: -s.x, z: -s.z, rot: (s.rot || 0) + Math.PI })));
-// Bunker's centre: a ring of radius 3.6 m broken by a doorway at each compass point, two straight wall pieces per quarter,
-// and an X of walls on the diagonals that stops short of a small open hub, so each doorway leads into its own bay
-function bunkerRing() {
-  const R = 3.6, gap = 0.8 / R, out = [];
+// Bunker's centre: a ring of walls broken by a doorway at each compass point, two straight wall pieces per quarter,
+// and an X of walls on the diagonals that stops short of an open hub, so each doorway leads into its own bay
+function bunkerRing(R, door, hub, h, d) {
+  const gap = door / 2 / R, out = [];
   for (let q = 0; q < 4; q++) {
     const a0 = q * Math.PI / 2 + gap, span = (Math.PI / 2 - 2 * gap) / 2;
     for (let k = 0; k < 2; k++) {
       const phi = a0 + span * (k + 0.5);
-      out.push({ type: 'box', kind: 'barrier', x: R * Math.cos(span / 2) * Math.cos(phi), z: R * Math.cos(span / 2) * Math.sin(phi), w: 2 * R * Math.sin(span / 2) + 0.12, d: 0.7, h: 4.0, rot: Math.PI / 2 - phi });
+      out.push({ type: 'box', kind: 'barrier', x: R * Math.cos(span / 2) * Math.cos(phi), z: R * Math.cos(span / 2) * Math.sin(phi), w: 2 * R * Math.sin(span / 2) + 0.15, d, h, rot: Math.PI / 2 - phi });
     }
-    const phi = q * Math.PI / 2 + Math.PI / 4, r = (1.2 + 3.45) / 2;
-    out.push({ type: 'box', kind: 'barrier', x: r * Math.cos(phi), z: r * Math.sin(phi), w: 3.45 - 1.2, d: 0.7, h: 4.0, rot: -phi });
+    const phi = q * Math.PI / 2 + Math.PI / 4, r1 = R - d * 0.4, r = (hub + r1) / 2;
+    out.push({ type: 'box', kind: 'barrier', x: r * Math.cos(phi), z: r * Math.sin(phi), w: r1 - hub, d, h, rot: -phi });
   }
   return out;
 }
@@ -3093,33 +3093,33 @@ const ARENAS = [
       { type: 'box', kind: 'barrier', x: 0, z: 9.0, w: 3.2, d: 0.6, h: 1.45 },
       { type: 'box', kind: 'barrier', x: 9.6, z: -2.6, w: 2.4, d: 0.6, h: 1.45, rot: Math.PI / 2 },
     ])) },
-  // built from Sam's sky-view sketch: a walled concrete yard, a start platform at each end with ramps off both sides,
-  // a broken line of tall concrete dividers in front of each platform, six tall pillars down the flanks, and a broken
-  // ring of walls with an X inside it in the middle; everything is taller than a fighter so it plays like a maze
+  // built from Sam's sky-view sketch: a big walled concrete yard (about twice the size of the ring arenas), a start
+  // platform at each end with ramps off both sides, a broken line of tall dividers in front of each platform, six tall
+  // pillars down the flanks, and a broken ring of walls with an X inside it in the middle; it plays like a maze
   { id: 'bunker', name: 'Bunker', tag: 'Concrete maze', desc: 'Start up on your platform, take a ramp down, then work through tall walls and pillars to find your rival.',
-    spawn: { z: 8.9, y: 1.1 }, noPeek: true,
+    r: 27, spawn: { z: 17.8, y: 1.1 }, noPeek: true,
     theme: { floor: ['#4a4b4d', '#353638', '#232425'], line: '#d9dce1', l1: 0xdfe2e7, l2: 0xff4d6d, fog: 0x0b0c0e, rim: 0x2c2d30, glow: 0xdfe2e7,
       steel: 0x4a4d52, concrete: 0x8a8781, crate: 0x6e6a5a, plat: 0x5a5c60 },
     solids: mirrorLayout([
-      { type: 'box', kind: 'plat', x: 0, z: 8.9, w: 8.4, d: 2.2, h: 1.1 },
-      { type: 'ramp', kind: 'ramp', x: 5.55, z: 8.9, w: 1.8, d: 2.7, h0: 0, h1: 1.1, rot: -Math.PI / 2 },
-      { type: 'ramp', kind: 'ramp', x: -5.55, z: 8.9, w: 1.8, d: 2.7, h0: 0, h1: 1.1, rot: Math.PI / 2 },
-      { type: 'box', kind: 'barrier', x: -3.9, z: 6.1, w: 2.0, d: 0.7, h: 4.0 },
-      { type: 'box', kind: 'barrier', x: 0, z: 6.1, w: 2.2, d: 0.7, h: 4.0 },
-      { type: 'box', kind: 'barrier', x: 3.9, z: 6.1, w: 2.0, d: 0.7, h: 4.0 },
-      { type: 'cyl', kind: 'pillar', x: 5.3, z: 4.8, r: 0.6, h: 5.0 },
-      { type: 'cyl', kind: 'pillar', x: -5.3, z: 4.8, r: 0.6, h: 5.0 },
-      { type: 'cyl', kind: 'pillar', x: 5.9, z: 0, r: 0.6, h: 5.0 },
-      { type: 'box', kind: 'wall', x: 0, z: 10.3, w: 16.6, d: 0.4, h: 1.6 },
-      { type: 'box', kind: 'wall', x: 8.1, z: 0, w: 0.4, d: 20.2, h: 1.6 },
-    ]).concat(bunkerRing()) },
+      { type: 'box', kind: 'plat', x: 0, z: 17.8, w: 12, d: 3.6, h: 1.1 },
+      { type: 'ramp', kind: 'ramp', x: 7.35, z: 17.8, w: 2.6, d: 2.7, h0: 0, h1: 1.1, rot: -Math.PI / 2 },
+      { type: 'ramp', kind: 'ramp', x: -7.35, z: 17.8, w: 2.6, d: 2.7, h0: 0, h1: 1.1, rot: Math.PI / 2 },
+      { type: 'box', kind: 'barrier', x: -7.8, z: 12.6, w: 4.0, d: 0.9, h: 5.2 },
+      { type: 'box', kind: 'barrier', x: 0, z: 12.6, w: 4.4, d: 0.9, h: 5.2 },
+      { type: 'box', kind: 'barrier', x: 7.8, z: 12.6, w: 4.0, d: 0.9, h: 5.2 },
+      { type: 'cyl', kind: 'pillar', x: 10.6, z: 9.6, r: 1.0, h: 6.5 },
+      { type: 'cyl', kind: 'pillar', x: -10.6, z: 9.6, r: 1.0, h: 6.5 },
+      { type: 'cyl', kind: 'pillar', x: 11.8, z: 0, r: 1.0, h: 6.5 },
+      { type: 'box', kind: 'wall', x: 0, z: 20.6, w: 33.4, d: 0.5, h: 2.1 },
+      { type: 'box', kind: 'wall', x: 16.45, z: 0, w: 0.5, d: 40.7, h: 2.1 },
+    ]).concat(bunkerRing(7.2, 3.2, 2.4, 5.2, 0.9)) },
 ];
 const arenaById = id => ARENAS.find(a => a.id === id);
 
 const World = {
   solids: [], plats: [], ramps: [],
   set(arena) {
-    this.arena = arena;
+    this.arena = arena; ARENA_R = arena.r || ARENA_R0;
     this.solids = arena.solids.map(d => {
       const s = Object.assign({ rot: 0 }, d);
       s.c = Math.cos(s.rot); s.sn = Math.sin(s.rot);
@@ -3714,7 +3714,7 @@ function buildSolidMesh(s, th) {
 function drawArenaMap(cv, A) {
   const dpr = Math.min(devicePixelRatio || 1, 2), W = cv.clientWidth || 220, H = cv.clientHeight || 160;
   cv.width = W * dpr; cv.height = H * dpr; const x = cv.getContext('2d'); x.scale(dpr, dpr);
-  const th = A.theme, R = Math.min(W, H) / 2 - 6, k = R / (ARENA_R + 0.9);
+  const th = A.theme, R = Math.min(W, H) / 2 - 6, k = R / ((A.r || ARENA_R0) + 0.9);
   x.translate(W / 2, H / 2);
   const gr = x.createRadialGradient(0, 0, 4, 0, 0, R); gr.addColorStop(0, th.floor[0]); gr.addColorStop(1, th.floor[2]);
   x.fillStyle = gr; x.beginPath(); x.arc(0, 0, R, 0, Math.PI * 2); x.fill();
@@ -3747,28 +3747,30 @@ const Battle = {
     this.cam = new THREE.PerspectiveCamera(55, 1, 0.1, 200);
     S.environment = makeEnv(r, false);
     S.add(new THREE.HemisphereLight(0x9fb4ff, 0x1a1410, 0.35));
-    const sun = new THREE.DirectionalLight(0xffe7c8, 1.35); sun.position.set(8, 18, 6); sun.castShadow = true;
+    const sun = this.sun = new THREE.DirectionalLight(0xffe7c8, 1.35); sun.position.set(8, 18, 6); sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -16, right: 16, top: 16, bottom: -16, near: 1, far: 50 }); sun.shadow.bias = -0.0005;
     S.add(sun);
     const p1 = this.l1 = new THREE.PointLight(0xffb547, 0.9, 24); p1.position.set(-12, 5, -6); S.add(p1);
     const p2 = this.l2 = new THREE.PointLight(0xff4d6d, 0.8, 24); p2.position.set(12, 5, 6); S.add(p2);
-    const floor = this.floor = new THREE.Mesh(new THREE.CircleGeometry(ARENA_R + 0.6, 96), new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0.2, envMapIntensity: 0.35 })); this.floorTex = {};
-    floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; S.add(floor);
+    // everything that frames the floor scales with the arena's size (see setArena)
+    const bowl = this.bowl = new THREE.Group(); S.add(bowl);
+    const floor = this.floor = new THREE.Mesh(new THREE.CircleGeometry(ARENA_R0 + 0.6, 96), new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0.2, envMapIntensity: 0.35 })); this.floorTex = {};
+    floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; bowl.add(floor);
     const wallM = stdMat(0x1a2130, { metalness: 0.6, roughness: 0.4, envMapIntensity: 0.4 });
-    this.wallM = wallM; const wall = new THREE.Mesh(new THREE.CylinderGeometry(ARENA_R + 0.9, ARENA_R + 0.9, 0.7, 96, 1, true), wallM); wall.position.y = 0.35; wallM.side = THREE.DoubleSide; wall.receiveShadow = true; S.add(wall);
-    const lip = this.lip = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R + 0.9, 0.06, 8, 128), glowMat(0xffb547)); lip.rotation.x = Math.PI / 2; lip.position.y = 0.72; S.add(lip);
-    const outer = new THREE.Mesh(new THREE.CylinderGeometry(34, 30, 9, 64, 1, true), stdMat(0x0b0f1a, { side: THREE.BackSide, roughness: 1, metalness: 0, envMapIntensity: 0.1 })); outer.position.y = 2; S.add(outer);
-    const ground = new THREE.Mesh(new THREE.CircleGeometry(40, 64), stdMat(0x0b0f18, { roughness: 0.9, metalness: 0.1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; S.add(ground);
+    this.wallM = wallM; const wall = new THREE.Mesh(new THREE.CylinderGeometry(ARENA_R0 + 0.9, ARENA_R0 + 0.9, 0.7, 96, 1, true), wallM); wall.position.y = 0.35; wallM.side = THREE.DoubleSide; wall.receiveShadow = true; bowl.add(wall);
+    const lip = this.lip = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R0 + 0.9, 0.06, 8, 128), glowMat(0xffb547)); lip.rotation.x = Math.PI / 2; lip.position.y = 0.72; bowl.add(lip);
+    const outer = new THREE.Mesh(new THREE.CylinderGeometry(34, 30, 9, 64, 1, true), stdMat(0x0b0f1a, { side: THREE.BackSide, roughness: 1, metalness: 0, envMapIntensity: 0.1 })); outer.position.y = 2; bowl.add(outer);
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(40, 64), stdMat(0x0b0f18, { roughness: 0.9, metalness: 0.1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; bowl.add(ground);
     for (let i = 0; i < 10; i++) {
-      const a = i / 10 * Math.PI * 2, R = ARENA_R + 4.5;
-      const col = mesh(new THREE.CylinderGeometry(0.45, 0.6, 6, 8), stdMat(0x252d40, { metalness: 0.6, roughness: 0.4 }), S, Math.cos(a) * R, 3, Math.sin(a) * R);
+      const a = i / 10 * Math.PI * 2, R = ARENA_R0 + 4.5;
+      const col = mesh(new THREE.CylinderGeometry(0.45, 0.6, 6, 8), stdMat(0x252d40, { metalness: 0.6, roughness: 0.4 }), bowl, Math.cos(a) * R, 3, Math.sin(a) * R);
       col.castShadow = false;
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.18, 0.9), glowMat(i % 2 ? 0xff4d6d : 0xffb547)); cap.position.set(Math.cos(a) * R, 6.1, Math.sin(a) * R); S.add(cap);
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.18, 0.9), glowMat(i % 2 ? 0xff4d6d : 0xffb547)); cap.position.set(Math.cos(a) * R, 6.1, Math.sin(a) * R); bowl.add(cap);
     }
     // crowd lights (stands)
     const pts = []; for (let i = 0; i < 700; i++) { const a = Math.random() * Math.PI * 2, R = rand(24, 31), y = rand(1, 6.5); pts.push(Math.cos(a) * R, y, Math.sin(a) * R); }
     const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    this.crowd = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0xffd9a8, size: 0.14, transparent: true, opacity: 0.7 })); S.add(this.crowd);
+    this.crowd = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0xffd9a8, size: 0.14, transparent: true, opacity: 0.7 })); bowl.add(this.crowd);
     // particle pool
     this.parts = [];
     const pgeo = new THREE.BoxGeometry(0.08, 0.08, 0.08);
@@ -3794,6 +3796,10 @@ const Battle = {
     this.lip.material.color.setHex(th.glow).convertSRGBToLinear(); this.lip.material.emissive.copy(this.lip.material.color);
     this.wallM.color.setHex(th.rim).convertSRGBToLinear();
     this.scene.background.setHex(th.fog); this.scene.fog.color.setHex(th.fog);
+    const k = ARENA_R / ARENA_R0; this.bowl.scale.set(k, 1, k);
+    this.scene.fog.near = 22 * k; this.scene.fog.far = 60 * k;
+    this.sun.position.set(8 * k, 18 * k, 6 * k); Object.assign(this.sun.shadow.camera, { left: -16 * k, right: 16 * k, top: 16 * k, bottom: -16 * k, far: 50 * k }); this.sun.shadow.camera.updateProjectionMatrix();
+    this.l1.position.set(-12 * k, 5, -6 * k); this.l2.position.set(12 * k, 5, 6 * k); this.l1.distance = this.l2.distance = 24 * k;
   },
   // fade anything standing between the camera and either fighter
   fadeCover(dt) {
