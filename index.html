@@ -155,8 +155,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 /* dark matte gray plate behind the logo; the tagline sits above it */
 /* dark matte gray backdrop: light tagline/blurb so they read on it */
 #home .home-logo { filter: none; }
-#home .m-blue { filter: drop-shadow(0 8px 18px #00000055); }
-/* FORGE is stamped into the plate (unmasked ::before = the recess): dark rim along the top/left edges where the recess falls into shadow, a bright lip along the bottom/right where it catches the light */
+/* FORGE and ARENA are stamped into the plate (unmasked ::before = the recess): dark rim along the top/left edges where the recess falls into shadow, a bright lip along the bottom/right where it catches the light */
+#home .home-logo .m-blue::before { content: attr(data-t); color: #343c48; text-shadow: -1px -2px 1px #000000a8, 1px 2px 0 #ffffff45, 2px 3px 1px #ffffff1c; }
 #home .home-logo .m-black::before { content: attr(data-t); color: #2b2e33; text-shadow: -1px -2px 1px #000000a8, 1px 2px 0 #ffffff45, 2px 3px 1px #ffffff1c; }
 #home .m-black b { color: #0c0c10; } /* worn black paint in the recess; the chips show the recess floor underneath */
 #home .home-kicker { color: #e3e6ea; background: linear-gradient(180deg, #ffffff 0%, #d9dce1 40%, #9fa4ac 58%, #e3e6ea 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 1px 1px #00000080); border-bottom: 3px solid #0c0c10; padding: 0 0 6px; display: flex; justify-content: space-between; box-sizing: border-box; }
@@ -167,6 +167,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 #home .home-begin { position: absolute; left: 50%; top: calc(56% + 162px); transform: translateX(-50%); margin: 0; font-size: 46px; padding: 16px 72px 9px; border-radius: 14px; background: linear-gradient(180deg, #ffffff 0%, #d9dce1 38%, #a9aeb6 55%, #e3e6ea 100%); color: #15171b; border: 1px solid #7d828a;
   box-shadow: inset 0 1px 0 #ffffff, inset 0 -2px 0 #7d828a, 0 4px 10px #0000004d; text-shadow: 0 1px 0 #ffffffa0; animation: silverPulse 2.2s ease-in-out infinite; }
 #home .home-begin:hover { filter: brightness(1.06); border-color: #5f646b; }
+/* BEGIN pressed into the silver: recessed gray letters, dark upper rim, bright lower lip */
+#home .home-begin { color: #5d626a; text-shadow: 0 -2px 1px #00000070, 0 2px 0 #ffffffd9, 0 3px 1px #ffffff60; }
 @keyframes silverPulse { 0%, 100% { box-shadow: inset 0 1px 0 #ffffff, inset 0 -2px 0 #7d828a, 0 4px 10px #0000004d, 0 0 0 0 #e3e6ea80; } 50% { box-shadow: inset 0 1px 0 #ffffff, inset 0 -2px 0 #7d828a, 0 4px 10px #0000004d, 0 0 0 14px #e3e6ea00; } }
 .tagline { color: var(--muted); margin: 0; max-width: 60ch; }
 .b-grid { display: grid; grid-template-columns: minmax(340px, 1fr) minmax(0, 1.35fr) minmax(250px, 0.72fr); gap: 14px; flex: 1; min-height: 0; }
