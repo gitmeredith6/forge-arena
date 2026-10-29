@@ -169,6 +169,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 #home .home-begin:hover { filter: brightness(1.06); border-color: #5f646b; }
 /* BEGIN pressed into the silver: recessed gray letters, dark upper rim, bright lower lip */
 #home .home-begin { color: #0c0c10; text-shadow: 0 -2px 1px #00000070, 0 2px 0 #ffffffd9, 0 3px 1px #ffffff60; }
+#home .home-begin.pressed { transform: translateX(-50%) translateY(4px); animation: none; filter: brightness(0.94); box-shadow: inset 0 3px 6px #00000045, inset 0 -1px 0 #7d828a, 0 1px 2px #00000070; transition: transform 60ms, box-shadow 60ms; }
+#home .home-begin.pressed::after { animation: none; display: none; }
 /* the glint: the plate brightens with a soft halo while a streak of light sweeps across its face */
 @keyframes beginGlint { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.12) drop-shadow(0 0 10px #ffffff40); } }
 #home .home-begin::after { content: ''; position: absolute; z-index: -1; top: -20%; bottom: -20%; left: -40%; width: 18%; pointer-events: none; transform: skewX(-20deg); background: linear-gradient(90deg, #ffffff00, #ffffffd0 45%, #ffffff 50%, #ffffffd0 55%, #ffffff00); animation: beginSheen 2.6s ease-in-out infinite; }
@@ -2851,7 +2853,10 @@ $('arBack').onclick = () => showScreen('builder');
 $('arFight').onclick = () => { SFX.init(); Battle.start(); };
 addEventListener('resize', () => { if (!$('arenas').hidden) renderArenas(); });
 $('fightBtn').onclick = () => { SFX.init(); showArenas(); };
-$('beginBtn').onclick = () => { SFX.init(); goMenu(); };
+// BEGIN sinks into the plate when pressed; hold the press for a beat before leaving so you can see it
+{ const bb = $('beginBtn'), up = () => bb.classList.remove('pressed');
+  bb.addEventListener('pointerdown', () => bb.classList.add('pressed')); bb.addEventListener('pointerleave', up); bb.addEventListener('pointercancel', up);
+  bb.onclick = () => { SFX.init(); bb.classList.add('pressed'); setTimeout(() => { up(); goMenu(); }, 170); }; }
 // button clicks on the title screen and main menu ring the anvil
 document.addEventListener('click', (e) => { const t = e.target.closest('button'); if (t && t.closest('#home, #menu') && !t.disabled) SFX.anvil(); }, true);
 // stretch the tagline to the width of the FORGE word
