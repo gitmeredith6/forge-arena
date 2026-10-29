@@ -3096,7 +3096,7 @@ const ARENAS = [
   // platform at each end with ramps off both sides, a broken line of tall dividers in front of each platform, six tall
   // pillars down the flanks, and a broken ring of walls with an X inside it in the middle; it plays like a maze
   { id: 'bunker', name: 'Bunker', tag: 'Concrete maze', desc: 'Start up on your platform, take a ramp down, then work through tall walls and pillars to find your rival.',
-    r: 41, spawn: { z: 29.6, y: 1.1 }, noPeek: true,
+    r: 41, box: { x: 25.05, z: 31.15 }, spawn: { z: 29.6, y: 1.1 }, noPeek: true,
     theme: { floor: ['#4a4b4d', '#353638', '#232425'], line: '#d9dce1', l1: 0xdfe2e7, l2: 0xff4d6d, fog: 0x0b0c0e, rim: 0x2c2d30, glow: 0xdfe2e7,
       steel: 0x4a4d52, concrete: 0x8a8781, crate: 0x6e6a5a, plat: 0x5a5c60 },
     solids: mirrorLayout([
@@ -3111,16 +3111,18 @@ const ARENAS = [
       { type: 'cyl', kind: 'pillar', x: 16.0, z: 14.0, r: 1.0, h: 6.5 },
       { type: 'cyl', kind: 'pillar', x: -16.0, z: 14.0, r: 1.0, h: 6.5 },
       { type: 'cyl', kind: 'pillar', x: 18.25, z: 0, r: 1.0, h: 6.5 },
-      { type: 'box', kind: 'wall', x: 0, z: 31.4, w: 51.1, d: 0.5, h: 2.1 },
-      { type: 'box', kind: 'wall', x: 25.3, z: 0, w: 0.5, d: 63.3, h: 2.1 },
+      { type: 'box', kind: 'wall', x: 0, z: 31.4, w: 51.1, d: 0.5, h: 8.0 },
+      { type: 'box', kind: 'wall', x: 25.3, z: 0, w: 0.5, d: 63.3, h: 8.0 },
     ]).concat(bunkerRing(10.5, 5.2, 4.8, 7.35, 5.2, 0.9)) },
 ];
 const arenaById = id => ARENAS.find(a => a.id === id);
 
 const World = {
-  solids: [], plats: [], ramps: [],
+  solids: [], plats: [], ramps: [], box: null,
+  // inside the playable area with margin m: the arena's rectangle (arena.box, half sizes to the wall faces) or its ring
+  inBounds(x, z, m = 0) { return this.box ? Math.abs(x) < this.box.x - m && Math.abs(z) < this.box.z - m : Math.hypot(x, z) < ARENA_R - m; },
   set(arena) {
-    this.arena = arena; ARENA_R = arena.r || ARENA_R0;
+    this.arena = arena; ARENA_R = arena.r || ARENA_R0; this.box = arena.box || null;
     this.solids = arena.solids.map(d => {
       const s = Object.assign({ rot: 0 }, d);
       s.c = Math.cos(s.rot); s.sn = Math.sin(s.rot);
@@ -3199,7 +3201,7 @@ const World = {
   },
   /* --- helpers for the CPU --- */
   walkable(f, x, z, stayUp) {
-    if (Math.hypot(x, z) > ARENA_R - f.radius * 0.8) return false;
+    if (!this.inBounds(x, z, f.radius * 0.8)) return false;
     for (const s of this.solids) if (this.inside(s, x, z, f.radius * 0.6) && this.heightAt(s, x, z) > f.pos.y + STEP) return false;
     return !stayUp || this.groundAt(x, z, f.pos.y + STEP) >= f.pos.y - 0.1;
   },
@@ -4034,7 +4036,7 @@ const Battle = {
       let to = null;
       for (const [a, b] of [[1, 0], [0, 1], [0, -1], [-1, 0]]) {
         const d = new V3(n.x * a - n.z * b, 0, n.z * a + n.x * b), c = opp.pos.clone().addScaledVector(d, gap); c.y = opp.pos.y;
-        if (Math.hypot(c.x, c.z) < ARENA_R - 0.8 && !(World.solids.length && World.solidAt(c.x, c.y + 0.6, c.z))) { to = c; break; }
+        if (World.inBounds(c.x, c.z, 0.8) && !(World.solids.length && World.solidAt(c.x, c.y + 0.6, c.z))) { to = c; break; }
       }
       if (to) {
         this.burst(from.clone().setY(from.y + 1), W.color, 18, 5); this.flash(from.clone().setY(from.y + 1), W.color, 0.8);
@@ -4094,7 +4096,7 @@ const Battle = {
         if (W.proj === 'rocket' || W.proj === 'shell') this.burst(P.pos, W.color, 10, 5);
         this.killProj(i); continue;
       }
-      if (P.life <= 0 || P.pos.y < 0 || Math.hypot(P.pos.x, P.pos.z) > ARENA_R + 1) { if (P.pos.y < 0.1) this.burst(P.pos, W.color, 5, 3); this.killProj(i); }
+      if (P.life <= 0 || P.pos.y < 0 || !World.inBounds(P.pos.x, P.pos.z, -1)) { if (P.pos.y < 0.1) this.burst(P.pos, W.color, 5, 3); this.killProj(i); }
     }
   },
   clearWeapons() {
@@ -4248,6 +4250,10 @@ const Battle = {
     for (const f of [a, b]) f._bumpT = Math.max(0, (f._bumpT || 0) - dt);
     this.empStep(a, b, dt); this.empStep(b, a, dt);
     for (const f of [a, b]) {
+      if (World.box) {
+        // rectangular arenas: hold each axis inside the walls at any height, so jetpacks and knockback can't carry you out
+        for (const ax of ['x', 'z']) { const max = World.box[ax] - f.radius; if (Math.abs(f.pos[ax]) > max) { const sg = Math.sign(f.pos[ax]); f.pos[ax] = sg * max; if (f.knock[ax] * sg > 0) f.knock[ax] *= -0.5; } }
+      }
       const r = Math.hypot(f.pos.x, f.pos.z), max = ARENA_R - f.radius;
       if (r > max) { f.pos.x *= max / r; f.pos.z *= max / r; const nx = f.pos.x / r, nz = f.pos.z / r; const kn = f.knock.x * nx + f.knock.z * nz; if (kn > 0) { f.knock.x -= 1.5 * kn * nx; f.knock.z -= 1.5 * kn * nz; } }
       const land = World.resolve(f, dt);
