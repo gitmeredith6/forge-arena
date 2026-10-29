@@ -154,7 +154,11 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 #home .home-glow i:nth-child(3) { border-color: #0c0c10cc; }
 /* dark matte gray plate behind the logo; the tagline sits above it */
 /* dark matte gray backdrop: light tagline/blurb so they read on it */
-#home .home-logo { filter: drop-shadow(0 8px 18px #00000055); }
+#home .home-logo { filter: none; }
+#home .m-blue { filter: drop-shadow(0 8px 18px #00000055); }
+/* FORGE is stamped into the plate (unmasked ::before = the recess): dark rim along the top/left edges where the recess falls into shadow, a bright lip along the bottom/right where it catches the light */
+#home .home-logo .m-black::before { content: attr(data-t); color: #2b2e33; text-shadow: -1px -2px 1px #000000a8, 1px 2px 0 #ffffff45, 2px 3px 1px #ffffff1c; }
+#home .m-black b { color: #0c0c10; } /* worn black paint in the recess; the chips show the recess floor underneath */
 #home .home-kicker { color: #e3e6ea; background: linear-gradient(180deg, #ffffff 0%, #d9dce1 40%, #9fa4ac 58%, #e3e6ea 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 1px 1px #00000080); border-bottom: 3px solid #0c0c10; padding: 0 0 6px; display: flex; justify-content: space-between; box-sizing: border-box; }
 /* words spread across the width of FORGE (set in fitKicker); cancel each word's trailing letter-spacing */
 #home .home-kicker span { margin-right: -0.22em; }
