@@ -2863,7 +2863,10 @@ function fitHomePlate() {
   home.style.setProperty('--dpx', (((left % step) + step) % step) + 'px'); home.style.setProperty('--dpy', (((top % step) + step) % step) + 'px');
 }
 const fitHome = () => { fitKicker(); fitHomePlate(); };
-fitHome(); addEventListener('resize', fitHome); if (document.fonts) document.fonts.ready.then(fitHome);
+fitHome(); addEventListener('resize', fitHome); if (document.fonts) { document.fonts.ready.then(fitHome); document.fonts.addEventListener('loadingdone', fitHome); }
+// the logo font can arrive after fonts.ready (Safari resolves it before the web font starts loading), so refit whenever the lettering changes size
+if (window.ResizeObserver) { const ro = new ResizeObserver(fitHome); ro.observe(document.querySelector('#home .home-logo')); ro.observe($('homeKicker')); }
+for (const ms of [300, 1000, 2500]) setTimeout(fitHome, ms);
 const SCREENS = ['home', 'menu', 'builder', 'arenas', 'career', 'settings', 'multi'];
 function showScreen(id) { for (const k of SCREENS) $(k).hidden = k !== id; if (id === 'builder') Preview.resize(); }
 function goMenu() {
