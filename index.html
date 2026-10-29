@@ -4200,7 +4200,9 @@ const Battle = {
     if (this.hitstop > 0) { this.hitstop -= dt; simDt = 0; }
     simDt *= this.slow;
     const fighting = this.phase === 'fight';
-    const pin = fighting ? Input.player() : null;
+    // after a K.O. (or time-out) the player can still run, jump and dodge around until the next round or the results screen
+    const roam = this.phase === 'ko' && this.p1.state !== 'ko';
+    const pin = fighting ? Input.player() : roam ? { ...Input.player(), heavy: false, left: false, right: false, kick: false, w1: false, w2: false, w3: false, ability: false, block: false } : null;
     const ain = fighting ? this.ai.input(simDt, this.p2, this.p1) : null;
     if (simDt > 0) {
       this.p1.update(simDt, this.p2, pin, this);
@@ -4212,8 +4214,10 @@ const Battle = {
     if (!this.paused) Input.clearPressed();
     if (this.phase === 'ko') {
       this.slow = Math.min(1, this.slow + rawDt * 0.6);
-      if (this.phaseT > 1.2 && this.koWinner && this.koWinner.state !== 'ko') { this.koWinner.state = 'victory'; }
-      if (this.phaseT > 3.0) {
+      // the CPU strikes its victory pose; the player keeps control instead
+      if (this.phaseT > 1.2 && this.koWinner === this.p2 && this.p2.state !== 'ko') { this.p2.state = 'victory'; }
+      const over = this.wins[0] >= 2 || this.wins[1] >= 2;
+      if (this.phaseT > (over ? 4.5 : 3.0)) {
         if (this.wins[0] >= 2 || this.wins[1] >= 2) this.matchOver();
         else this.startRound();
       }
