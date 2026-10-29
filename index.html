@@ -395,9 +395,11 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 /* title: no rings, logo raised, tagline under ARENA */
 #home .home-in { margin-top: -12vh; gap: 10px; }
 /* plain plate behind the logo and tagline: the same steel and vignette as the backdrop minus the diamonds, fixed so it lines up seamlessly */
-#home .home-in { width: max-content; max-width: calc(100vw - 24px); padding: 0 1px 6px 6px; border-radius: 3px; background: radial-gradient(ellipse at 50% 42%, #00000000 0%, #00000038 55%, #000000a0 100%), linear-gradient(115deg, #5d6167 0%, #6a6e75 30%, #55595f 55%, #666a71 80%, #585c62 100%); background-attachment: fixed; }
+#home .home-in { width: max-content; max-width: calc(100vw - 24px); padding: 0 0 6px; border-radius: 2px; background: radial-gradient(ellipse at 50% 42%, #00000000 0%, #00000038 55%, #000000a0 100%), linear-gradient(115deg, #5d6167 0%, #6a6e75 30%, #55595f 55%, #666a71 80%, #585c62 100%); background-attachment: fixed; }
 #home .home-logo span::before { content: none; }
 #home .home-logo > span { display: block; }
+/* trim the panel to the ink: the glyph boxes carry a few px of side bearing past the letters */
+#home .home-in > * { margin-left: -1px; margin-right: -5px; }
 
 /* ======== title-screen look on every page: matte gray, obsidian + steel titles, silver buttons, black rings ======== */
 #builder, .page, #arenas { background: radial-gradient(ellipse at 50% 30%, #50535a 0%, #45484d 55%, #383b40 100%); background-attachment: fixed; }
