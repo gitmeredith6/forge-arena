@@ -2622,7 +2622,7 @@ let build = { head: 'sentinel', top: 'sentinel', middle: 'furnace', bottom: 'spr
 let curSec = null;
 let difficulty = 'normal';
 let arenaId = 'guerrilla';
-try { const a = localStorage.getItem('forge-arena-map'); if (['classic', 'guerrilla', 'citadel'].includes(a)) arenaId = a; } catch (e) {}
+try { const a = localStorage.getItem('forge-arena-map'); if (['classic', 'guerrilla', 'citadel', 'bunker'].includes(a)) arenaId = a; } catch (e) {}
 // fills in anything an older save is missing, or returns null when the save is unusable
 const fixBuild = s => (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) ? Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons, ability: cleanAbility(s.ability) || (s.ability === undefined && (s.weapons || []).find(id => ABILITY[id])) || null, head: headById(s.head) ? s.head : s.top, colors: cleanColors(s.colors), lights: Object.fromEntries(Object.entries(cleanColors(s.lights)).map(([k, c]) => [k, OLD_LIGHTS[c] || c])) }) : null;
 try { const s = fixBuild(JSON.parse(localStorage.getItem('forge-arena-build') || 'null')); if (s) build = s; } catch (e) {}
@@ -3078,6 +3078,25 @@ const ARENAS = [
       { type: 'box', kind: 'barrier', x: 0, z: 9.0, w: 3.2, d: 0.6, h: 1.45 },
       { type: 'box', kind: 'barrier', x: 9.6, z: -2.6, w: 2.4, d: 0.6, h: 1.45, rot: Math.PI / 2 },
     ])) },
+  // built from Sam's sky-view sketch: a walled concrete yard, a start platform at each end with ramps off both sides,
+  // a broken line of concrete dividers in front of each platform, six pillars down the flanks and an open marked centre
+  { id: 'bunker', name: 'Bunker', tag: 'Concrete yard', desc: 'Start up on your platform, take a ramp down, then duck between dividers and pillars to close in on your rival.',
+    spawn: { z: 8.9, y: 1.1 },
+    theme: { mark: 'cross', floor: ['#4a4b4d', '#353638', '#232425'], line: '#d9dce1', l1: 0xdfe2e7, l2: 0xff4d6d, fog: 0x0b0c0e, rim: 0x2c2d30, glow: 0xdfe2e7,
+      steel: 0x4a4d52, concrete: 0x8a8781, crate: 0x6e6a5a, plat: 0x5a5c60 },
+    solids: mirrorLayout([
+      { type: 'box', kind: 'plat', x: 0, z: 8.9, w: 8.4, d: 2.2, h: 1.1 },
+      { type: 'ramp', kind: 'ramp', x: 5.55, z: 8.9, w: 1.8, d: 2.7, h0: 0, h1: 1.1, rot: -Math.PI / 2 },
+      { type: 'ramp', kind: 'ramp', x: -5.55, z: 8.9, w: 1.8, d: 2.7, h0: 0, h1: 1.1, rot: Math.PI / 2 },
+      { type: 'box', kind: 'barrier', x: -3.7, z: 6.4, w: 2.2, d: 0.6, h: 1.45 },
+      { type: 'box', kind: 'barrier', x: 0, z: 6.4, w: 2.4, d: 0.6, h: 1.45 },
+      { type: 'box', kind: 'barrier', x: 3.7, z: 6.4, w: 2.2, d: 0.6, h: 1.45 },
+      { type: 'cyl', kind: 'pillar', x: 5.3, z: 4.8, r: 0.55, h: 3.0 },
+      { type: 'cyl', kind: 'pillar', x: -5.3, z: 4.8, r: 0.55, h: 3.0 },
+      { type: 'cyl', kind: 'pillar', x: 6.0, z: 0, r: 0.55, h: 3.0 },
+      { type: 'box', kind: 'wall', x: 0, z: 10.3, w: 16.6, d: 0.4, h: 1.6 },
+      { type: 'box', kind: 'wall', x: 8.1, z: 0, w: 0.4, d: 20.2, h: 1.6 },
+    ]) },
 ];
 const arenaById = id => ARENAS.find(a => a.id === id);
 
@@ -3604,6 +3623,13 @@ function makeFloorTexture(th) {
   for (let i = 0; i < 1400; i++) { x.fillStyle = Math.random() < 0.5 ? '#ffffff08' : '#00000018'; const a = Math.random() * Math.PI * 2, r = Math.random() * 500; x.fillRect(Math.cos(a) * r, Math.sin(a) * r, rand(2, 10), rand(2, 10)); }
   x.strokeStyle = th.line + '66'; x.lineWidth = 6; x.beginPath(); x.arc(0, 0, 486, 0, Math.PI * 2); x.stroke();
   x.strokeStyle = th.line + '33'; x.lineWidth = 3; x.beginPath(); x.arc(0, 0, 120, 0, Math.PI * 2); x.stroke();
+  // optional centre marking: dashed ring with a dashed X through it
+  if (th.mark === 'cross') {
+    x.strokeStyle = th.line + '55'; x.lineWidth = 7; x.setLineDash([34, 22]);
+    x.beginPath(); x.arc(0, 0, 165, 0, Math.PI * 2); x.stroke();
+    for (const a of [Math.PI / 4, -Math.PI / 4]) { x.beginPath(); x.moveTo(-Math.cos(a) * 130, -Math.sin(a) * 130); x.lineTo(Math.cos(a) * 130, Math.sin(a) * 130); x.stroke(); }
+    x.setLineDash([]);
+  }
   // center emblem
   x.fillStyle = '#ffffff10'; x.font = '700 150px Teko, Impact, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('FORGE', 0, 6);
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t;
@@ -3690,7 +3716,8 @@ function drawArenaMap(cv, A) {
     x.fill(); x.stroke();
     if (s.type === 'ramp') { x.strokeStyle = th.line; x.globalAlpha = 0.6; for (let lz = -s.d / 2 + 0.4; lz < s.d / 2; lz += 0.6) { const a = P(s.x - s.w / 2 * s.c + lz * s.sn, s.z + s.w / 2 * s.sn + lz * s.c), b = P(s.x + s.w / 2 * s.c + lz * s.sn, s.z - s.w / 2 * s.sn + lz * s.c); x.beginPath(); x.moveTo(...a); x.lineTo(...b); x.stroke(); } x.globalAlpha = 1; }
   }
-  for (const [z, c] of [[-4.5, '#ffb547'], [4.5, '#ff4d6d']]) { const [px, py] = P(0, z); x.fillStyle = c; x.beginPath(); x.arc(px, py, 4.5, 0, Math.PI * 2); x.fill(); }
+  const spz = A.spawn ? A.spawn.z : 4.5;
+  for (const [z, c] of [[-spz, '#dfe2e7'], [spz, '#ff4d6d']]) { const [px, py] = P(0, z); x.fillStyle = c; x.beginPath(); x.arc(px, py, 4.5, 0, Math.PI * 2); x.fill(); }
 }
 const Battle = {
   active: false, paused: false,
@@ -3791,7 +3818,8 @@ const Battle = {
   },
   placeFighters() {
     this.clearWeapons();
-    this.p1.reset(new V3(0, 0, -4.5), 0); this.p2.reset(new V3(0, 0, 4.5), Math.PI);
+    const sp = (World.arena && World.arena.spawn) || { z: 4.5, y: 0 };
+    this.p1.reset(new V3(0, sp.y, -sp.z), 0); this.p2.reset(new V3(0, sp.y, sp.z), Math.PI);
     this.ai = new AIController(difficulty);
     this.timeLeft = ROUND_TIME; this.hitstop = 0; this.slow = 1;
   },
