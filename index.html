@@ -3476,7 +3476,7 @@ class Fighter {
       }
       case 'weapon': {
         const W = this.wpn;
-        speedMul = 1; turnRate = W.kind === 'beam' || W.kind === 'cone' ? 3.5 : 8;
+        speedMul = 1; turnRate = W.kind === 'beam' || W.kind === 'cone' || W.kind === 'proj' ? 3.5 : 8; // aiming is slow while you fire
         game.weaponStep(this, opp, dt);
         if (W.side !== undefined && !W.both && this.state === 'weapon' && this.buffer) {
           // one arm's weapon works like a punch: the other button in the wind-up upgrades to both arms, a press during the follow-through chains the next
@@ -4174,8 +4174,11 @@ const Battle = {
     return (this._pg = { rocket: rk, frost: new THREE.IcosahedronGeometry(0.13, 0), shell: new THREE.SphereGeometry(0.1, 12, 8), bullet: bl, hook: hk });
   },
   spawnProj(f, opp, W, i) {
-    const o = this.originOf(f, W, i), tgt = aimPt(opp);
-    const dir = tgt.clone().sub(o).normalize();
+    // shots leave along the way the shooter is facing (not straight at the opponent), pitched to reach chest height at the
+    // opponent's range; the auto-turn lags a moving target, so a quick sidestep or dodge can make a shot miss
+    const o = this.originOf(f, W, i), tgt = aimPt(opp), h = new V3(Math.sin(f.yaw), 0, Math.cos(f.yaw));
+    const range = Math.max(1, Math.hypot(tgt.x - f.pos.x, tgt.z - f.pos.z)), aim = new V3(f.pos.x, tgt.y, f.pos.z).addScaledVector(h, range);
+    const dir = aim.sub(o).normalize(); // both arms converge on the point straight ahead at the opponent's range
     // lower accuracy throws shots a little off line
     const miss = (1 - f.stats.acc) * 0.18 * rand(-1, 1); dir.applyAxisAngle(new V3(0, 1, 0), miss);
     const vel = dir.clone().multiplyScalar(W.speed);
