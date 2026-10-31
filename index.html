@@ -29,6 +29,8 @@
   --w-heavy: #e88c5c;
   --good: #7ee0a1;
   --bad: #ff7a7a;
+  --warn: #f2c94c;
+  --over: #8a9cb5;        /* the blue of ARENA in the logo, for stats pushed past 100 */
   --f-display: "Black Ops One", "Teko", Impact, sans-serif;
   --f-label: "Bungee", "Barlow Semi Condensed", sans-serif;
   --f-body: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
@@ -270,6 +272,13 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .bar { position: relative; height: 8px; background: #0c111b; border-radius: 4px; overflow: hidden; }
 .bar i { position: absolute; top: 0; bottom: 0; left: 0; background: var(--p1); border-radius: 4px; transition: width .18s; }
 .bar b { position: absolute; top: 0; bottom: 0; border-radius: 2px; }
+.stat { --tier: var(--p1); }
+.stat.t-lo { --tier: var(--bad); }
+.stat.t-mid { --tier: var(--warn); }
+.stat.t-hi { --tier: var(--good); }
+.stat.t-over { --tier: var(--over); }
+.stat .bar i { background: var(--tier); }
+.stat .sv { color: var(--tier); }
 .bar b.up { background: var(--good); }
 .bar b.down { background: var(--bad); opacity: .85; }
 .special { border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; padding: 10px 12px; }
@@ -810,7 +819,10 @@ function computeStats(build) {
     wcdMul: 0.72 + bulk * 0.1,
   };
 }
-const statScore = (S, v) => clamp(Math.round(1 + (v - S.base) / S.unit), 1, 100);
+// scores can pass 100 when perks stack up; the bar stops at full but the number shows the real score
+const statScore = (S, v) => Math.max(1, Math.round(1 + (v - S.base) / S.unit));
+// stat tiers: red under 35, yellow under 75, green 75-100, and the logo's ARENA blue above 100
+const statTier = v => v > 100 ? 'over' : v >= 75 ? 'hi' : v >= 35 ? 'mid' : 'lo';
 const STAT_VIEW = [
   // every stat shows as a 1-100 score: score 1 sits at base, and each point is one unit
   { k: 'armor',  label: 'Armor',    base: 0.25, unit: 0.005 },
@@ -2934,13 +2946,13 @@ function renderStats(hoverBuild) {
   const s = computeStats(build), h = hoverBuild ? computeStats(hoverBuild) : null;
   const norm = (v, d) => statScore(d, v);
   $('stats').innerHTML = STAT_VIEW.map(d => {
-    const a = norm(s[d.k], d); let extra = '', val = a;
-    if (h && norm(h[d.k], d) !== a) {
-      const b = norm(h[d.k], d);
-      extra = b > a ? `<b class="up" style="left:${a}%;width:${b - a}%"></b>` : `<b class="down" style="left:${b}%;width:${a - b}%"></b>`;
-      val = `<span style="color:${b > a ? 'var(--good)' : 'var(--bad)'}">${b}</span>`;
+    const raw = norm(s[d.k], d), a = Math.min(100, raw); let extra = '', val = raw;
+    if (h && norm(h[d.k], d) !== raw) {
+      const rb = norm(h[d.k], d), b = Math.min(100, rb);
+      if (b !== a) extra = b > a ? `<b class="up" style="left:${a}%;width:${b - a}%"></b>` : `<b class="down" style="left:${b}%;width:${a - b}%"></b>`;
+      val = `<span style="color:${rb > raw ? 'var(--good)' : 'var(--bad)'}">${rb}</span>`;
     }
-    return `<div class="stat"><span class="sl">${d.label}</span><div class="bar"><i style="width:${h && norm(h[d.k], d) < a ? norm(h[d.k], d) : a}%"></i>${extra}</div><span class="sv">${val}</span></div>`;
+    return `<div class="stat t-${statTier(raw)}"><span class="sl">${d.label}</span><div class="bar"><i style="width:${h && Math.min(100, norm(h[d.k], d)) < a ? Math.min(100, norm(h[d.k], d)) : a}%"></i>${extra}</div><span class="sv">${val}</span></div>`;
   }).join('');
   // weapons and the ability already show on the preview, so the stats card has no separate list of them
 }
