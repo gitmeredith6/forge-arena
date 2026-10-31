@@ -562,7 +562,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 <section id="multi" class="page" aria-label="Multiplayer" hidden>
   <div class="pg-in">
     <div class="ar-head"><button type="button" class="btn" data-menu>Main menu</button><h2 class="ar-title">MULTI<span>PLAYER</span></h2></div>
-    <div class="cr-empty"><p><b style="color:var(--fg);font-size:18px">Online matchmaking is coming soon.</b><br>You'll be able to take your fighter online and battle other players' builds.</p><button type="button" class="btn btn-go" id="mpPlay">PLAY NOW AGAINST THE CPU</button></div>
+    <div class="cr-empty"><p><b style="color:var(--fg);font-size:18px">Online matchmaking is coming soon.</b><br>You'll be able to take your build online and battle other players' builds.</p><button type="button" class="btn btn-go" id="mpPlay">PLAY NOW AGAINST THE CPU</button></div>
   </div>
 </section>
 
@@ -575,12 +575,12 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   </div>
 </section>
 
-<section id="builder" aria-label="Fighter builder" hidden>
+<section id="builder" aria-label="Builder" hidden>
   <div class="top-bar">
     <button type="button" class="btn" id="bMenu">Menu</button>
     <h1 class="logo">FORGE <span>ARENA</span></h1>
-    <div class="seg who" id="who" role="group" aria-label="Which fighter you are building"><button type="button" data-w="me">Your fighter</button><button type="button" data-w="opp">Opponent</button></div>
-    <p class="tagline">Click any part of your fighter to change it. Arms, Middle and Bottom each come in Light, Middle or Heavy, and you can add two weapons.</p>
+    <div class="seg who" id="who" role="group" aria-label="Which build you are editing"><button type="button" data-w="me">Your build</button><button type="button" data-w="opp">Opponent</button></div>
+    <p class="tagline">Click any part of your build to change it. Arms, Middle and Bottom each come in Light, Middle or Heavy, and you can add two weapons.</p>
   </div>
   <div class="b-grid">
     <div class="card b-parts">
@@ -592,7 +592,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       </div>
     </div>
     <div class="card b-preview" id="previewBox">
-      <canvas id="previewCanvas" aria-label="3D preview of your fighter"></canvas>
+      <canvas id="previewCanvas" aria-label="3D preview of your build"></canvas>
       <div class="pv-hint" id="pvHint">Click a part to change it</div>
       <button type="button" class="pv-spin" id="spinBtn" aria-pressed="false"></button>
       <div class="pv-label">
@@ -601,7 +601,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       </div>
     </div>
     <div class="card b-stats">
-      <h2>Fighter stats</h2>
+      <h2>Build stats</h2>
       <div class="stats" id="stats"></div>
       <div>
         <div class="lbl">Opponent build</div>
@@ -733,7 +733,7 @@ const HEADS = [
 const headById = id => HEADS.find(h => h.id === id);
 const SPECIALS = {
   light:  { id: 'blink',   name: 'Blink Strike', desc: 'Dash in untouchable and land a guard-breaking hit.' },
-  middle: { id: 'pulse',   name: 'Shock Pulse',  desc: 'An unblockable burst that blasts nearby fighters away.' },
+  middle: { id: 'pulse',   name: 'Shock Pulse',  desc: 'An unblockable burst that blasts anything close by away.' },
   heavy:  { id: 'fortify', name: 'Fortify',      desc: 'For 3 seconds take 40% less damage, never flinch and hit 20% harder.' },
 };
 const PARTS = {
@@ -2807,7 +2807,7 @@ function renderTabs() {
   $('secBack').onclick = () => openSec(null);
 }
 function renderSecList() {
-  $('secDesc').textContent = 'Click any part of your fighter in the preview to change it, or pick a section here.';
+  $('secDesc').textContent = 'Click any part of your build in the preview to change it, or pick a section here.';
   const W = $('weights'); W.innerHTML = '';
   for (const sec of ['head', 'top', 'middle', 'bottom', 'weapons', 'abilities']) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'secpick'; b.id = 'tab-' + sec;
