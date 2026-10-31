@@ -42,7 +42,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 
 /* ---------- builder ---------- */
 [hidden] { display: none !important; }
-#builder { min-height: 100%; display: flex; flex-direction: column; gap: 14px;
+#builder { min-height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;
   padding-block: 14px 18px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   background: radial-gradient(1200px 500px at 50% -10%, #1b2740 0%, transparent 70%), var(--bg); }
 .top-bar { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -103,7 +103,11 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .cr-foot { display: flex; justify-content: flex-end; }
 .cr-wide { grid-column: 1 / -1; }
 .seg.two { grid-template-columns: 1fr 1fr; }
-.seg.who { grid-template-columns: 1fr 1fr; min-width: 260px; }
+.seg.who { grid-template-columns: 1fr 1fr; }
+.b-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; }
+.b-side > .b-stats { flex: 1; }
+#builder .top-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+#builder .top-bar > :first-child { justify-self: start; }
 .seg.who button[data-w="opp"][aria-pressed="true"] { color: var(--p2); box-shadow: inset 0 0 0 1px var(--p2); }
 #builder.opp .b-preview { box-shadow: inset 0 0 0 1px #ff4d6d66; }
 .home-glow i { position: absolute; left: 50%; top: 56%; width: 900px; height: 900px; margin: -450px 0 0 -450px; border-radius: 50%; border: 2px solid #ffb54726; transform: rotateX(72deg); animation: ringSpin 14s linear infinite; }
@@ -261,12 +265,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .pv-spin { position: absolute; top: 8px; left: 10px; z-index: 2; background: #0b0f18cc; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: var(--fg); display: inline-flex; gap: 6px; align-items: center; }
 .pv-spin:hover { border-color: #ffffff40; }
 .pv-spin span { font-size: 10px; color: var(--p1); }
-.pv-hint { position: absolute; top: 10px; right: 12px; font-size: 12px; color: var(--muted); pointer-events: none; background: #0b0f18aa; border-radius: 6px; padding: 4px 8px; }
-.pv-hint.on { color: var(--fg); box-shadow: inset 0 0 0 1px var(--p1); }
 
-.b-stats { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.b-stats { padding: 14px; display: flex; flex-direction: column; gap: 9px; }
 .b-stats h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 24px; line-height: 1; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.stats { display: flex; flex-direction: column; gap: 7px; }
+.stats { display: flex; flex-direction: column; gap: 5px; }
 .stat { display: grid; grid-template-columns: 92px 1fr 84px; gap: 8px; align-items: center; font-size: 14px; }
 .stat .sl { color: var(--muted); }
 .stat .sv { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
@@ -311,7 +313,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 }
 @media (max-width: 720px) {
   .b-grid { grid-template-columns: minmax(0, 1fr); }
-  .b-preview, .b-parts, .b-stats { grid-column: 1; grid-row: auto; }
+  .b-preview, .b-parts, .b-side { grid-column: 1; grid-row: auto; }
   .b-preview { min-height: 360px; order: -1; }
   .weights { gap: 6px; }
   .wcol h3 { font-size: 19px; }
@@ -579,8 +581,6 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   <div class="top-bar">
     <button type="button" class="btn" id="bMenu">Menu</button>
     <h1 class="logo">FORGE <span>ARENA</span></h1>
-    <div class="seg who" id="who" role="group" aria-label="Which build you are editing"><button type="button" data-w="me">Your build</button><button type="button" data-w="opp">Opponent</button></div>
-    <p class="tagline">Click any part of your build to change it. Arms, Middle and Bottom each come in Light, Middle or Heavy, and you can add two weapons.</p>
   </div>
   <div class="b-grid">
     <div class="card b-parts">
@@ -593,13 +593,14 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     </div>
     <div class="card b-preview" id="previewBox">
       <canvas id="previewCanvas" aria-label="3D preview of your build"></canvas>
-      <div class="pv-hint" id="pvHint">Click a part to change it</div>
       <button type="button" class="pv-spin" id="spinBtn" aria-pressed="false"></button>
       <div class="pv-label">
         <div class="pv-ability" id="pvAbility" hidden></div>
         <div class="pv-name" id="pvName"></div>
       </div>
     </div>
+    <div class="b-side">
+      <div class="seg who" id="who" role="group" aria-label="Which build you are editing"><button type="button" data-w="me">Your build</button><button type="button" data-w="opp">Opponent</button></div>
     <div class="card b-stats">
       <h2>Build stats</h2>
       <div class="stats" id="stats"></div>
@@ -618,19 +619,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
         <button type="button" class="btn btn-go" id="fightBtn">FIGHT</button>
       </div>
     </div>
-  </div>
-  <div class="controls">
-    <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span>
-    <span><kbd>J</kbd> or left click: left arm punch</span>
-    <span><kbd>K</kbd> or right click: right arm punch</span>
-    <span><kbd>J</kbd>+<kbd>K</kbd> together: double-arm smash</span>
-    <span><kbd>L</kbd> or <kbd>Shift</kbd> hold: block</span>
-    <span><kbd>Q</kbd> kick (its style comes from your bottom)</span>
-    <span><kbd>1</kbd> <kbd>2</kbd> fire your head and chest weapons (arm weapons fire with <kbd>J</kbd> and <kbd>K</kbd>)</span>
-    <span><kbd>Space</kbd> dodge</span>
-    <span><kbd>F</kbd> jump (legs jump highest, other bottoms hop)</span>
-    <span><kbd>R</kbd> use your ability</span>
-    <span><kbd>Esc</kbd> pause</span>
+    </div>
   </div>
 </section>
 
@@ -3164,10 +3153,7 @@ const Preview = (() => {
       if (o.userData.m0 && o.userData.sec !== want) { o.material = o.userData.m0; o.userData.m0 = null; }
       else if (want && o.userData.sec === want && !o.userData.m0) { o.userData.m0 = o.material; o.material = hl(o.material); }
     });
-    hint.classList.toggle('on', !!hoverSec);
-    hint.textContent = hoverSec ? `${secName(hoverSec)}: click to change` : 'Click a part to change it';
   }
-  const hint = $('pvHint');
   function hover(sec) { if (sec === hoverSec) return; hoverSec = sec; paintHL(); canvas.style.cursor = sec ? 'pointer' : ''; }
   function select(sec) { selSec = sec; }
   canvas.addEventListener('pointerdown', e => { dragging = true; moved = false; lastX = downX = e.clientX; downY = e.clientY; canvas.setPointerCapture(e.pointerId); });
