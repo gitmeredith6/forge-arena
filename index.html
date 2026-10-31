@@ -2966,7 +2966,7 @@ function renderAll() {
   renderTabs(); renderParts(); renderStats();
   $('pvAbility').innerHTML = build.ability ? `${abilityIcon(build.ability, 'pv-ab-ico')}<span style="color:${abilityColor(build.ability)}">${ABILITY[build.ability].name}</span>` : '';
   $('pvAbility').hidden = !build.ability;
-  $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' + (oppCustom ? '' : ' (not in use: random is on)') : 'Your fighter'}</small>${buildNameHTML(build)}`;
+  $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' + (oppCustom ? '' : ' (not in use: random is on)') : 'Your build'}</small>${buildNameHTML(build)}`;
   for (const b of $('who').children) b.setAttribute('aria-pressed', String(b.dataset.w === editing));
   for (const b of $('oppMode').children) b.setAttribute('aria-pressed', String((b.dataset.m === 'custom') === oppCustom));
   $('builder').classList.toggle('opp', editing === 'opp');
