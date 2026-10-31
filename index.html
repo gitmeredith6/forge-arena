@@ -252,7 +252,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .pv-name small { display: block; font-family: var(--f-body); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .wchips { display: flex; gap: 4px; }
 .pv-ability { flex-basis: 100%; display: flex; align-items: center; gap: 8px; margin-bottom: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
-.pv-ability > span { color: var(--over); -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 0 1px 4px #000c; }
+.pv-ability > span { -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 0 1px 4px #000c; }
 .pv-ab-ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: #0b0f18cc; border: 1px solid currentColor; box-shadow: 0 0 14px -4px currentColor; }
 .pv-ab-ico svg { width: 26px; height: 26px; }
 .ab-ico { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 6px; vertical-align: -5px; }
@@ -879,7 +879,8 @@ const ABILITY_ICON = {
   tractor: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="2.4"/><path d="M7.5 9.5L20 5M7.5 14.5L20 19"/><path d="M13 9.5l-2 2.5 2 2.5M17 8.5l-2 3.5 2 3.5"/></svg>',
   bubble: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/><path d="M8 13.5a5 5 0 0 1 3-2.2" stroke-width="1.5"/><circle cx="12" cy="17" r="1.6"/></svg>',
 };
-const abilityIcon = (id, cls = 'ab-ico') => `<span class="${cls}" style="color:#${ABILITY[id].color.toString(16).padStart(6, '0')}" aria-hidden="true">${ABILITY_ICON[id]}</span>`;
+const abilityColor = id => '#' + ABILITY[id].color.toString(16).padStart(6, '0');
+const abilityIcon = (id, cls = 'ab-ico') => `<span class="${cls}" style="color:${abilityColor(id)}" aria-hidden="true">${ABILITY_ICON[id]}</span>`;
 const cleanWeapons = ws => { if (!Array.isArray(ws)) return null; return [...new Set(ws.filter(id => WEAPON[id]))].slice(0, MAX_WEAPONS); };
 // which arm weapon sits on each arm, as [right, left] (the order of rig.arms); the first one picked goes on the left arm (J)
 const armLoadout = ws => { const a = (ws || []).filter(id => ARM_SWAP.includes(id)); return !a.length ? null : a.length === 1 ? [a[0], a[0]] : [a[1], a[0]]; };
@@ -2795,7 +2796,7 @@ const secSub = sec => sec === 'weapons' ? ` · Pick ${MAX_WEAPONS}` : sec === 'a
 function secPick(sec) {
   if (sec === 'head') { const h = headById(build.head); return `<span class="t-pick" style="color:${WCOLOR[WEIGHTS[h.size]]}">${h.name}</span>`; }
   if (sec === 'weapons') return `<span class="t-pick">${build.weapons.length} of ${MAX_WEAPONS}</span>`;
-  if (sec === 'abilities') return `<span class="t-pick">${build.ability ? ABILITY[build.ability].name : 'None'}</span>`;
+  if (sec === 'abilities') return build.ability ? `<span class="t-pick" style="color:${abilityColor(build.ability)}">${ABILITY[build.ability].name}</span>` : '<span class="t-pick">None</span>';
   const p = partById(sec, build[sec]); return `<span class="t-pick" style="color:${WCOLOR[p.w]}">${p.name}</span>`;
 }
 function openSec(sec) { curSec = sec; renderTabs(); renderParts(); Preview.select(sec); if (sec && matchMedia('(max-width: 720px)').matches) $('tabs').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
@@ -2963,7 +2964,7 @@ function renderStats(hoverBuild) {
 }
 function renderAll() {
   renderTabs(); renderParts(); renderStats();
-  $('pvAbility').innerHTML = build.ability ? `${abilityIcon(build.ability, 'pv-ab-ico')}<span>${ABILITY[build.ability].name}</span>` : '';
+  $('pvAbility').innerHTML = build.ability ? `${abilityIcon(build.ability, 'pv-ab-ico')}<span style="color:${abilityColor(build.ability)}">${ABILITY[build.ability].name}</span>` : '';
   $('pvAbility').hidden = !build.ability;
   $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' + (oppCustom ? '' : ' (not in use: random is on)') : 'Your fighter'}</small>${buildNameHTML(build)}`;
   for (const b of $('who').children) b.setAttribute('aria-pressed', String(b.dataset.w === editing));
