@@ -2534,6 +2534,22 @@ function animateRig(rig, f, dt, time) {
     // from a hit: carry those segments back through the body's own tilt so they stay put in the fighter's ground space
     rig.body.updateMatrix(); const inv = rig.body.matrix.clone().invert();
     for (let i = 0; i < nS; i++) { const gw = smooth01((0.5 - S.base[i].p.y) / 0.3); if (gw > 0) pos[i].lerp(pos[i].clone().applyMatrix4(inv), gw); }
+    // airborne (jetpack, jump, knocked up): the coil lets go and the chain hangs straight down from the hips, swinging
+    // like a rope with the swing travelling down its length, trailing back while rising. Whatever reaches the floor lies along it
+    S.air = lerp(S.air || 0, f && f.air && st !== 'kick' && st !== 'ko' ? 1 : 0, 1 - Math.exp(-(f && f.air ? 4 : 9) * dt));
+    if (S.air > 0.01) {
+      const hgt = f ? Math.max(0, f.pos.y - World.groundAt(f.pos.x, f.pos.z, f.pos.y + 0.01)) : 0, floorY = 0.07 - hgt;
+      const trail = f ? clamp(f.vy * 0.05, -0.15, 0.35) : 0;
+      const hp = pos[0].clone(); let onFloor = false;
+      for (let i = 1; i < nS; i++) {
+        const k = i / (nS - 1), s0 = S.base[i].u * S.len;
+        const sx = Math.sin(time * 1.7 - s0 * 1.3) * 0.32 * k, sz = Math.cos(time * 1.3 - s0 * 1.1) * 0.18 * k - trail * (0.3 + k);
+        const dir = onFloor ? new V3(sx * 0.6, 0, -1) : new V3(sx, -1, sz);
+        hp.addScaledVector(dir.normalize(), S.sp);
+        if (hp.y < floorY) { hp.y = floorY; onFloor = true; }
+        pos[i].lerp(hp, S.air);
+      }
+    }
     const m = new THREE.Matrix4();
     for (let i = 0; i < nS; i++) {
       const t = pos[Math.min(nS - 1, i + 1)].clone().sub(pos[Math.max(0, i - 1)]).normalize();
