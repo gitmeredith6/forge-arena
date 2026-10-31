@@ -252,7 +252,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .pv-name small { display: block; font-family: var(--f-body); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .wchips { display: flex; gap: 4px; }
 .pv-ability { flex-basis: 100%; display: flex; align-items: center; gap: 8px; margin-bottom: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
-.pv-ability > span { color: var(--over); text-shadow: 0 1px 4px #000c, 0 0 2px #000; }
+.pv-ability > span { color: var(--over); -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 0 1px 4px #000c; }
 .pv-ab-ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: #0b0f18cc; border: 1px solid currentColor; box-shadow: 0 0 14px -4px currentColor; }
 .pv-ab-ico svg { width: 26px; height: 26px; }
 .ab-ico { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 6px; vertical-align: -5px; }
