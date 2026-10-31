@@ -294,7 +294,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .seg button { background: none; border: 0; padding: 6px; border-radius: 6px; font-weight: 600; color: var(--muted); }
 .seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line); }
 .lbl { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
-.actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 8px; margin-top: auto; }
+.actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 8px; margin-top: 6px; }
 .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; padding: 10px 12px; font-weight: 600; }
 .btn:hover { border-color: var(--muted); }
 .btn-go { background: var(--p1); color: #1a1206; border-color: var(--p1); font-family: var(--f-display); font-size: 30px; line-height: 1; padding: 10px 12px 4px; letter-spacing: 0.06em; }
@@ -589,6 +589,10 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
         <p class="sec-desc" id="secDesc"></p>
         <div class="weights" id="weights"></div>
         <div class="paint" id="paint" hidden></div>
+        <div class="actions">
+          <button type="button" class="btn" id="randomBtn">Randomize</button>
+          <button type="button" class="btn btn-go" id="fightBtn">FIGHT</button>
+        </div>
       </div>
     </div>
     <div class="card b-preview" id="previewBox">
@@ -613,10 +617,6 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
           <button type="button" id="diff-normal" data-d="normal" aria-pressed="true">Normal</button>
           <button type="button" id="diff-hard" data-d="hard" aria-pressed="false">Hard</button>
         </div>
-      </div>
-      <div class="actions">
-        <button type="button" class="btn" id="randomBtn">Randomize</button>
-        <button type="button" class="btn btn-go" id="fightBtn">FIGHT</button>
       </div>
     </div>
     </div>
