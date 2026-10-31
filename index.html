@@ -2607,6 +2607,12 @@ const CAM_VIEWS = {
 /* ======================= SOUND (tiny synth) ======================= */
 const SFX = {
   ctx: null, noiseBuf: null, muted: false,
+  // turn an embedded base64 mp3 into a decoded buffer without fetch()
+  decode(src) {
+    const bin = atob(src.slice(src.indexOf(',') + 1)), u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new Promise((ok, no) => this.ctx.decodeAudioData(u.buffer, ok, no));
+  },
   init() {
     try {
       if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); const n = this.ctx.sampleRate * 0.5; this.noiseBuf = this.ctx.createBuffer(1, n, this.ctx.sampleRate); const d = this.noiseBuf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; }
@@ -2627,7 +2633,7 @@ const SFX = {
   cannonBuf: null, cannonLoad: null, cannonVoices: [],
   loadCannon() {
     if (!this.ctx || this.cannonBuf || this.cannonLoad) return;
-    this.cannonLoad = fetch(CANNON_SRC).then(r => r.arrayBuffer()).then(b => new Promise((ok, no) => this.ctx.decodeAudioData(b, ok, no))).then(buf => { this.cannonBuf = buf; }).catch(() => { this.cannonLoad = null; });
+    this.cannonLoad = this.decode(CANNON_SRC).then(buf => { this.cannonBuf = buf; }).catch(() => { this.cannonLoad = null; });
   },
   cannon(big) {
     if (!this.ctx || this.muted) return;
@@ -2648,7 +2654,7 @@ const SFX = {
   tractorBuf: null, tractorLoad: null,
   loadTractor() {
     if (!this.ctx || this.tractorBuf || this.tractorLoad) return;
-    this.tractorLoad = fetch(TRACTOR_SRC).then(r => r.arrayBuffer()).then(b => new Promise((ok, no) => this.ctx.decodeAudioData(b, ok, no))).then(buf => { this.tractorBuf = buf; }).catch(() => { this.tractorLoad = null; });
+    this.tractorLoad = this.decode(TRACTOR_SRC).then(buf => { this.tractorBuf = buf; }).catch(() => { this.tractorLoad = null; });
   },
   tractor() {
     if (!this.ctx || this.muted || !this.tractorBuf) { this.special(); return null; }
@@ -2668,7 +2674,7 @@ const SFX = {
   loadClicks() {
     if (!this.ctx || this.clickBufs) return;
     this.clickBufs = [];
-    CLICK_SET.forEach(src => fetch(src).then(r => r.arrayBuffer()).then(b => new Promise((ok, no) => this.ctx.decodeAudioData(b, ok, no))).then(buf => this.clickBufs.push(buf)).catch(() => {}));
+    CLICK_SET.forEach(src => this.decode(src).then(buf => this.clickBufs.push(buf)).catch(() => {}));
   },
   click() {
     if (!this.ctx || this.muted || !this.clickBufs || !this.clickBufs.length) return;
@@ -2955,8 +2961,9 @@ $('fightBtn').onclick = () => { SFX.init(); showArenas(); };
   bb.addEventListener('pointerdown', () => bb.classList.add('pressed')); bb.addEventListener('pointerleave', up); bb.addEventListener('pointercancel', up);
   bb.onclick = () => { SFX.init(); bb.classList.add('pressed'); setTimeout(() => { up(); goMenu(); }, 170); }; }
 // button clicks on the title screen and main menu ring the anvil
-// build page: every button click plays one of the camera-focus clicks
-document.addEventListener('click', (e) => { const t = e.target.closest('button'); if (t && t.closest('#builder') && !t.disabled) { SFX.init(); SFX.click(); } });
+// build page: every button click plays one of the camera-focus clicks. Capture phase, because most builder buttons
+// re-render the list they sit in, and by the time a bubbling click reaches the document the button is no longer in #builder
+document.addEventListener('click', (e) => { const t = e.target.closest('button'); if (t && t.closest('#builder') && !t.disabled) { SFX.init(); SFX.click(); } }, true);
 document.addEventListener('click', (e) => { const t = e.target.closest('button'); if (t && t.closest('#home, #menu') && !t.disabled && t.dataset.going !== '2') SFX.anvil(); }, true);
 // main menu buttons sink when pressed; the click waits a beat so the press is visible before the menu goes away
 document.addEventListener('pointerdown', (e) => { const t = e.target.closest('#menu .menu-btn'); if (t) t.classList.add('pressed'); });
