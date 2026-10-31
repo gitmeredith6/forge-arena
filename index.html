@@ -30,6 +30,7 @@
   --good: #7ee0a1;
   --bad: #ff7a7a;
   --warn: #f2c94c;
+  --cream: #f1e9d6;       /* section names in the parts list and stat names */
   --over: #8a9cb5;        /* the blue of ARENA in the logo, for stats pushed past 100 */
   --f-display: "Black Ops One", "Teko", Impact, sans-serif;
   --f-label: "Bungee", "Barlow Semi Condensed", sans-serif;
@@ -193,12 +194,12 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .sec-back { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 13px; color: var(--fg); white-space: nowrap; }
 .sec-back:hover { border-color: var(--muted); }
 .sec-title { display: flex; flex-direction: column; min-width: 0; }
-.sec-title .t-sec { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--p1); }
+.sec-title .t-sec { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream); }
 .sec-title .t-pick { font-family: var(--f-display); font-size: 26px; line-height: 1; font-weight: 600; }
 .weights.list { grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .secpick { text-align: left; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; }
 .secpick:hover { border-color: var(--p1); }
-.secpick .t-sec { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.secpick .t-sec { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--cream); }
 .secpick .t-pick { font-family: var(--f-display); font-size: 24px; line-height: 1; font-weight: 600; grid-column: 1; }
 .secpick .go { grid-column: 2; grid-row: 1 / span 2; color: var(--muted); font-size: 20px; }
 .tab { background: none; border: 0; padding: 10px 8px 8px; text-align: left; border-bottom: 3px solid transparent; display: flex; flex-direction: column; gap: 0; }
@@ -272,7 +273,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 /* the stat rows spread out to fill about half the stats card */
 .b-stats .stats { flex: 0 0 46%; justify-content: space-between; }
 .stat { display: grid; grid-template-columns: 92px 1fr 84px; gap: 8px; align-items: center; font-size: 14px; }
-.stat .sl { color: var(--muted); }
+.stat .sl { color: var(--cream); }
 .stat .sv { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .stat .sv small { font-size: inherit; font-weight: inherit; }
 .bar { position: relative; height: 8px; background: #0c111b; border-radius: 4px; overflow: hidden; }
