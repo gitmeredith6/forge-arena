@@ -3719,7 +3719,7 @@ class AIController {
         const reachM = me.stats.reach + opp.radius;
         const fits = W => W.kind === 'shield' ? (opp.state === 'weapon' || me.hp < me.stats.hp * 0.5) :
           W.kind === 'emp' ? dist < W.radius + opp.radius * 0.5 : W.kind === 'cone' ? dist < W.range && clear : W.kind === 'zap' ? dist < W.range - 0.3 && clear : W.kind === 'melee' || W.kind === 'grind' ? dist < reachM + W.reach :
-          W.pull ? dist > 3.5 && dist < W.range && clear : dist > 2.2 && dist < (W.range || 14) && (clear || W.proj === 'rocket');
+          W.pull ? dist > 3.5 && dist < W.range && clear : dist > 2.2 && dist < (W.range || (W.proj === 'shell' ? 30 : 14)) && (clear || W.proj === 'rocket');
         const ready = me.weapons.map((W, i) => [W, i]).filter(([W, i]) => me.wcd[i] <= 0 && fits(W));
         if (ready.length) inp['w' + (pick(ready)[1] + 1)] = true;
       }
@@ -4282,7 +4282,10 @@ const Battle = {
     const mat = W.proj === 'rocket' ? stdMat(0xd80c0c, { metalness: 0.35, roughness: 0.28 }) : new THREE.MeshBasicMaterial({ color: new THREE.Color(W.color).convertSRGBToLinear() });
     const m = new THREE.Mesh(this.projGeo()[W.proj], mat); m.position.copy(o); this.scene.add(m);
     if (W.proj !== 'bullet') { const h = halo(m, new THREE.Color(W.color), 0, 0, W.proj === 'rocket' ? -0.14 : 0, W.proj === 'shell' ? 0.6 : 0.45, 0.9); h.castShadow = false; }
-    const P = { W, owner: f, target: opp, pos: o.clone(), vel, life: W.proj === 'rocket' ? 2.6 : (W.range || 18) / W.speed + 0.2, m, from: o.clone() };
+    const P = { W, owner: f, target: opp, pos: o.clone(), vel, life: W.proj === 'rocket' ? 2.6 : W.proj === 'shell' ? 12 : (W.range || 18) / W.speed + 0.2, m, from: o.clone() };
+    // cannon shells have no range limit, they fly until they hit something; instead each one drifts slowly to one side,
+    // which barely shows up close but throws long shots off target (less drift with better accuracy)
+    if (W.proj === 'shell') { const side = new V3(-dir.z, 0, dir.x).normalize(); P.drift = side.multiplyScalar(rand(-1, 1) * (0.3 + (1 - f.stats.acc) * 0.9)).add(new V3(0, rand(-0.25, 0.15), 0)); }
     if (W.proj === 'hook') { const lg = new THREE.BufferGeometry().setFromPoints([o, o]); P.chain = new THREE.Line(lg, new THREE.LineBasicMaterial({ color: 0xc8ccd6 })); this.scene.add(P.chain); }
     (this.projs = this.projs || []).push(P);
     this.flash(o, W.color, W.proj === 'bullet' ? 0.35 : 0.7);
@@ -4300,6 +4303,7 @@ const Battle = {
     for (let i = this.projs.length - 1; i >= 0; i--) {
       const P = this.projs[i], T = P.target, W = P.W;
       P.life -= dt;
+      if (P.drift) P.vel.addScaledVector(P.drift, dt);
       if (W.homing && T.state !== 'ko') { const want = aimPt(T).sub(P.pos).normalize().multiplyScalar(W.speed); P.vel.lerp(want, 1 - Math.exp(-W.homing * dt)); }
       const half = P.pos.clone().addScaledVector(P.vel, dt * 0.5);
       P.pos.addScaledVector(P.vel, dt); P.m.position.copy(P.pos); P.m.lookAt(P.pos.clone().add(P.vel));
@@ -4317,7 +4321,7 @@ const Battle = {
         if (W.proj === 'rocket' || W.proj === 'shell') this.burst(P.pos, W.color, 10, 5);
         this.killProj(i); continue;
       }
-      if (P.life <= 0 || P.pos.y < 0 || !World.inBounds(P.pos.x, P.pos.z, -1) || (World.arena.roof && P.pos.y > World.arena.roof)) { if (P.pos.y < 0.1) this.burst(P.pos, W.color, 5, 3); this.killProj(i); }
+      if (P.life <= 0 || P.pos.y < 0 || !World.inBounds(P.pos.x, P.pos.z, -1) || (World.arena.roof && P.pos.y > World.arena.roof)) { if (P.pos.y < 0.1) this.burst(P.pos, W.color, 5, 3); else if (W.proj === 'shell' && P.life > 0) { this.burst(P.pos, W.color, 9, 4); this.flash(P.pos, W.color, 0.6); } this.killProj(i); }
     }
   },
   clearWeapons() {
