@@ -2793,7 +2793,7 @@ const editAccent = () => editing === 'opp' ? ACCENT.p2 : ACCENT.p1;
 // the left panel: a list of the fighter's sections, or, once one is picked (here or by clicking the model), that section's options
 const secName = sec => sec === 'head' ? 'Head' : sec === 'weapons' ? 'Weapons' : sec === 'abilities' ? 'Abilities' : SECTIONS[sec].label;
 // a short tag after the section name, only where the name alone doesn't say what the part is
-const secSub = sec => sec === 'weapons' ? ` · Pick ${MAX_WEAPONS}` : sec === 'abilities' ? ' · Pick 1' : sec === 'middle' || sec === 'bottom' ? ` · ${SECTIONS[sec].sub}` : '';
+const secSub = sec => sec === 'middle' || sec === 'bottom' ? ` · ${SECTIONS[sec].sub}` : '';
 function secPick(sec) {
   if (sec === 'head') { const h = headById(build.head); return `<span class="t-pick" style="color:${WCOLOR[WEIGHTS[h.size]]}">${h.name}</span>`; }
   if (sec === 'weapons') return `<span class="t-pick">${build.weapons.length} of ${MAX_WEAPONS}</span>`;
