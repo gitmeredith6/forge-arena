@@ -609,9 +609,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       <h2>Build stats</h2>
       <div class="stats" id="stats"></div>
       <div>
-        <div class="lbl">Opponent build</div>
-        <div class="seg two" id="oppMode"><button type="button" data-m="random">Random each fight</button><button type="button" data-m="custom">Custom</button></div>
-        <div class="lbl" style="margin-top:10px">Opponent skill</div>
+        <div class="lbl">Opponent skill</div>
         <div class="seg" id="diff">
           <button type="button" id="diff-easy" data-d="easy" aria-pressed="false">Easy</button>
           <button type="button" id="diff-normal" data-d="normal" aria-pressed="true">Normal</button>
@@ -2762,13 +2760,16 @@ try { const a = localStorage.getItem('forge-arena-map'); if (['classic', 'guerri
 const fixBuild = s => (s && partById('top', s.top) && partById('middle', s.middle) && partById('bottom', s.bottom)) ? Object.assign(s, { weapons: cleanWeapons(s.weapons) || build.weapons, ability: cleanAbility(s.ability) || (s.ability === undefined && (s.weapons || []).find(id => ABILITY[id])) || null, head: headById(s.head) ? s.head : s.top, colors: cleanColors(s.colors), lights: Object.fromEntries(Object.entries(cleanColors(s.lights)).map(([k, c]) => [k, OLD_LIGHTS[c] || c])) }) : null;
 try { const s = fixBuild(JSON.parse(localStorage.getItem('forge-arena-build') || 'null')); if (s) build = s; } catch (e) {}
 // the opponent: random each fight unless you build a custom one. `build` is whichever fighter the builder is editing
-let myBuild = build, oppBuild = null, oppCustom = false, editing = 'me';
-try { const o = JSON.parse(localStorage.getItem('forge-arena-opp') || 'null'); if (o) { oppBuild = fixBuild(o.build); oppCustom = !!(o.custom && oppBuild); } } catch (e) {}
+// the opponent you fight is whatever build sits in the Opponent slot; until it's edited, that's this default
+const DEFAULT_OPP = { head: 'bastion', top: 'warden', middle: 'guard', bottom: 'ranger', weapons: ['cannon'], ability: 'bubble' };
+let myBuild = build, oppBuild = null, editing = 'me';
+try { const o = JSON.parse(localStorage.getItem('forge-arena-opp') || 'null'); if (o && o.build) oppBuild = fixBuild(o.build); } catch (e) {}
+if (!oppBuild) oppBuild = fixBuild(DEFAULT_OPP);
 try { SFX.muted = localStorage.getItem('forge-arena-sound') === 'off'; } catch (e) {}
 try { const d = localStorage.getItem('forge-arena-diff'); if (['easy', 'normal', 'hard'].includes(d)) difficulty = d; } catch (e) {}
 const save = () => {
-  if (editing === 'opp') { if (build !== oppBuild) oppCustom = true; oppBuild = build; } else myBuild = build;
-  try { localStorage.setItem('forge-arena-build', JSON.stringify(myBuild)); localStorage.setItem('forge-arena-opp', JSON.stringify({ build: oppBuild, custom: oppCustom })); localStorage.setItem('forge-arena-diff', difficulty); } catch (e) {}
+  if (editing === 'opp') oppBuild = build; else myBuild = build;
+  try { localStorage.setItem('forge-arena-build', JSON.stringify(myBuild)); localStorage.setItem('forge-arena-opp', JSON.stringify({ build: oppBuild })); localStorage.setItem('forge-arena-diff', difficulty); } catch (e) {}
 };
 function setEditing(w) {
   if (w === editing) return;
@@ -2955,15 +2956,13 @@ function renderAll() {
   renderTabs(); renderParts(); renderStats();
   $('pvAbility').innerHTML = build.ability ? `${abilityIcon(build.ability, 'pv-ab-ico')}<span style="color:${abilityColor(build.ability)}">${ABILITY[build.ability].name}</span>` : '';
   $('pvAbility').hidden = !build.ability;
-  $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' + (oppCustom ? '' : ' (not in use: random is on)') : 'Your build'}</small>${buildNameHTML(build)}`;
+  $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' : 'Your build'}</small>${buildNameHTML(build)}`;
   for (const b of $('who').children) b.setAttribute('aria-pressed', String(b.dataset.w === editing));
-  for (const b of $('oppMode').children) b.setAttribute('aria-pressed', String((b.dataset.m === 'custom') === oppCustom));
   $('builder').classList.toggle('opp', editing === 'opp');
   Preview.setBuild(build);
   for (const b of $('diff').children) b.setAttribute('aria-pressed', String(b.dataset.d === difficulty));
 }
 $('who').onclick = e => { const b = e.target.closest('button'); if (b) setEditing(b.dataset.w); };
-$('oppMode').onclick = e => { const b = e.target.closest('button'); if (!b) return; oppCustom = b.dataset.m === 'custom'; if (oppCustom) { if (!oppBuild) oppBuild = randomBuild(); setEditing('opp'); } save(); renderAll(); };
 $('diff').onclick = e => { const d = e.target.closest('button'); if (!d) return; difficulty = d.dataset.d; save(); renderAll(); };
 $('randomBtn').onclick = () => { build = randomBuild(); save(); renderAll(); };
 function renderArenas() {
@@ -4038,7 +4037,7 @@ const Battle = {
     this.active = true; this.paused = false; $('overlay').hidden = true;
     this.clearWeapons();
     for (const f of [this.p1, this.p2]) if (f) { this.scene.remove(f.rig.root); disposeObj(f.rig.root); f.trails.forEach(t => t.dispose()); if (f.fx) { for (const m of [...f.fx.beams, f.fx.cone, f.fx.bolt]) { this.scene.remove(m); m.geometry.dispose(); m.material.dispose(); } } }
-    this.enemyBuild = oppCustom && oppBuild ? oppBuild : randomBuild();
+    this.enemyBuild = oppBuild;
     this.p1 = new Fighter(myBuild, ACCENT.p1, this.scene);
     this.p2 = new Fighter(this.enemyBuild, ACCENT.p2, this.scene);
     this.ai = new AIController(difficulty);
