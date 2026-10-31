@@ -248,7 +248,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .b-preview { position: relative; overflow: hidden; min-height: 520px; background: radial-gradient(closest-side at 50% 62%, #233456 0%, #121926 100%); }
 .b-preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: pan-y; }
 .pv-label { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 8px; pointer-events: none; }
-.pv-name { font-family: var(--f-display); font-size: 30px; line-height: 0.9; font-weight: 600; }
+.pv-name { font-family: var(--f-display); font-size: 30px; line-height: 0.9; font-weight: 600; text-shadow: 0 2px 6px #000c, 0 0 2px #000; }
 .pv-name small { display: block; font-family: var(--f-body); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .wchips { display: flex; gap: 4px; }
 .pv-ability { flex-basis: 100%; display: flex; align-items: center; gap: 8px; margin-bottom: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
@@ -597,7 +597,6 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       <div class="pv-label">
         <div class="pv-ability" id="pvAbility" hidden></div>
         <div class="pv-name" id="pvName"></div>
-        <div class="wchips" id="pvChips"></div>
       </div>
     </div>
     <div class="card b-stats">
@@ -907,6 +906,8 @@ const OLD_LIGHTS = { 0xff1010: 0xe80008, 0x1050ff: 0x0a2ad8, 0x10ff40: 0x00e02a,
 const cleanColors = c => { const o = {}; if (c && typeof c === 'object') for (const k of PAINT_SECS) if (Number.isInteger(c[k]) && c[k] >= 0 && c[k] <= 0xffffff) o[k] = c[k]; return o; };
 const randomBuild = () => ({ head: pick(HEADS).id, top: pick(PARTS.top).id, middle: pick(PARTS.middle).id, bottom: pick(PARTS.bottom).id, weapons: randomWeapons(), ability: Math.random() < 0.85 ? pick(ABILITIES).id : null });
 const buildName = b => `${partById('top', b.top).name} · ${partById('middle', b.middle).name} · ${partById('bottom', b.bottom).name}`;
+// the same name with each part in its weight-class colour (light blue, middle violet, heavy orange)
+const buildNameHTML = b => ['top', 'middle', 'bottom'].map(s => { const P = partById(s, b[s]); return `<span style="color:${WCOLOR[P.w]}" title="${WLABEL[P.w]}">${P.name}</span>`; }).join(' · ');
 
 /* ======================= MODELS ======================= */
 const ACCENT = { p1: 0xffb547, p2: 0xff4d6d };
@@ -2963,11 +2964,10 @@ function renderAll() {
   renderTabs(); renderParts(); renderStats();
   $('pvAbility').innerHTML = build.ability ? `${abilityIcon(build.ability, 'pv-ab-ico')}<span>${ABILITY[build.ability].name}</span>` : '';
   $('pvAbility').hidden = !build.ability;
-  $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' + (oppCustom ? '' : ' (not in use: random is on)') : 'Your fighter'}</small>${buildName(build)}`;
+  $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' + (oppCustom ? '' : ' (not in use: random is on)') : 'Your fighter'}</small>${buildNameHTML(build)}`;
   for (const b of $('who').children) b.setAttribute('aria-pressed', String(b.dataset.w === editing));
   for (const b of $('oppMode').children) b.setAttribute('aria-pressed', String((b.dataset.m === 'custom') === oppCustom));
   $('builder').classList.toggle('opp', editing === 'opp');
-  $('pvChips').innerHTML = wchips(build);
   Preview.setBuild(build);
   for (const b of $('diff').children) b.setAttribute('aria-pressed', String(b.dataset.d === difficulty));
 }
@@ -3114,7 +3114,7 @@ const Preview = (() => {
   const rim2 = new THREE.PointLight(0x6fa8ff, 1.4, 10); rim2.position.set(2.8, 1.2, -2); scene.add(rim2);
   const ped = mesh(new THREE.CylinderGeometry(1.05, 1.15, 0.14, 48), stdMat(0x1d2638, { metalness: 0.7, roughness: 0.35 }), scene, 0, -0.07, 0);
   ped.castShadow = false;
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.08, 0.015, 6, 64), glowMat(0xffb547)); ring.rotation.x = Math.PI / 2; ring.position.y = 0.0; scene.add(ring);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.08, 0.015, 6, 64), glowMat(0x8a9cb5)); ring.rotation.x = Math.PI / 2; ring.position.y = 0.0; scene.add(ring);
   let fitT = 0, pvDist = 0, pvY = 0, rig = null, yaw = 0.5, dragging = false, lastX = 0, pop = 0, still = false;
   try { still = localStorage.getItem('forge-arena-still') === '1'; } catch (e) {}
   let spin = still ? 0 : 0.35;
