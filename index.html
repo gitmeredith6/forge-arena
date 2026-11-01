@@ -252,12 +252,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 
 .b-preview { position: relative; overflow: hidden; min-height: 520px; background: radial-gradient(closest-side at 50% 62%, #233456 0%, #121926 100%); }
 .b-preview canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: pan-y; }
-.pv-label { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 8px; pointer-events: none; }
+.pv-label { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; justify-content: space-between; align-items: end; gap: 12px; pointer-events: none; }
+.pv-name > span { display: block; }
+.pv-kit { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.pv-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
+.pv-item > span { -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 0 1px 4px #000c; }
 .pv-name { font-family: var(--f-display); font-size: 30px; line-height: 0.9; font-weight: 600; text-shadow: 0 2px 6px #000c, 0 0 2px #000; }
 .pv-name small { display: block; font-family: var(--f-body); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .wchips { display: flex; gap: 4px; }
-.pv-ability { flex-basis: 100%; display: flex; align-items: center; gap: 8px; margin-bottom: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
-.pv-ability > span { -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 0 1px 4px #000c; }
 .pv-ab-ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: #0b0f18cc; border: 1px solid currentColor; box-shadow: 0 0 14px -4px currentColor; }
 .pv-ab-ico svg { width: 26px; height: 26px; }
 .ab-ico { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 6px; vertical-align: -5px; }
@@ -602,8 +604,8 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       <canvas id="previewCanvas" aria-label="3D preview of your build"></canvas>
       <button type="button" class="pv-spin" id="spinBtn" aria-pressed="false"></button>
       <div class="pv-label">
-        <div class="pv-ability" id="pvAbility" hidden></div>
         <div class="pv-name" id="pvName"></div>
+        <div class="pv-kit" id="pvKit"></div>
       </div>
     </div>
     <div class="b-side">
@@ -877,7 +879,7 @@ const WEAPON_ICON = {
   cannon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="8.5" width="11" height="7" rx="2"/><rect x="13.5" y="6.5" width="4.5" height="11" rx="1.5"/><path d="M20.5 8.5l1.5-1M21 12h1.5M20.5 15.5l1.5 1"/></svg>',
   saws: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12.0 5.0 L17.3 3.5 L16.1 6.3 L21.3 8.2 L18.7 9.8 L21.7 14.4 L18.7 14.2 L18.5 19.6 L16.1 17.7 L12.8 22.0 L12.0 19.0 L6.7 20.5 L7.9 17.7 L2.7 15.8 L5.3 14.2 L2.3 9.6 L5.3 9.8 L5.5 4.4 L7.9 6.3 L11.2 2.0Z"/><circle cx="12" cy="12" r="2.4"/></svg>',
 };
-const weaponIcon = W => `<span class="ab-ico" style="color:#${W.color.toString(16).padStart(6, '0')}" aria-hidden="true">${WEAPON_ICON[W.id] || ''}</span>`;
+const weaponIcon = (W, cls = 'ab-ico') => `<span class="${cls}" style="color:#${W.color.toString(16).padStart(6, '0')}" aria-hidden="true">${WEAPON_ICON[W.id] || ''}</span>`;
 const abilityColor = id => '#' + ABILITY[id].color.toString(16).padStart(6, '0');
 const abilityIcon = (id, cls = 'ab-ico') => `<span class="${cls}" style="color:${abilityColor(id)}" aria-hidden="true">${ABILITY_ICON[id]}</span>`;
 const cleanWeapons = ws => { if (!Array.isArray(ws)) return null; return [...new Set(ws.filter(id => WEAPON[id]))].slice(0, MAX_WEAPONS); };
@@ -2966,9 +2968,12 @@ function renderStats(hoverBuild) {
 }
 function renderAll() {
   renderTabs(); renderParts(); renderStats();
-  $('pvAbility').innerHTML = build.ability ? `${abilityIcon(build.ability, 'pv-ab-ico')}<span style="color:${abilityColor(build.ability)}">${ABILITY[build.ability].name}</span>` : '';
-  $('pvAbility').hidden = !build.ability;
-  $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' : 'Your build'}</small>${buildNameHTML(build)}`;
+  // bottom right of the preview: the weapons stacked above the ability, each with its icon in its own colour
+  const kitRow = (icon, color, name) => `<div class="pv-item">${icon}<span style="color:${color}">${name}</span></div>`;
+  $('pvKit').innerHTML = build.weapons.map(id => { const W = WEAPONS.find(w => w.id === id); return W ? kitRow(weaponIcon(W, 'pv-ab-ico'), '#' + W.color.toString(16).padStart(6, '0'), W.name) : ''; }).join('')
+    + (build.ability ? kitRow(abilityIcon(build.ability, 'pv-ab-ico'), abilityColor(build.ability), ABILITY[build.ability].name) : '');
+  // bottom left: the three body parts stacked, each in its weight-class colour
+  $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' : 'Your build'}</small>` + ['top', 'middle', 'bottom'].map(sec => { const P = partById(sec, build[sec]); return `<span style="color:${WCOLOR[P.w]}" title="${WLABEL[P.w]}">${P.name}</span>`; }).join('');
   for (const b of $('who').children) b.setAttribute('aria-pressed', String(b.dataset.w === editing));
   $('builder').classList.toggle('opp', editing === 'opp');
   Preview.setBuild(build);
