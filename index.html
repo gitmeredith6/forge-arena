@@ -259,6 +259,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .pv-kit { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .pv-item { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; }
 .pv-item > span { -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 0 1px 4px #000c; }
+/* build breakdown sits in the top right corner of the preview */
+.b-preview .pv-name { position: absolute; top: 12px; right: 14px; text-align: right; pointer-events: none; z-index: 1; }
 .pv-name { font-family: var(--f-display); font-size: 30px; line-height: 0.9; font-weight: 600; text-shadow: 0 2px 6px #000c, 0 0 2px #000; }
 .pv-name small { display: block; font-family: var(--f-body); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .wchips { display: flex; gap: 4px; }
@@ -304,7 +306,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .parts-foot { margin-top: auto; padding: 12px; border-top: 1px solid var(--line); }
 .parts-foot .btn { width: 100%; }
 .stats-foot { margin-top: auto; display: flex; justify-content: flex-end; }
-.stats-foot .btn-go { width: 62%; }
+.stats-foot .btn-go { width: 100%; }
 .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; padding: 10px 12px; font-weight: 600; }
 .btn:hover { border-color: var(--muted); }
 .btn-go { background: var(--p1); color: #1a1206; border-color: var(--p1); font-family: var(--f-display); font-size: 30px; line-height: 1; padding: 10px 12px 4px; letter-spacing: 0.06em; }
@@ -604,8 +606,8 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <div class="card b-preview" id="previewBox">
       <canvas id="previewCanvas" aria-label="3D preview of your build"></canvas>
       <button type="button" class="pv-spin" id="spinBtn" aria-pressed="false"></button>
+      <div class="pv-name" id="pvName"></div>
       <div class="pv-label">
-        <div class="pv-name" id="pvName"></div>
         <div class="pv-kit" id="pvKit"></div>
       </div>
     </div>
