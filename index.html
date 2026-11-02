@@ -867,9 +867,9 @@ const WEAPONS = [
   { id: 'laser',   slot: 'head',  name: 'Laser Eyes',      desc: 'Beams fire straight from the eyes and burn the target at long range.', cd: 7,  w: 0.25, a: 0.6,  r: 0.25, move: 0.5,  kind: 'beam',  from: 'eyes',  tick: 0.1,  mult: 0.8, kb: 0.4, range: 14, color: 0xff3b3b },
   { id: 'tesla',   slot: 'head',  name: 'Tesla Coil',      desc: 'Fires an electric pulse that blasts a blue dome out around you (about 14 feet) that moves with you for a couple of seconds. Anything it catches takes damage and is knocked out by the EMP for a few seconds.', cd: 12, w: 0.35, a: 0.1, r: 0.35, move: 0.2, kind: 'emp', radius: 4.27, mult: 1.2, kb: 2, emp: 2.5, color: 0x3fa9ff },
   { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 1.5, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
-  { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 1.1, kb: 4, homing: 2.4, color: 0xffb547 },
-  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Forearm cannons. J or K fires that arm as fast as you can press; both together charge up a powerful double blast.', cd: 6, w: 0.45, a: 0.04, r: 0.35, move: 1, kind: 'proj', proj: 'shell', count: 2, speed: 22, mult: 0.9, kb: 13, stun: 0.45, color: 0xffd27a },
-  { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Forearm chainsaws. J or K jabs with that arm; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.11, stun: 0.12, color: 0xff9f43 },
+  { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 1.1, kb: 4, homing: 2.4, color: 0xffb547, ui: 0xa6f03c },
+  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Forearm cannons. J or K fires that arm as fast as you can press; both together charge up a powerful double blast.', cd: 6, w: 0.45, a: 0.04, r: 0.35, move: 1, kind: 'proj', proj: 'shell', count: 2, speed: 22, mult: 0.9, kb: 13, stun: 0.45, color: 0xffd27a, ui: 0xffe14d },
+  { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Forearm chainsaws. J or K jabs with that arm; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.11, stun: 0.12, color: 0xff9f43, ui: 0xc3cbd8 },
 ];
 const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
 const MAX_WEAPONS = 2;
@@ -909,8 +909,10 @@ const WEAPON_ICON = {
   cannon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="8.5" width="11" height="7" rx="2"/><rect x="13.5" y="6.5" width="4.5" height="11" rx="1.5"/><path d="M20.5 8.5l1.5-1M21 12h1.5M20.5 15.5l1.5 1"/></svg>',
   saws: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12.0 5.0 L17.3 3.5 L16.1 6.3 L21.3 8.2 L18.7 9.8 L21.7 14.4 L18.7 14.2 L18.5 19.6 L16.1 17.7 L12.8 22.0 L12.0 19.0 L6.7 20.5 L7.9 17.7 L2.7 15.8 L5.3 14.2 L2.3 9.6 L5.3 9.8 L5.5 4.4 L7.9 6.3 L11.2 2.0Z"/><circle cx="12" cy="12" r="2.4"/></svg>',
 };
-const weaponIcon = (W, cls = 'ab-ico') => `<span class="${cls}" style="color:#${W.color.toString(16).padStart(6, '0')}" aria-hidden="true">${WEAPON_ICON[W.id] || ''}</span>`;
-const abilityColor = id => '#' + ABILITY[id].color.toString(16).padStart(6, '0');
+// the colour a weapon or ability shows in menus and the HUD (ui when its in-game effect colour would clash with another icon)
+const uiColor = W => '#' + (W.ui !== undefined ? W.ui : W.color).toString(16).padStart(6, '0');
+const weaponIcon = (W, cls = 'ab-ico') => `<span class="${cls}" style="color:${uiColor(W)}" aria-hidden="true">${WEAPON_ICON[W.id] || ''}</span>`;
+const abilityColor = id => uiColor(ABILITY[id]);
 const abilityIcon = (id, cls = 'ab-ico') => `<span class="${cls}" style="color:${abilityColor(id)}" aria-hidden="true">${ABILITY_ICON[id]}</span>`;
 const cleanWeapons = ws => { if (!Array.isArray(ws)) return null; return [...new Set(ws.filter(id => WEAPON[id]))].slice(0, MAX_WEAPONS); };
 // which arm weapon sits on each arm, as [right, left] (the order of rig.arms); the first one picked goes on the left arm (J)
@@ -3013,7 +3015,7 @@ function renderAll() {
   renderTabs(); renderParts(); renderStats();
   // bottom right of the preview: the weapons stacked above the ability, each with its icon in its own colour
   const kitRow = (icon, color, name) => `<div class="pv-item">${icon}<span style="color:${color}">${name}</span></div>`;
-  $('pvKit').innerHTML = build.weapons.map(id => { const W = WEAPONS.find(w => w.id === id); return W ? kitRow(weaponIcon(W, 'pv-ab-ico'), '#' + W.color.toString(16).padStart(6, '0'), W.name) : ''; }).join('')
+  $('pvKit').innerHTML = build.weapons.map(id => { const W = WEAPONS.find(w => w.id === id); return W ? kitRow(weaponIcon(W, 'pv-ab-ico'), uiColor(W), W.name) : ''; }).join('')
     + (build.ability ? kitRow(abilityIcon(build.ability, 'pv-ab-ico'), abilityColor(build.ability), ABILITY[build.ability].name) : '');
   // bottom left: the three body parts stacked, each in its weight-class colour
   $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' : 'Your build'}</small>` + (H => H ? `<span style="color:${WCOLOR[WEIGHTS[H.size]]}" title="${WLABEL[WEIGHTS[H.size]]}">${H.name}</span>` : '')(headById(build.head)) + ['top', 'middle', 'bottom'].map(sec => { const P = partById(sec, build[sec]); return `<span style="color:${WCOLOR[P.w]}" title="${WLABEL[P.w]}">${P.name}</span>`; }).join('');
@@ -4115,7 +4117,7 @@ const Battle = {
     const AB = this.p1.ability;
     // weapon and ability icons stack down the left under your health bar. A dark shade fills each one from the top while it
     // recharges (or, for the cannons, as they heat up) and the icon dims whenever it can't be used
-    const tile = (id, W, icon, key) => `<div class="ws" id="${id}" style="--wc:#${W.color.toString(16).padStart(6, '0')}" title="${W.name}"><span class="ws-ico">${icon}</span><b>${key}</b><i></i></div>`;
+    const tile = (id, W, icon, key) => `<div class="ws" id="${id}" style="--wc:${uiColor(W)}" title="${W.name}"><span class="ws-ico">${icon}</span><b>${key}</b><i></i></div>`;
     $('p1W').innerHTML = this.p1.weapons.map((W, i) => tile('ws' + i, W, WEAPON_ICON[W.id] || '', i + 1)).join('')
       + (this.p1.armW ? [...new Set([...this.p1.armW].reverse())].map(W => tile('wsArm-' + W.id, W, WEAPON_ICON[W.id] || '', weaponKey(this.p1.build.weapons, W.id))).join('') : '')
       + (AB ? tile('wsA', AB, ABILITY_ICON[AB.id] || '', 'R') : '');
