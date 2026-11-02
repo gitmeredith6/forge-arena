@@ -3502,12 +3502,17 @@ class Fighter {
   // attack with the fitted arm weapon instead of a punch: side 1 = left arm, 0 = right, -1 = both
   // with two different arm weapons, both buttons fire each arm's own weapon at once, a bit harder than alone (the right arm's runs as wpn2)
   useArm(side) {
+    // every arm shot comes through here (fresh presses and rapid follow-ups alike), so this is where cannons heat up and lock out
+    const game = Battle, cannons = (side < 0 ? this.armW : [this.armW[side]]).filter(W => W.id === 'cannon').length;
+    if (cannons && this.overheat) { if (this === game.p1 && !(this.heatNoteT > game.arenaT)) { game.popAt(this, 'OVERHEATED', 'note', 0.8); this.heatNoteT = (game.arenaT || 0) + 1.2; } return false; }
+    if (cannons) { this.heat = Math.min(1, this.heat + (side < 0 && cannons === 2 ? HEAT.double : HEAT.shot * cannons)); this.heatT = HEAT.delay; if (this.heat >= 1) { this.overheat = true; game.burst(this.pos.clone().setY(this.pos.y + this.rig.height * 0.6), 0xb8bcc4, 16, 2.5); if (this === game.p1) game.popAt(this, 'OVERHEATED', 'note', 0.9); } }
     if (side >= 0) this.punchSide = side;
     const [Wr, Wl] = this.armW, mixed = Wr !== Wl;
     this.state = 'weapon'; this.t = 0; this.hitDone = false; this.tickT = 0; this.shots = 0; this.attackId++; this.wpn2 = null;
     if (side >= 0) this.wpn = armVariant(this.armW[side], side);
     else if (!mixed) this.wpn = Wl;
     else { const up = W => Object.assign(W, { mult: W.mult * 1.2, kb: W.kb * 1.5, both: true }); this.wpn = up(armVariant(Wl, 1)); this.wpn2 = up(armVariant(Wr, 0)); this.s2 = { hitDone: false, tickT: 0, shots: 0 }; }
+    return true;
   }
   abilityOff(empty) {
     const A = this.ability; this.abOn = false;
@@ -3526,10 +3531,8 @@ class Fighter {
     }
     if (this.armWpn && (a === 'light' || a === 'heavy' || a === 'left' || a === 'right')) {
       const side = a === 'heavy' ? -1 : a === 'left' ? 1 : a === 'right' ? 0 : (this.punchSide ^ 1);
-      const cannons = (side < 0 ? this.armW : [this.armW[side]]).filter(W => W.id === 'cannon').length;
-      if (cannons && this.overheat) { if (this === game.p1 && !(this.heatNoteT > game.arenaT)) { game.popAt(this, 'OVERHEATED', 'note', 0.8); this.heatNoteT = (game.arenaT || 0) + 1.2; } return false; }
-      if (cannons) { this.heat = Math.min(1, this.heat + (side < 0 && cannons === 2 ? HEAT.double : HEAT.shot * cannons)); this.heatT = HEAT.delay; if (this.heat >= 1) { this.overheat = true; if (this === game.p1) game.popAt(this, 'OVERHEATED', 'note', 0.9); } }
-      this.useArm(side); game.sfx('whoosh'); return true;
+      if (!this.useArm(side)) return false;
+      game.sfx('whoosh'); return true;
     }
     if (a === 'light' || a === 'heavy' || a === 'kick') { this.startAttack(a); return true; }
     // punchSide 1 throws with the left arm, 0 with the right
