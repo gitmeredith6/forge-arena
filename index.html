@@ -273,7 +273,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 /* build breakdown sits in the top right corner of the preview */
 .b-preview .pv-name { position: absolute; top: 12px; left: 14px; text-align: left; pointer-events: none; z-index: 1; }
 .pv-name { font-family: var(--f-display); font-size: 30px; line-height: 0.9; font-weight: 600; text-shadow: 0 2px 6px #000c, 0 0 2px #000; }
-.pv-name small { display: block; font-family: var(--f-body); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.pv-name small { display: block; font-family: var(--f-body); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cream); font-weight: 600; }
 .wchips { display: flex; gap: 4px; }
 .pv-ab-ico { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: #0b0f18cc; border: 1px solid currentColor; box-shadow: 0 0 14px -4px currentColor; }
 .pv-ab-ico svg { width: 26px; height: 26px; }
@@ -3015,7 +3015,7 @@ function renderAll() {
   $('pvKit').innerHTML = build.weapons.map(id => { const W = WEAPONS.find(w => w.id === id); return W ? kitRow(weaponIcon(W, 'pv-ab-ico'), '#' + W.color.toString(16).padStart(6, '0'), W.name) : ''; }).join('')
     + (build.ability ? kitRow(abilityIcon(build.ability, 'pv-ab-ico'), abilityColor(build.ability), ABILITY[build.ability].name) : '');
   // bottom left: the three body parts stacked, each in its weight-class colour
-  $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' : 'Your build'}</small>` + ['top', 'middle', 'bottom'].map(sec => { const P = partById(sec, build[sec]); return `<span style="color:${WCOLOR[P.w]}" title="${WLABEL[P.w]}">${P.name}</span>`; }).join('');
+  $('pvName').innerHTML = `<small>${editing === 'opp' ? 'Opponent' : 'Your build'}</small>` + (H => H ? `<span style="color:${WCOLOR[WEIGHTS[H.size]]}" title="${WLABEL[WEIGHTS[H.size]]}">${H.name}</span>` : '')(headById(build.head)) + ['top', 'middle', 'bottom'].map(sec => { const P = partById(sec, build[sec]); return `<span style="color:${WCOLOR[P.w]}" title="${WLABEL[P.w]}">${P.name}</span>`; }).join('');
   for (const b of $('who').children) b.setAttribute('aria-pressed', String(b.dataset.w === editing));
   $('builder').classList.toggle('opp', editing === 'opp');
   Preview.setBuild(build);
