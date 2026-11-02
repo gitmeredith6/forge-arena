@@ -1933,7 +1933,8 @@ function makeFighterModel(build, accent, shOff = 0) {
   chestDetail(mw, tw, th, td, torsoBase, faceScale, torsoProf(M, mw));
   // jet pack ability (once a Furnace-only detail, tabled; FURNACE_JETPACK brings that back): twin fuel tanks on a back plate,
   // a central turbine housing and flared nozzles with live flames. A ray from behind finds the back of whichever torso it's on
-  if (build.ability === 'jetpack' || (M.id === 'furnace' && FURNACE_JETPACK)) {
+  // a hover base (Phantom) has no jetpack on its back: its own beam is the engine and flares up when the jetpack is lit
+  if ((build.ability === 'jetpack' || (M.id === 'furnace' && FURNACE_JETPACK)) && B.type !== 'hover') {
     const tr = 0.12, tl = th * 0.56, ty = chestY - 0.05;
     root.updateMatrixWorld(true);
     const bms = []; body.traverse(c => { if (c.isMesh && c.userData.sec === 'middle') bms.push(c); });
@@ -2474,7 +2475,7 @@ function animateRig(rig, f, dt, time) {
   rig.body.position.y = cur.by;
   if (rig.swayY) balanceSway(rig, f, st, dt, time);
   // Phantom's beam flares into a big burst for the jump
-  if (rig.flame) { const jb = f && f.jumpT > 0 ? f.jumpT / 0.35 : 0; const sy = 0.8 + Math.random() * 0.4 + sp * 0.5 + jb * 2.6; rig.flame.scale.set(1 + jb * 0.9, sy, 1 + jb * 0.9); rig.flame.position.y = -0.75 - 0.25 * sy; }
+  if (rig.flame) { const jb = f && f.jumpT > 0 ? f.jumpT / 0.35 : 0, jet = f && f.jetT > 0 ? 1 : 0; rig.jetK = (rig.jetK || 0) + (jet - (rig.jetK || 0)) * Math.min(1, dt * 8); const jk = rig.jetK; const sy = 0.8 + Math.random() * 0.4 + sp * 0.5 + jb * 2.6 + jk * (2.6 + Math.random() * 0.9); const wd = 1 + jb * 0.9 + jk * 1.4; rig.flame.scale.set(wd, sy, wd); rig.flame.position.y = -0.75 - 0.25 * sy; rig.flame.material.opacity = 0.6 + jk * 0.3; }
   if (rig.pods) { const open = f && f.state === 'weapon' && f.wpn.id === 'rockets' ? 1 : 0; rig.podOpen = lerp(rig.podOpen || 0, open, 1 - Math.exp(-14 * dt)); for (const p of rig.pods) { p.g.position.y = p.y0 + (p.y1 - p.y0) * rig.podOpen; p.g.visible = rig.podOpen > 0.03; } }
   if (rig.saws && rig.saws.length) { const rev = f && f.state === 'weapon' && (f.wpn.id === 'saws' || (f.wpn2 && f.wpn2.id === 'saws')); rig.sawT = (rig.sawT || 0) + dt * (rev ? 3.5 : 0.25); for (const sw of rig.saws) sawPlace(sw, rig.sawT * sw.step); }
   if (rig.coil) {
