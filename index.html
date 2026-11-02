@@ -271,7 +271,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .pv-item { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; }
 .pv-item > span { -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 0 1px 4px #000c; }
 /* build breakdown sits in the top right corner of the preview */
-.b-preview .pv-name { position: absolute; top: 12px; right: 14px; text-align: right; pointer-events: none; z-index: 1; }
+.b-preview .pv-name { position: absolute; top: 12px; left: 14px; text-align: left; pointer-events: none; z-index: 1; }
 .pv-name { font-family: var(--f-display); font-size: 30px; line-height: 0.9; font-weight: 600; text-shadow: 0 2px 6px #000c, 0 0 2px #000; }
 .pv-name small { display: block; font-family: var(--f-body); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .wchips { display: flex; gap: 4px; }
@@ -280,7 +280,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--p1); o
 .ab-ico { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 6px; vertical-align: -5px; }
 .ab-ico svg { width: 22px; height: 22px; }
 .wchip { font-family: var(--f-display); font-size: 18px; line-height: 1; padding: 4px 6px 1px; border-radius: 4px; color: #0a0e16; background: var(--wc); font-weight: 600; }
-.pv-spin { position: absolute; top: 8px; left: 10px; z-index: 2; background: #0b0f18cc; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: var(--fg); display: inline-flex; gap: 6px; align-items: center; }
+.pv-spin { position: absolute; top: 8px; right: 10px; z-index: 2; background: #0b0f18cc; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: var(--fg); display: inline-flex; gap: 6px; align-items: center; }
 .pv-spin:hover { border-color: #ffffff40; }
 .pv-spin span { font-size: 10px; color: var(--p1); }
 
@@ -796,12 +796,13 @@ const WEIGHT_MODS = {
 };
 const partById = (sec, id) => PARTS[sec].find(p => p.id === id);
 
-// jump height in metres: real legs jump highest (the light Sprinter most), every other bottom does a smaller hop.
-// Heavier arms and midsections weigh the jump down
+// jump height in metres. Every build clears the chest-high barriers (1.45 m) except a full heavy build, which only hops;
+// nothing clears the tall walls (2.25 m), so they stay real cover. Lighter parts jump higher, and real legs get a little extra
 function jumpHeight(build) {
-  const B = partById('bottom', build.bottom), wv = { light: 0, middle: 1, heavy: 2 };
-  const base = { sprinter: 1.2, ranger: 1.05, phantom: 0.55 }[B.id] || 0.45;
-  return base * (1 - 0.13 * wv[partById('top', build.top).w] - 0.15 * wv[partById('middle', build.middle).w]);
+  const wv = { light: 0, middle: 1, heavy: 2 }, bulk = ['top', 'middle', 'bottom'].reduce((n, k) => n + wv[partById(k, build[k]).w], 0);
+  if (bulk === 6) return 0.95;
+  const legs = { sprinter: 0.1, ranger: 0.06, phantom: 0.03 }[build.bottom] || 0;
+  return Math.min(1.85, 1.75 - 0.05 * bulk + legs);
 }
 const MAX_HP = 3000;
 // raw hit damage is scaled so a 3,000-health fight lasts as long as the old health numbers did
@@ -851,7 +852,7 @@ const STAT_VIEW = [
   { k: 'power',  label: 'Power',    base: 6.2,  unit: 0.12 },
   { k: 'acc',    label: 'Accuracy', base: 0.45, unit: 0.005 },
   { k: 'move',   label: 'Run Speed', base: 3.6,  unit: 0.06 },
-  { k: 'jump',   label: 'Jump',     base: 0.15, unit: 0.0106 },
+  { k: 'jump',   label: 'Jump',     base: 0.15, unit: 0.017 },
   { k: 'blockRed', label: 'Block',  base: 0.41, unit: 0.005 },
   // how little you get knocked back and staggered
   { k: 'kbRes',  label: 'Stability', base: -0.14, unit: 0.01 },
