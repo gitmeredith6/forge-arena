@@ -891,7 +891,7 @@ const ROAM_ABILITIES = new Set(['jetpack', 'teleport', 'bubble']);
 const ABILITY_LOCK = 10;
 // hand cannons heat up as they fire: each shot adds heat, and a full gauge overheats them until they cool right down.
 // Heat bleeds off on its own once you stop firing for a moment
-const HEAT = { shot: 0.085, double: 0.2, delay: 0.6, cool: 0.32, ventCool: 0.45 };
+const HEAT = { shot: 0.085, delay: 0.6, cool: 0.32, ventCool: 0.45 };
 const cleanAbility = id => ABILITY[id] ? id : null;
 // simple line icons, drawn in currentColor so they take the colour of wherever they sit
 const ABILITY_ICON = {
@@ -918,7 +918,7 @@ const armLoadout = ws => { const a = (ws || []).filter(id => ARM_SWAP.includes(i
 // (side 1 = left, 0 = right, matching punchSide); both buttons use the full double-arm version
 const ARM_SINGLE = {
   cannon: { count: 1, w: 0.03, a: 0.02, r: 0.12, mult: 0.27, kb: 3, stun: 0 },
-  saws:   { w: 0.1, a: 0.32, r: 0.2, mult: 0.12, stun: 0.08 },
+  saws:   { w: 0.16, a: 0.36, r: 0.2, mult: 0.12, stun: 0.08 },
 };
 const armVariant = (W, side) => side < 0 ? W : Object.assign({}, W, ARM_SINGLE[W.id], { side });
 // the key shown for a weapon: arm weapons use J and K, the rest are numbered in the order they were added
@@ -2280,6 +2280,18 @@ function newPose() { return { aR: { x: 0, z: 0, e: 0, r: 1 }, aL: { x: 0, z: 0, 
 function disposeObj(o) { o.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) { for (const k of ['map', 'bumpMap']) { const t = c.material[k]; if (t && t !== HALO_TEX && (!DETAIL || (t !== DETAIL.map && t !== DETAIL.bump))) t.dispose(); } c.material.dispose(); } }); }
 
 /* procedural animation — computes a target pose from fighter state, eases toward it */
+// chainsaw attack: wind the saws up over the head, slam them down onto the target, grind, and go again for a second chop
+function sawChop(t, W) {
+  const up = { x: -3.05, e: -0.55, bx: -0.2, tw: -0.25, dip: 0, rate: 16 }, down = { x: -0.75, e: -0.1, bx: 0.38, tw: 0.3, dip: 0.08, rate: 55 };
+  if (t < W.w) return { ...up, x: -0.8 + (up.x + 0.8) * Math.min(1, t / W.w), rate: 18 };
+  const half = W.a >= 0.6 ? W.a / 2 : W.a, k = t - W.w;
+  if (k >= W.a) return { x: -0.7, e: -1.0, bx: 0.1, tw: 0, dip: 0, rate: 14 };
+  const p = (k % half) / half, jit = Math.sin(t * 45) * 0.07;
+  if (p < 0.15) { const q = p / 0.15; return { x: up.x + (down.x - up.x) * q * q, e: up.e + (down.e - up.e) * q, bx: up.bx + (down.bx - up.bx) * q, tw: up.tw + (down.tw - up.tw) * q, dip: down.dip * q, rate: 70 }; }
+  if (p < 0.72 || k >= half) return { ...down, x: down.x + jit, bx: down.bx + jit * 0.4 };
+  const q = (p - 0.72) / 0.28; return { ...up, x: down.x + (up.x - down.x) * q, e: down.e + (up.e - down.e) * q, bx: down.bx + (up.bx - down.bx) * q, tw: down.tw + (up.tw - down.tw) * q, rate: 30 };
+}
+
 // moves every chainsaw tooth to its spot on the loop, offset by the distance the chain has run
 function sawPlace(sw, run) {
   for (const l of sw.links) { const [y, rx, z] = sw.at(l.d + run); l.g.position.set(0, y, z === undefined ? (rx > 0 ? sw.h : -sw.h) : z); l.g.rotation.x = rx; }
@@ -2383,7 +2395,7 @@ function animateRig(rig, f, dt, time) {
           else if (W.kind === 'melee') {
             if (t < W.w) { P[A].x = -2.3; P[A].z = -0.7 * zs; P[A].e = -1.0; P.tw = -0.3 * zs * tw; }
             else if (live) { P[A].x = -1.3; P[A].z = 0.55 * zs; P[A].e = -0.15; P.tw = 0.35 * zs * tw; P.bx = 0.15; rate = 40; }
-          } else { const j = Math.sin(t * 28); P[A].x = -1.4 + j * 0.1; P[A].e = -0.2; P[A].r = 0; P.tw = 0.2 * zs * tw; P.bx = 0.1; }
+          } else { const c = sawChop(t, W); P[A].x = c.x; P[A].e = c.e; P[A].r = 0; P[A].z = 0.15 * zs; P.tw = c.tw * zs * tw; P.bx = c.bx; P.by -= c.dip; rate = c.rate; }
         };
         rate = 30;
         if (f.wpn2) { one(W, false); one(f.wpn2, false); }
@@ -2395,7 +2407,7 @@ function animateRig(rig, f, dt, time) {
         if (t < W.w) { P.aR.x = P.aL.x = -2.2; P.aR.z = -0.6; P.aL.z = 0.6; P.aR.e = P.aL.e = -1.0; P.tw = -0.2; }
         else if (live) { P.aR.x = P.aL.x = -1.3; P.aR.z = 0.5; P.aL.z = -0.5; P.aR.e = P.aL.e = -0.15; P.bx = 0.2; rate = 40; }
       } else if (W.kind === 'grind') {
-        const j = Math.sin(t * 28); P.aR.x = -1.35 + j * 0.12; P.aL.x = -1.35 - j * 0.12; P.aR.e = P.aL.e = -0.25; P.bx = 0.12; rate = 30;
+        const c = sawChop(t, W), j = Math.sin(t * 40) * 0.06; P.aR.x = c.x + j; P.aL.x = c.x - j; P.aR.e = P.aL.e = c.e; P.aR.z = -0.12; P.aL.z = 0.12; P.bx = c.bx; P.by -= c.dip; rate = c.rate;
       } else if (W.id === 'reactor') {
         P.bx = t < W.w ? -0.18 : 0.08; P.aR.z = -0.9; P.aL.z = 0.9; P.aR.x = P.aL.x = -0.3; P.aR.e = P.aL.e = -0.6;
       } else if (W.id === 'tesla') {
@@ -3505,7 +3517,7 @@ class Fighter {
     // every arm shot comes through here (fresh presses and rapid follow-ups alike), so this is where cannons heat up and lock out
     const game = Battle, cannons = (side < 0 ? this.armW : [this.armW[side]]).filter(W => W.id === 'cannon').length;
     if (cannons && this.overheat) { if (this === game.p1 && !(this.heatNoteT > game.arenaT)) { game.popAt(this, 'OVERHEATED', 'note', 0.8); this.heatNoteT = (game.arenaT || 0) + 1.2; } return false; }
-    if (cannons) { this.heat = Math.min(1, this.heat + (side < 0 && cannons === 2 ? HEAT.double : HEAT.shot * cannons)); this.heatT = HEAT.delay; if (this.heat >= 1) { this.overheat = true; game.burst(this.pos.clone().setY(this.pos.y + this.rig.height * 0.6), 0xb8bcc4, 16, 2.5); if (this === game.p1) game.popAt(this, 'OVERHEATED', 'note', 0.9); } }
+    if (cannons) { const owned = this.armW.filter(W => W.id === 'cannon').length; this.heat = Math.min(1, this.heat + HEAT.shot * cannons / owned); this.heatT = HEAT.delay; if (this.heat >= 1) { this.overheat = true; game.burst(this.pos.clone().setY(this.pos.y + this.rig.height * 0.6), 0xb8bcc4, 16, 2.5); if (this === game.p1) game.popAt(this, 'OVERHEATED', 'note', 0.9); } }
     if (side >= 0) this.punchSide = side;
     const [Wr, Wl] = this.armW, mixed = Wr !== Wl;
     this.state = 'weapon'; this.t = 0; this.hitDone = false; this.tickT = 0; this.shots = 0; this.attackId++; this.wpn2 = null;
@@ -4045,7 +4057,7 @@ const Battle = {
     // particle pool
     this.parts = [];
     const pgeo = new THREE.BoxGeometry(0.08, 0.08, 0.08);
-    for (let i = 0; i < 120; i++) { const m = new THREE.Mesh(pgeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })); m.visible = false; S.add(m); this.parts.push({ m, v: new V3(), life: 0, max: 1 }); }
+    for (let i = 0; i < 200; i++) { const m = new THREE.Mesh(pgeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })); m.visible = false; S.add(m); this.parts.push({ m, v: new V3(), life: 0, max: 1 }); }
     this.rings = [];
     this.flashes = [];
     for (let i = 0; i < 6; i++) { const sp = halo(S, new THREE.Color(1, 1, 1), 0, -10, 0, 1, 0); sp.userData.t = 1; this.flashes.push(sp); }
@@ -4271,6 +4283,7 @@ const Battle = {
       const ok = W.kind === 'beam' ? d <= W.range + opp.radius && face > 0.94 : W.kind === 'cone' ? d <= W.range + opp.radius && face > 0.72 : d <= f.stats.reach + W.reach + opp.radius && face > 0.3;
       if (!ok || opp.invuln || (W.kind !== 'grind' && World.losHit(this.originOf(f, W, 0), aimPt(opp))) || this.shielded(opp)) return;
       this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.pull ? 0 : W.kb || 0.3, stun: W.stun || 0, quiet: true, energy: 0.25, color: W.color });
+      if (W.kind === 'grind') this.sawSparks(f, opp);
       // tractor beam: haul the target in, stopping just short of you (heavier, sturdier bottoms resist a little)
       if (W.pull) {
         const gap = d - (f.radius + opp.radius + 0.45);
@@ -4439,8 +4452,6 @@ const Battle = {
         const blk = World.losHit(a, a.clone().addScaledVector(fwd, W.range).add(new V3(0, -0.12 * W.range, 0)));
         const len = blk ? a.distanceTo(blk) + 0.2 : W.range, fl = rand(0.85, 1.1); c.scale.set(1.1 * fl * len / W.range, 1.1 * fl * len / W.range, len * fl); c.material.opacity = rand(0.35, 0.6);
         if (Math.random() < 0.7) { const p = a.clone().addScaledVector(fwd, rand(0.5, W.range)); this.burst(p, Math.random() < 0.5 ? 0xff7a1a : 0xffc24a, 1, 2); }
-      } else if (W.kind === 'grind' && live && Math.random() < 0.6) {
-        const tp = f.rig.arms[Math.random() < 0.5 ? 0 : 1].fist.getWorldPosition(new V3()); this.burst(tp, 0xffc24a, 1, 4);
       }
     }
   },
@@ -4460,6 +4471,16 @@ const Battle = {
     const w = a > b ? this.p1 : this.p2; this.wins[w === this.p1 ? 0 : 1]++; this.updatePips(); this.koWinner = w;
   },
   /* --- effects --- */
+  // chainsaw biting metal: a spray of hot sparks where the blade meets the target
+  sawSparks(f, opp) {
+    const tgt = aimPt(opp);
+    for (const arm of f.rig.arms) {
+      const tp = arm.fist.getWorldPosition(new V3()); if (tp.distanceTo(tgt) > 3) continue;
+      const p = tp.lerp(tgt, 0.35);
+      this.burst(p, 0xfff2b0, 3, 9); this.burst(p, 0xffc24a, 3, 7); this.burst(p, 0xff7a1a, 2, 5);
+      if (Math.random() < 0.4) this.flash(p, 0xffd27a, 0.5);
+    }
+  },
   burst(p, color, n, speed) {
     for (let i = 0; i < n; i++) {
       const q = this.parts.find(q => q.life <= 0); if (!q) return;
