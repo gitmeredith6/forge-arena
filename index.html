@@ -392,6 +392,15 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 .dmg.blk { color: #9fd3ff; font-size: 26px; }
 .dmg.note { color: #cfd8e6; font-size: 24px; letter-spacing: 0.08em; }
 @keyframes rise { 0% { opacity: 0; transform: translate(-50%, -30%) scale(1.4); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -160%) scale(0.9); } }
+/* aim view: crosshair in the middle of the screen (red over the opponent) and the camera switch chip */
+.xhair { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; pointer-events: none; z-index: 3; }
+.xhair i { position: absolute; inset: 0; border: 2px solid var(--cream); border-radius: 50%; opacity: 0.75; box-shadow: 0 0 0 1px #0008, inset 0 0 0 1px #0008; transition: transform 0.12s, border-color 0.12s; }
+.xhair b { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: var(--cream); box-shadow: 0 0 0 1px #000a; }
+.xhair.on i { border-color: var(--p2); transform: scale(0.8); opacity: 1; }
+.xhair.on b { background: var(--p2); }
+.aim-chip { position: absolute; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 4; background: #0b0f18cc; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; color: var(--cream); font-size: 12px; font-weight: 700; }
+.aim-chip:hover { border-color: #ffffff40; }
+.aim-chip kbd { margin-left: 6px; }
 .hint { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); color: #c6cfdd; font-size: 13px; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; pointer-events: none; text-shadow: 0 1px 3px #000; width: max-content; max-width: calc(100% - 32px); }
 .overlay { position: absolute; inset: 0; display: grid; place-items: center; background: #05070cc4; backdrop-filter: blur(3px); z-index: 5;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -684,6 +693,8 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     </div>
   </div>
   <div class="banner"><div id="banner"></div></div>
+  <div class="xhair" id="xhair" hidden><i></i><b></b></div>
+  <button type="button" class="aim-chip" id="aimChip" title="Switch camera (V)"></button>
   <div class="touch" id="touch">
     <div class="stick" id="stick"><i id="stickKnob"></i></div>
     <div class="wbtns" id="wbtns"></div>
@@ -696,7 +707,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
       <button type="button" data-a="jump" class="jp">JUMP</button>
     </div>
   </div>
-  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>J</kbd>/click left arm</span><span><kbd>K</kbd>/right-click right arm</span><span><kbd>J</kbd>+<kbd>K</kbd> smash</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>F</kbd> jump</span><span><kbd>R</kbd> ability</span></div>
+  <div class="hint" id="hint"><span><kbd>WASD</kbd> move</span><span><kbd>V</kbd> aim view</span><span><kbd>J</kbd>/click left arm</span><span><kbd>K</kbd>/right-click right arm</span><span><kbd>J</kbd>+<kbd>K</kbd> smash</span><span><kbd>Q</kbd> kick</span><span><kbd>1</kbd><kbd>2</kbd> weapons</span><span><kbd>Shift</kbd> block</span><span><kbd>Space</kbd> dodge</span><span><kbd>F</kbd> jump</span><span><kbd>R</kbd> ability</span></div>
   <div class="vs" id="vs" hidden>
     <div class="side"><div class="who" style="color: var(--p1)">You</div><div class="nm" id="vsP1"></div><div class="vsw" id="vsP1w"></div></div>
     <div class="mid">VS<small id="vsArena"></small></div>
@@ -2682,6 +2693,7 @@ const CAM_VIEWS = {
   chase:     { back: 5.4, backK: 0.35, side: 1.5, up: 3.3, upK: 0.15, lookT: 0.5, lookY: 1.2 },
   shoulder:  { back: 4.6, backK: 0.35, side: 3.0, sideK: 0.1, up: 3.6, upK: 0.18, lookT: 0.55, lookY: 1.1 },
   high:      { back: 4.6, backK: 0.45, side: 1.2, up: 6.4, upK: 0.3, lookT: 0.5, lookY: 0.7 },
+  aim:       { back: 4.1, side: 1.25, up: 0.45 }, // over the right shoulder, steered by the mouse (see updateCamera)
   broadcast: { mid: true, back: 1.2, backK: 0.1, side: 4.6, sideK: 0.5, up: 3.2, upK: 0.1, lookT: 0.5, lookY: 1.1 },
 };
 /* ======================= SOUND (tiny synth) ======================= */
@@ -3614,7 +3626,9 @@ class Fighter {
     }
     const to = new V3(opp.pos.x - this.pos.x, 0, opp.pos.z - this.pos.z);
     const dist = to.length();
-    const lockYaw = Math.atan2(to.x, to.z);
+    // aim view: the player's bot turns with the mouse instead of locking onto the opponent; WASD moves relative to that
+    const aimed = this === game.p1 && game.aimMode && this.state !== 'ko' && this.state !== 'victory';
+    const lockYaw = aimed ? game.aimYaw : Math.atan2(to.x, to.z);
     const fwd = new V3(Math.sin(lockYaw), 0, Math.cos(lockYaw));
     const right = new V3(-fwd.z, 0, fwd.x);
     let mx = inp ? inp.mx : 0, mz = inp ? inp.mz : 0;
@@ -3667,6 +3681,7 @@ class Fighter {
       case 'ko': case 'victory': turnRate = this.state === 'victory' ? 3 : 0; break;
     }
     if (steer) this.moveVel.lerp(wish.multiplyScalar(s.runSpeed * speedMul * (this.slowT > 0 ? 0.6 : 1)), 1 - Math.exp(-14 * dt));
+    if (aimed && this.state !== 'stun') turnRate = 40;
     const dy = wrapAngle(lockYaw - this.yaw), mt = turnRate * dt;
     this.yaw += clamp(dy, -mt, mt);
     this.rig.root.rotation.y = this.yaw;
@@ -3871,6 +3886,7 @@ const Input = {
 addEventListener('keydown', e => {
   if (!Battle.active) return;
   if (e.code === 'Escape') { Battle.togglePause(); return; }
+  if (e.code === 'KeyV' && !e.repeat) { Battle.setAimMode(!Battle.aimMode); if (Battle.aimMode) Battle.lockPointer(); return; }
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
   if (!e.repeat) Input.pressed.add(e.code);
   Input.held.add(e.code);
@@ -3878,7 +3894,15 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => Input.held.delete(e.code));
 addEventListener('blur', () => { Input.held.clear(); Input.touchHeld.clear(); });
 const bCanvas = $('battleCanvas');
-bCanvas.addEventListener('mousedown', e => { Input.pressed.add('mouse' + e.button); Input.held.add('mouse' + e.button); });
+bCanvas.addEventListener('mousedown', e => {
+  // in aim view the first click just grabs the mouse; after that clicks fire as usual
+  if (Battle.aimMode && !document.pointerLockElement) { Battle.lockPointer(); return; }
+  Input.pressed.add('mouse' + e.button); Input.held.add('mouse' + e.button);
+});
+addEventListener('mousemove', e => { if (document.pointerLockElement === bCanvas) Battle.aimLook(e.movementX || 0, e.movementY || 0); });
+// the browser drops the mouse on Esc before the game sees the key, so losing the lock mid-fight pauses
+document.addEventListener('pointerlockchange', () => { if (!document.pointerLockElement && Battle.active && Battle.aimMode && !Battle.paused && Battle.phase !== 'over') Battle.togglePause(); });
+$('aimChip').addEventListener('click', e => { e.currentTarget.blur(); Battle.setAimMode(!Battle.aimMode); if (Battle.aimMode) Battle.lockPointer(); });
 addEventListener('mouseup', e => Input.held.delete('mouse' + e.button));
 bCanvas.addEventListener('contextmenu', e => e.preventDefault());
 // touch
@@ -4069,6 +4093,7 @@ const Battle = {
     const onResize = () => { const w = innerWidth, h = innerHeight; r.setSize(w, h, false); this.cam.aspect = w / h; this.cam.fov = w / h < 0.8 ? 68 : 55; this.cam.updateProjectionMatrix(); };
     addEventListener('resize', onResize); onResize(); this.onResize = onResize;
     $('pauseBtn').onclick = () => this.togglePause();
+    { let on = false; try { on = localStorage.getItem('forge-arena-aim') === '1'; } catch (e) {} this.aimYaw = 0; this.aimPitch = 0.05; this.setAimMode(on); }
   },
   setArena(id) {
     const A = arenaById(id) || ARENAS[0];
@@ -4150,14 +4175,15 @@ const Battle = {
     if (!this.active || this.phase === 'over') return;
     this.paused = !this.paused;
     if (this.paused) this.showOverlay('Paused', 'Take a breather.', [['Resume', () => this.togglePause(), true], ['Restart match', () => this.start()], ['Back to builder', () => this.exit()], ['Main menu', () => { this.exit(); goMenu(); }]]);
-    else $('overlay').hidden = true;
+    else { $('overlay').hidden = true; this.lockPointer(); }
+    if (this.paused && document.pointerLockElement) document.exitPointerLock();
   },
   showOverlay(title, text, actions) {
     $('ovTitle').textContent = title; $('ovText').textContent = text; const A = $('ovActions'); A.innerHTML = '';
     actions.forEach(([label, fn, primary], i) => { const b = document.createElement('button'); b.type = 'button'; b.id = 'ov-' + i; b.className = primary ? 'btn btn-go' : 'btn'; b.textContent = label; b.onclick = fn; A.appendChild(b); });
     $('overlay').hidden = false; setTimeout(() => A.firstChild && A.firstChild.focus(), 30);
   },
-  exit() { this.active = false; $('battle').hidden = true; $('builder').hidden = false; $('overlay').hidden = true; Preview.resize(); },
+  exit() { if (document.pointerLockElement) document.exitPointerLock(); this.active = false; $('battle').hidden = true; $('builder').hidden = false; $('overlay').hidden = true; Preview.resize(); },
   toArenas() { this.exit(); showArenas(); },
   updatePips() {
     [...$('p1Pips').children].forEach((p, i) => p.classList.toggle('on', this.wins[0] > i));
@@ -4350,8 +4376,9 @@ const Battle = {
     // shots leave along the way the shooter is facing (not straight at the opponent), pitched to reach chest height at the
     // opponent's range; the auto-turn lags a moving target, so a quick sidestep or dodge can make a shot miss
     const o = this.originOf(f, W, i), tgt = aimPt(opp), h = new V3(Math.sin(f.yaw), 0, Math.cos(f.yaw));
-    const range = Math.max(1, Math.hypot(tgt.x - f.pos.x, tgt.z - f.pos.z)), aim = new V3(f.pos.x, tgt.y, f.pos.z).addScaledVector(h, range);
-    const dir = aim.sub(o).normalize(); // both arms converge on the point straight ahead at the opponent's range
+    const range = Math.max(1, Math.hypot(tgt.x - f.pos.x, tgt.z - f.pos.z));
+    const aim = f === this.p1 && this.aimMode ? this.aimPoint() : new V3(f.pos.x, tgt.y, f.pos.z).addScaledVector(h, range);
+    const dir = aim.sub(o).normalize(); // both arms converge on the point straight ahead at the opponent's range (or on the crosshair)
     // lower accuracy throws shots a little off line
     const miss = (1 - f.stats.acc) * 0.18 * rand(-1, 1); dir.applyAxisAngle(new V3(0, 1, 0), miss);
     const vel = dir.clone().multiplyScalar(W.speed);
@@ -4530,11 +4557,32 @@ const Battle = {
     d.style.left = ((v.x + 1) / 2 * innerWidth + rand(-20, 20)) + 'px'; d.style.top = ((1 - v.y) / 2 * innerHeight) + 'px';
     $('fx').appendChild(d); setTimeout(() => d.remove(), (life || 0.85) * 1000);
   },
-  snapCamera() { this.updateCamera(1, true); },
+  snapCamera() { if (this.aimMode) this.aimYaw = this.p1.yaw, this.aimPitch = -0.1; this.updateCamera(1, true); },
+  // aim view (V): an over-the-shoulder camera the mouse steers. Clicking the arena locks the pointer so the mouse turns freely
+  setAimMode(on) {
+    this.aimMode = on; try { localStorage.setItem('forge-arena-aim', on ? '1' : '0'); } catch (e) {}
+    if (on && this.p1) { this.aimYaw = this.p1.yaw; this.aimPitch = -0.1; }
+    if (!on && document.pointerLockElement) document.exitPointerLock();
+    $('xhair').hidden = !on;
+    $('aimChip').innerHTML = (on ? 'Aim view' : 'Arena view') + '<kbd>V</kbd>';
+  },
+  lockPointer() { if (this.aimMode && this.active && !this.paused && !document.pointerLockElement && bCanvas.requestPointerLock) try { const r = bCanvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) {} },
+  aimLook(dx, dy) { if (!this.aimMode || this.paused) return; const k = 0.0024 * (this.aimSens || 1); this.aimYaw -= dx * k; this.aimPitch = clamp(this.aimPitch - dy * k, -0.55, 0.6); },
+  aimDir() { const cp = Math.cos(this.aimPitch); return new V3(Math.sin(this.aimYaw) * cp, Math.sin(this.aimPitch), Math.cos(this.aimYaw) * cp); },
+  // the point under the crosshair: the opponent if the line passes through them, else the first wall or floor, else far away
+  aimPoint() {
+    const o = this.cam.position.clone(), d = this.aimDir(), e = this.p2, c = aimPt(e), R = e.radius + 0.35;
+    const tc = c.clone().sub(o).dot(d);
+    if (tc > 0 && c.clone().sub(o).addScaledVector(d, -tc).length() < R * 1.4 && Math.abs(e.pos.y + e.rig.height * 0.5 - (o.y + d.y * tc)) < e.rig.height * 0.7) { this.aimOn = true; return o.addScaledVector(d, tc); }
+    this.aimOn = false;
+    const far = o.clone().addScaledVector(d, 60); if (far.y < 0) far.copy(o).addScaledVector(d, o.y / Math.max(0.05, -d.y));
+    const hit = World.losHit(o.clone().addScaledVector(d, 3.5), far); return hit || far;
+  },
   updateCamera(dt, snap) {
     const p = this.p1.pos, e = this.p2.pos;
     const dir = new V3(p.x - e.x, 0, p.z - e.z); const dist = dir.length(); if (dist > 1e-3) dir.divideScalar(dist); else dir.set(0, 0, -1);
     const side = new V3(dir.z, 0, -dir.x);
+    if (this.aimMode) return this.aimCamera(dt, snap);
     const far = Math.min(Math.max(0, dist - 7), World.box ? 10 : 99), C = CAM_VIEWS[this.camView] || CAM_VIEWS.shoulder;
     const want = new V3(p.x, 0, p.z).addScaledVector(dir, C.back + far * C.backK).addScaledVector(side, -C.side - far * (C.sideK || 0)); want.y = C.up + far * C.upK + p.y * 0.8;
     const look = new V3().lerpVectors(p, e, C.lookT); look.y = C.lookY + (p.y + e.y) * 0.5;
@@ -4547,6 +4595,21 @@ const Battle = {
     this.cam.position.lerp(want, k); this.camLook.lerp(look, k);
     if (this.shake > 0) { this.cam.position.x += rand(-1, 1) * this.shake * 0.3; this.cam.position.y += rand(-1, 1) * this.shake * 0.3; }
     this.cam.lookAt(this.camLook);
+  },
+  aimCamera(dt, snap) {
+    const f = this.p1, C = CAM_VIEWS.aim, d = this.aimDir(), flat = new V3(Math.sin(this.aimYaw), 0, Math.cos(this.aimYaw)), rt = new V3(-flat.z, 0, flat.x);
+    const head = new V3(f.pos.x, f.pos.y + f.rig.height * 0.92 + C.up, f.pos.z);
+    // swing back with the pitch so looking up drops the camera behind the shoulders and looking down lifts it over them
+    const want = head.clone().addScaledVector(rt, C.side).addScaledVector(d, -C.back);
+    want.y = Math.max(0.5, want.y);
+    // walls: pull the camera in front of anything between it and the bot
+    const blk = World.losHit(head, want); if (blk) want.copy(head).lerp(blk, 0.85);
+    if (World.arena && World.arena.roof) want.y = Math.min(want.y, World.arena.roof - 0.8);
+    const k = snap ? 1 : 1 - Math.exp(-22 * dt);
+    this.cam.position.lerp(want, k);
+    if (this.shake > 0) { this.cam.position.x += rand(-1, 1) * this.shake * 0.2; this.cam.position.y += rand(-1, 1) * this.shake * 0.2; }
+    this.camLook.copy(this.cam.position).addScaledVector(d, 20); this.cam.lookAt(this.camLook);
+    this.aimPoint(); const xh = $('xhair'); if (xh) xh.classList.toggle('on', !!this.aimOn);
   },
   separate(dt = 1 / 60) {
     const a = this.p1, b = this.p2;
