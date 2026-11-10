@@ -3317,11 +3317,125 @@ function bunkerRing(R, door, hub, arm, h, d) {
   }
   return out;
 }
+/* ======================= ARENA HAZARDS ======================= */
+// Each arena can list hazards (arena.hazards). They run on fight time (arenaT), so every round starts the same way.
+//  vent:    a floor grate that glows and spits sparks for a second, then blasts a column of fire (burns anyone standing in it)
+//  crusher: a steel block hanging over a striped pad; it shakes and the pad flashes red, then it slams down (big hit and a stun)
+// Moving platforms are ordinary 'plat' solids with a slide: {...} cycle; World.tick moves them and Hazards.step carries riders.
+const HZ_VENT = { r: 0.95, warn: 1.0, blast: 1.6, dps: 5 };
+const HZ_CRUSH = { up: 6.2, rise: 1.4, warn: 1.1, fall: 0.16, down: 1.1, h: 1.5, dmg: 18, stun: 0.9 };
+const Hazards = {
+  list: [],
+  build(A, G, th) {
+    this.list = (A.hazards || []).map(d => Object.assign({ phase: 0 }, d));
+    for (const H of this.list) {
+      const g = H.g = new THREE.Group(); g.position.set(H.x, 0, H.z); G.add(g);
+      if (H.type === 'vent') {
+        const r = H.r = H.r || HZ_VENT.r;
+        mesh(new THREE.CylinderGeometry(r + 0.12, r + 0.18, 0.05, 28), stdMat(0x22252b, { metalness: 0.7, roughness: 0.5 }), g, 0, 0.025, 0);
+        for (let i = -3; i <= 3; i++) mesh(new THREE.BoxGeometry(0.06, 0.03, Math.sqrt(Math.max(0, r * r - (i * r / 3.6) ** 2)) * 2), stdMat(0x0d0f12, { metalness: 0.4, roughness: 0.8 }), g, i * r / 3.6, 0.06, 0);
+        H.glowM = glowMat(0xff6a1a); H.glowM.emissiveIntensity = 0;
+        const ring = mesh(new THREE.TorusGeometry(r + 0.05, 0.045, 8, 36), H.glowM, g, 0, 0.06, 0); ring.rotation.x = Math.PI / 2;
+        const core = mesh(new THREE.CircleGeometry(r * 0.95, 28), H.glowM, g, 0, 0.035, 0); core.rotation.x = -Math.PI / 2;
+        // the fire: two additive cones, an outer orange one and an inner yellow core
+        const fm = (c, o) => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).convertSRGBToLinear(), transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false });
+        const cg = new THREE.ConeGeometry(1, 1, 18, 1, true); cg.translate(0, 0.5, 0);
+        H.fire = [mesh(cg, fm(0xff5a14, 0.55), g, 0, 0, 0), mesh(cg, fm(0xffd25a, 0.6), g, 0, 0, 0)];
+        H.fire.forEach(m => { m.visible = false; m.rotation.x = Math.PI; m.position.y = 0; });
+      } else if (H.type === 'crusher') {
+        const w = H.w = H.w || 2.6, d = H.d = H.d || 2.6, top = H.top = H.top || 5.2;
+        // striped pad on the floor marks where it lands
+        const pad = document.createElement('canvas'); pad.width = pad.height = 128; const x = pad.getContext('2d');
+        x.fillStyle = '#16181c'; x.fillRect(0, 0, 128, 128); x.fillStyle = '#e8b931';
+        for (let i = -128; i < 256; i += 32) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 16, 0); x.lineTo(i + 16 - 128, 128); x.lineTo(i - 128, 128); x.fill(); }
+        x.fillStyle = '#16181c'; x.fillRect(14, 14, 100, 100);
+        const tex = new THREE.CanvasTexture(pad); tex.encoding = THREE.sRGBEncoding;
+        const pm = new THREE.Mesh(new THREE.PlaneGeometry(w + 0.5, d + 0.5), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, metalness: 0.2 })); pm.rotation.x = -Math.PI / 2; pm.position.y = 0.02; pm.receiveShadow = true; g.add(pm);
+        H.padM = glowMat(0xff3b3b); H.padM.emissiveIntensity = 0;
+        for (const [px, pz, pw, pd] of [[0, (d + 0.5) / 2, w + 0.6, 0.08], [0, -(d + 0.5) / 2, w + 0.6, 0.08], [(w + 0.5) / 2, 0, 0.08, d + 0.6], [-(w + 0.5) / 2, 0, 0.08, d + 0.6]]) mesh(new THREE.BoxGeometry(pw, 0.04, pd), H.padM, g, px, 0.03, pz);
+        // the block: a heavy steel slab with a rod running up out of sight
+        const b = H.block = new THREE.Group(); g.add(b);
+        const steel = stdMat(th.steel || 0x3a4152, { metalness: 0.75, roughness: 0.38 });
+        mesh(new THREE.BoxGeometry(w, HZ_CRUSH.h, d), steel, b, 0, HZ_CRUSH.h / 2, 0).castShadow = true;
+        mesh(new THREE.BoxGeometry(w + 0.12, 0.18, d + 0.12), stdMat(0x1a1c20, { metalness: 0.6, roughness: 0.5 }), b, 0, 0.09, 0);
+        for (const sx of [-1, 1]) mesh(new THREE.BoxGeometry(0.14, HZ_CRUSH.h * 0.8, d + 0.04), stdMat(0xe8b931, { metalness: 0.3, roughness: 0.5 }), b, sx * w * 0.3, HZ_CRUSH.h / 2, 0);
+        mesh(new THREE.CylinderGeometry(0.28, 0.28, 12, 14), stdMat(0x8a9099, { metalness: 0.9, roughness: 0.25 }), b, 0, HZ_CRUSH.h + 6, 0);
+        H.y = top; b.position.y = top;
+      }
+    }
+  },
+  // where each hazard is in its cycle at fight time t
+  state(H, t) {
+    const u = ((t + H.phase) % H.T + H.T) % H.T;
+    if (H.type === 'vent') { const b0 = H.T - HZ_VENT.blast, w0 = b0 - HZ_VENT.warn; return u >= b0 ? { k: 'blast', f: (u - b0) / HZ_VENT.blast } : u >= w0 ? { k: 'warn', f: (u - w0) / HZ_VENT.warn } : { k: 'idle', f: 0 }; }
+    const C = HZ_CRUSH, f0 = H.T - C.fall - C.down, w0 = f0 - C.warn;
+    if (u < C.rise) return { k: 'rise', f: u / C.rise };
+    if (u >= f0 + C.fall) return { k: 'down', f: (u - f0 - C.fall) / C.down };
+    if (u >= f0) return { k: 'fall', f: (u - f0) / C.fall };
+    if (u >= w0) return { k: 'warn', f: (u - w0) / C.warn };
+    return { k: 'up', f: 0 };
+  },
+  inside(H, p, m = 0) {
+    if (H.type === 'vent') return Math.hypot(p.x - H.x, p.z - H.z) < H.r + m;
+    return Math.abs(p.x - H.x) < H.w / 2 + m && Math.abs(p.z - H.z) < H.d / 2 + m;
+  },
+  step(game, dt) {
+    const t = game.arenaT || 0;
+    // moving platforms carry whoever is standing on them
+    for (const s of World.sliders) if (s.dx || s.dz) for (const f of [game.p1, game.p2]) if (!f.air && Math.abs(f.pos.y - s.h) < 0.06 && World.inside(s, f.pos.x - s.dx, f.pos.z - s.dz)) { f.pos.x += s.dx; f.pos.z += s.dz; }
+    for (const H of this.list) {
+      const S = this.state(H, t), prev = H.k; H.k = S.k;
+      if (H.type === 'vent') {
+        H.glowM.emissiveIntensity = S.k === 'blast' ? 3.2 : S.k === 'warn' ? 0.6 + 2.2 * S.f * (0.6 + 0.4 * Math.sin(t * 30)) : 0.12;
+        const on = S.k === 'blast';
+        H.fire.forEach((m, i) => { m.visible = on; if (on) { const rise = Math.min(1, S.f * 6), fade = S.f > 0.85 ? (1 - S.f) / 0.15 : 1, hgt = (i ? 2.2 : 3.4) * rise * fade * (0.9 + Math.random() * 0.2), rad = H.r * (i ? 0.45 : 0.85); m.scale.set(rad, hgt, rad); m.rotation.y += dt * 4; m.rotation.x = 0; } });
+        if (S.k === 'warn' && Math.random() < dt * 30) game.burst(new V3(H.x + rand(-H.r, H.r) * 0.6, 0.15, H.z + rand(-H.r, H.r) * 0.6), Math.random() < 0.5 ? 0xffc24a : 0xff7a1a, 1, 3);
+        if (on && prev !== 'blast') { game.sfx('whoosh'); game.flash(new V3(H.x, 0.5, H.z), 0xff7a1a, 1.4); }
+        if (on && Math.random() < dt * 40) game.burst(new V3(H.x + rand(-0.3, 0.3), rand(0.4, 2.6), H.z + rand(-0.3, 0.3)), Math.random() < 0.5 ? 0xffd25a : 0xff5a14, 1, 4);
+        if (on && game.phase === 'fight') for (const f of [game.p1, game.p2]) if (this.inside(H, f.pos, f.radius * 0.5) && f.pos.y < 2.6 && !f.invuln) {
+          game.dot(f, HZ_VENT.dps * dt); f.burnT = Math.max(f.burnT || 0, 1.2); f.burnDps = 2.4; f.burnBy = null;
+          if (f === game.p1 && !(f.hzNoteT > t)) { game.popAt(f, 'BURNING', 'note', 0.6); f.hzNoteT = t + 1.5; }
+        }
+      } else {
+        const C = HZ_CRUSH, ease = q => q * q * (3 - 2 * q);
+        let y = H.top, shake = 0;
+        if (S.k === 'rise') y = H.top * ease(S.f); else if (S.k === 'fall') y = H.top * (1 - S.f * S.f); else if (S.k === 'down') y = 0; else if (S.k === 'warn') shake = 0.05 * S.f;
+        H.block.position.set(rand(-1, 1) * shake, y, rand(-1, 1) * shake); H.y = y;
+        H.padM.emissiveIntensity = S.k === 'warn' || S.k === 'fall' ? (Math.sin(t * 22) > 0 ? 3 : 0.4) : S.k === 'down' ? 1.2 : 0.15;
+        if (S.k === 'down' && prev === 'fall') {
+          // the slam: dust ring, shake, and a heavy unblockable hit on anyone caught under it
+          game.shake = Math.max(game.shake || 0, 0.35); game.sfx('cannon', true);
+          for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2; game.burst(new V3(H.x + Math.cos(a) * H.w * 0.55, 0.2, H.z + Math.sin(a) * H.d * 0.55), 0xb8bcc4, 1, 5); }
+          if (game.phase === 'fight') for (const f of [game.p1, game.p2]) if (this.inside(H, f.pos, f.radius * 0.6) && f.pos.y < C.h + 0.3 && !f.invuln) {
+            game.dot(f, C.dmg); if (f.state !== 'ko') { f.state = 'stun'; f.t = 0; f.stunDur = C.stun; f.buffer = null; }
+            const dx = f.pos.x - H.x, dz = f.pos.z - H.z, l = Math.hypot(dx, dz) || 1; f.knock.x += dx / l * 9; f.knock.z += dz / l * 9;
+            game.popAt(f, 'CRUSHED', 'note', 1.0);
+          }
+        }
+        // while it is down (or nearly) the block is solid: shove anyone inside out to the nearest edge
+        if (y < C.h) for (const f of [game.p1, game.p2]) if (f.pos.y < y + C.h - 0.2 && this.inside(H, f.pos, f.radius)) {
+          const lx = f.pos.x - H.x, lz = f.pos.z - H.z, ox = H.w / 2 + f.radius - Math.abs(lx), oz = H.d / 2 + f.radius - Math.abs(lz);
+          if (ox < oz) f.pos.x += Math.sign(lx || 1) * ox; else f.pos.z += Math.sign(lz || 1) * oz;
+        }
+      }
+    }
+  },
+  // the CPU steps out of a vent that is about to fire and away from a crusher that is coming down
+  steerAI(me, opp, inp, t) {
+    for (const H of this.list) {
+      const S = this.state(H, t + 0.35), danger = H.type === 'vent' ? S.k !== 'idle' : S.k === 'warn' || S.k === 'fall';
+      if (!danger || !this.inside(H, me.pos, me.radius + 0.6)) continue;
+      let ax = me.pos.x - H.x, az = me.pos.z - H.z; const l = Math.hypot(ax, az) || 1; ax /= l; az /= l;
+      const fx = opp.pos.x - me.pos.x, fz = opp.pos.z - me.pos.z, fl = Math.hypot(fx, fz) || 1, fwx = fx / fl, fwz = fz / fl;
+      inp.mx = ax * -fwz + az * fwx; inp.mz = ax * fwx + az * fwz; inp.block = false;
+    }
+  },
+};
 const ARENAS = [
   { id: 'classic', name: 'Classic', tag: 'Open ring', desc: 'The original ring. Nothing between you and your rival.',
     theme: { floor: ['#2a3346', '#161c29', '#0d1119'], line: '#ffb547', l1: 0xffb547, l2: 0xff4d6d, fog: 0x070a12, rim: 0x1a2130, glow: 0xffb547 },
     solids: [] },
-  { id: 'guerrilla', name: 'Guerrilla', tag: 'Cover and platforms', desc: 'Walls, chest-high barriers and two raised platforms. Take cover, flank, and fight for the high ground.',
+  { id: 'guerrilla', name: 'Guerrilla', tag: 'Cover and platforms', desc: 'Walls, chest-high barriers, two raised platforms and two that glide back and forth. Watch the fire vents in the open lanes.',
     theme: { floor: ['#34352a', '#202119', '#11120e'], line: '#e0c25a', l1: 0xffc46b, l2: 0xff6a4d, fog: 0x0a0b08, rim: 0x2a2c22, glow: 0xffc24a,
       steel: 0x3d4236, concrete: 0x77736a, crate: 0x6e6a44, plat: 0x4a4e44 },
     solids: mirrorLayout([
@@ -3334,11 +3448,19 @@ const ARENAS = [
       { type: 'cyl', kind: 'pillar', x: -8.5, z: -6.5, r: 0.6, h: 2.8 },
       { type: 'box', kind: 'crate', x: -0.3, z: 9.6, w: 1.2, d: 1.2, h: 1.1, rot: 0.2 },
       { type: 'box', kind: 'crate', x: 1.0, z: 9.9, w: 1.0, d: 1.0, h: 2.0, rot: -0.15 },
-    ]) },
+    ]).concat([
+      // two low platforms glide back and forth along the far lanes; hop on and ride
+      { type: 'box', kind: 'plat', x: -1.5, z: -7.0, w: 2.6, d: 2.0, h: 0.7, slide: { ax: 1, az: 0, dist: 2.6, T: 9, phase: 0 } },
+      { type: 'box', kind: 'plat', x: 1.5, z: 7.0, w: 2.6, d: 2.0, h: 0.7, slide: { ax: 1, az: 0, dist: 2.6, T: 9, phase: 4.5 } },
+    ]),
+    hazards: [
+      { type: 'vent', x: 2.2, z: -4.9, T: 8, phase: 1.5 },
+      { type: 'vent', x: -2.2, z: 4.9, T: 8, phase: -2.5 },
+    ] },
   // built from Sam's sky-view sketch: a big walled concrete yard (about three times the size of the ring arenas), a start
   // platform at each end with ramps off both sides, a broken line of tall dividers in front of each platform, six tall
   // pillars down the flanks, and a broken ring of walls with an X inside it in the middle; it plays like a maze
-  { id: 'bunker', name: 'Bunker', tag: 'Concrete maze', desc: 'Start up on your platform, take a ramp down, then work through tall walls and pillars to find your rival.',
+  { id: 'bunker', name: 'Bunker', tag: 'Concrete maze', desc: 'Start up on your platform, take a ramp down, then work through tall walls, pillars, crushers and fire vents to find your rival.',
     r: 41, box: { x: 25.05, z: 31.15 }, roof: 8.0, spawn: { z: 29.6, y: 1.1 }, noPeek: true,
     theme: { floor: ['#4a4b4d', '#353638', '#232425'], line: '#d9dce1', l1: 0xdfe2e7, l2: 0xff4d6d, fog: 0x0b0c0e, rim: 0x2c2d30, glow: 0xdfe2e7,
       steel: 0x4a4d52, concrete: 0x8a8781, crate: 0x6e6a5a, plat: 0x5a5c60 },
@@ -3356,12 +3478,22 @@ const ARENAS = [
       { type: 'cyl', kind: 'pillar', x: 18.25, z: 0, r: 1.0, h: 6.5 },
       { type: 'box', kind: 'wall', x: 0, z: 31.4, w: 51.1, d: 0.5, h: 8.0 },
       { type: 'box', kind: 'wall', x: 25.3, z: 0, w: 0.5, d: 63.3, h: 8.0 },
-    ]).concat(bunkerRing(10.5, 5.2, 4.8, 7.35, 5.2, 0.9)) },
+    ]).concat(bunkerRing(10.5, 5.2, 4.8, 7.35, 5.2, 0.9)),
+    hazards: [
+      { type: 'crusher', x: 0, z: -14, T: 9, phase: 1.0 },
+      { type: 'crusher', x: 0, z: 14, T: 9, phase: 5.5 },
+      { type: 'crusher', x: -14, z: 0, T: 10, phase: 3.0 },
+      { type: 'crusher', x: 14, z: 0, T: 10, phase: 8.0 },
+      { type: 'vent', x: -19, z: -20, T: 7, phase: 0.5 },
+      { type: 'vent', x: 19, z: 20, T: 7, phase: 0.5 },
+      { type: 'vent', x: 19, z: -20, T: 7, phase: 4 },
+      { type: 'vent', x: -19, z: 20, T: 7, phase: 4 },
+    ] },
 ];
 const arenaById = id => ARENAS.find(a => a.id === id);
 
 const World = {
-  solids: [], plats: [], ramps: [], movers: [], box: null,
+  solids: [], plats: [], ramps: [], movers: [], sliders: [], box: null,
   // inside the playable area with margin m: the arena's rectangle (arena.box, half sizes to the wall faces) or its ring
   // walls with a move cycle sink into the floor and rise again: up, sink, down, rise, over move.T seconds.
   // Height feeds collision, line of sight and cover directly, and anyone standing on top rides it
@@ -3371,6 +3503,12 @@ const World = {
       const f = u < up ? 1 : u < up + sink ? 1 - (u - up) / sink : u < up + sink + down ? 0 : (u - up - sink - down) / (M.T - up - sink - down);
       const e = f * f * (3 - 2 * f); s.h = s.top = s.fullH * e;
       if (s.group) { s.group.position.y = s.h - s.fullH; s.group.visible = s.h > 0.02; }
+    }
+    // moving platforms glide back and forth along slide.ax/az, easing at each end; dx/dz is this tick's move (for riders)
+    for (const s of this.sliders) {
+      const L = s.slide, k = Math.sin(((t + (L.phase || 0)) / L.T) * Math.PI * 2), nx = s.x0 + L.ax * L.dist * k, nz = s.z0 + L.az * L.dist * k;
+      s.dx = nx - s.x; s.dz = nz - s.z; s.x = nx; s.z = nz;
+      if (s.group) s.group.position.set(nx, s.group.position.y, nz);
     }
   },
   inBounds(x, z, m = 0) { return this.box ? Math.abs(x) < this.box.x - m && Math.abs(z) < this.box.z - m : Math.hypot(x, z) < ARENA_R - m; },
@@ -3383,6 +3521,7 @@ const World = {
       return s;
     });
     this.movers = this.solids.filter(s => s.move); for (const s of this.movers) s.fullH = s.h;
+    this.sliders = this.solids.filter(s => s.slide); for (const s of this.sliders) { s.x0 = s.x; s.z0 = s.z; s.dx = s.dz = 0; }
     this.plats = this.solids.filter(s => s.kind === 'plat'); this.ramps = this.solids.filter(s => s.type === 'ramp');
     for (const P of this.plats) P.ramps = [];
     for (const R of this.ramps) {
@@ -3833,6 +3972,7 @@ class AIController {
     }
     if (inp.block) { inp.mz = Math.min(inp.mz, 0); }
     if (World.solids.length && !inp.dodge) this.steer(dt, me, opp, inp, dist);
+    if (Hazards.list.length) Hazards.steerAI(me, opp, inp, Battle.arenaT || 0);
     return inp;
   }
   // turn the opponent-relative stick into a world direction, route it via ramps and around cover, then turn it back
@@ -4102,6 +4242,7 @@ const Battle = {
     if (this.arenaGroup) { this.scene.remove(this.arenaGroup); disposeObj(this.arenaGroup); }
     const th = A.theme, G = this.arenaGroup = new THREE.Group();
     for (const s of World.solids) G.add(buildSolidMesh(s, th));
+    Hazards.build(A, G, th);
     if (A.roof && A.box) G.add(buildRoof(A, th));
     this.scene.add(G);
     const fm = this.floor.material; fm.map = this.floorTex[A.id] || (this.floorTex[A.id] = makeFloorTexture(th)); fm.needsUpdate = true;
@@ -4165,7 +4306,7 @@ const Battle = {
   },
   startRound() {
     $('vs').hidden = true;
-    this.round++; this.arenaT = 0; World.tick(0); this.placeFighters(); this.snapCamera();
+    this.round++; this.arenaT = 0; World.tick(0); this.placeFighters(); Hazards.step(this, 0); this.snapCamera();
     this.phase = 'count'; this.phaseT = 0; this.lastBeep = -1;
     this.banner(`<small>ROUND ${this.round}</small>READY`);
   },
@@ -4666,7 +4807,7 @@ const Battle = {
     const roam = this.phase === 'ko' && this.p1.state !== 'ko';
     const pin = fighting ? Input.player() : roam ? { ...Input.player(), heavy: false, left: false, right: false, kick: false, w1: false, w2: false, w3: false, ability: Input.player().ability && ROAM_ABILITIES.has(this.p1.ability && this.p1.ability.id), block: false } : null;
     const ain = fighting ? this.ai.input(simDt, this.p2, this.p1) : null;
-    if (simDt > 0 && fighting) World.tick(this.arenaT = (this.arenaT || 0) + simDt);
+    if (simDt > 0 && fighting) { World.tick(this.arenaT = (this.arenaT || 0) + simDt); Hazards.step(this, simDt); }
     if (simDt > 0) {
       this.p1.update(simDt, this.p2, pin, this);
       this.p2.update(simDt, this.p1, ain, this);
