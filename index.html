@@ -851,6 +851,13 @@ function computeStats(build) {
     radius: 0.46 + bulk * 0.035,
     jump: jumpHeight(build),
     wcdMul: 0.72 + bulk * 0.1,
+    // size trades speed for punch. Weapons hit harder on bigger builds (0.8x on the lightest, 1.2x on the heaviest), and hand
+    // cannons follow the arms: heavy arms fire slow, heavy, devastating shells; light arms fire weak, fast shells that
+    // auto-fire almost like a machine gun while the button is held
+    wDmg: 0.8 + 0.4 * bulk / 6,
+    cannonDmg: [0.6, 1.0, 1.7][wv[partById('top', build.top).w]],
+    cannonSpd: [1.35, 1.0, 0.55][wv[partById('top', build.top).w]],
+    cannonRate: [0.085, 0.17, 0.4][wv[partById('top', build.top).w]] / Math.sqrt(Math.max(0.5, 1 + g('atkSpdMul'))),
   };
 }
 // scores can pass 100 when perks stack up; the bar stops at full but the number shows the real score
@@ -881,7 +888,7 @@ const WEAPONS = [
   { id: 'tesla',   slot: 'head',  name: 'Tesla Coil',      desc: 'Fires an electric pulse that blasts a blue dome out around you (about 14 feet) that moves with you for a couple of seconds. Anything it catches takes damage and is knocked out by the EMP for a few seconds.', cd: 12, w: 0.35, a: 0.1, r: 0.35, move: 0.2, kind: 'emp', radius: 4.27, mult: 1.2, kb: 2, emp: 2.5, color: 0x3fa9ff },
   { id: 'reactor', slot: 'chest', name: 'Arc Reactor',     desc: 'Charges up, then fires a heavy chest beam that drives the target back.', cd: 12, w: 0.6, a: 0.4, r: 0.35, move: 0.15, kind: 'beam', from: 'chest', tick: 0.08, mult: 1.5, kb: 2.2, range: 16, color: 0x7fe6ff, wide: true },
   { id: 'rockets', slot: 'chest', name: 'Shoulder Rockets', desc: 'Launchers rise out of the shoulder pads and fire four homing rockets.', cd: 10, w: 0.35, a: 0.45, r: 0.3, move: 0.6, kind: 'proj', proj: 'rocket', count: 4, speed: 12, mult: 1.1, kb: 4, homing: 2.4, color: 0xffb547, ui: 0xa6f03c },
-  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Forearm cannons. J or K fires that arm as fast as you can press; both together charge up a powerful double blast.', cd: 6, w: 0.45, a: 0.04, r: 0.35, move: 1, kind: 'proj', proj: 'shell', count: 2, speed: 22, mult: 0.9, kb: 13, stun: 0.45, color: 0xffd27a, ui: 0xffe14d },
+  { id: 'cannon',  slot: 'arms',  name: 'Hand Cannons',    desc: 'Forearm cannons that fire where your mouse points. Click or hold J/K to fire that arm: light arms spray fast, weak shells, heavy arms fire slow, devastating ones. Both together charge a powerful double blast.', cd: 6, w: 0.45, a: 0.04, r: 0.35, move: 1, kind: 'proj', proj: 'shell', count: 2, speed: 22, mult: 0.9, kb: 13, stun: 0.45, color: 0xffd27a, ui: 0xffe14d },
   { id: 'saws',    slot: 'arms',  name: 'Chainsaw Arms',   desc: 'Forearm chainsaws. J or K jabs with that arm; both together grind with both saws.', cd: 8, w: 0.2, a: 0.8, r: 0.3, move: 0.55, kind: 'grind', tick: 0.1, reach: 0.45, mult: 0.11, stun: 0.12, color: 0xff9f43, ui: 0xc3cbd8 },
 ];
 const WEAPON = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
@@ -3681,7 +3688,7 @@ class Fighter {
     // every arm shot comes through here (fresh presses and rapid follow-ups alike), so this is where cannons heat up and lock out
     const game = Battle, cannons = (side < 0 ? this.armW : [this.armW[side]]).filter(W => W.id === 'cannon').length;
     if (cannons && this.overheat) { if (this === game.p1 && !(this.heatNoteT > game.arenaT)) { game.popAt(this, 'OVERHEATED', 'note', 0.8); this.heatNoteT = (game.arenaT || 0) + 1.2; } return false; }
-    if (cannons) { const owned = this.armW.filter(W => W.id === 'cannon').length; this.heat = Math.min(1, this.heat + HEAT.shot * cannons / owned); this.heatT = HEAT.delay; if (this.heat >= 1) { this.overheat = true; game.burst(this.pos.clone().setY(this.pos.y + this.rig.height * 0.6), 0xb8bcc4, 16, 2.5); if (this === game.p1) game.popAt(this, 'OVERHEATED', 'note', 0.9); } }
+    if (cannons) { const owned = this.armW.filter(W => W.id === 'cannon').length; this.heat = Math.min(1, this.heat + HEAT.shot * cannons / owned * (0.55 + 0.45 * this.stats.cannonDmg)); this.heatT = HEAT.delay; if (this.heat >= 1) { this.overheat = true; game.burst(this.pos.clone().setY(this.pos.y + this.rig.height * 0.6), 0xb8bcc4, 16, 2.5); if (this === game.p1) game.popAt(this, 'OVERHEATED', 'note', 0.9); } }
     if (side >= 0) this.punchSide = side;
     const [Wr, Wl] = this.armW, mixed = Wr !== Wl;
     this.state = 'weapon'; this.t = 0; this.hitDone = false; this.tickT = 0; this.shots = 0; this.attackId++; this.wpn2 = null;
@@ -3755,6 +3762,14 @@ class Fighter {
       if (this.ability.kind === 'jet') this.jetT = Math.max(this.jetT, 0.05); else this.wShieldT = Math.max(0, this.abFuel);
       if (this.abFuel <= 0) this.abilityOff(true);
       else if (inp && inp.ability) { this.abilityOff(false); inp = Object.assign({}, inp, { ability: false }); }
+    }
+    // holding one arm's button with a hand cannon on that arm keeps firing at the arms' rate (light arms are nearly full auto)
+    if (inp && this.armW) {
+      const side = inp.holdL && !inp.holdR ? 1 : inp.holdR && !inp.holdL ? 0 : -1, W = side >= 0 && this.armW[side];
+      if (W && W.id === 'cannon' && !this.overheat) {
+        if (inp.left || inp.right) this.autoT = s.cannonRate;
+        else if ((this.autoT = (this.autoT || 0) - dt) <= 0) { this.autoT += s.cannonRate; if (this.autoT < 0) this.autoT = 0; inp = Object.assign({}, inp, side ? { left: true } : { right: true }); }
+      } else this.autoT = 0;
     }
     if (inp) {
       for (const a of ['dodge', 'special', 'ability', 'w1', 'w2', 'w3', 'heavy', 'kick', 'light', 'left', 'right']) if (inp[a]) { this.buffer = { a, t: 0.25 }; break; }
@@ -4018,6 +4033,7 @@ const Input = {
     const hl = h.has('KeyJ') || h.has('mouse0') || t.has('left'), hr = h.has('KeyK') || h.has('mouse2') || t.has('right');
     const both = (pl && (pr || hr)) || (pr && hl);
     return {
+      holdL: hl, holdR: hr,
       mx, mz,
       heavy: both, left: pl && !both, right: pr && !both,
       kick: p.has('KeyQ') || p.has('t-kick'),
@@ -4433,7 +4449,7 @@ const Battle = {
     if (def.invuln) { this.popAt(def, 'DODGE', 'note'); return; }
     if (this.shielded(def)) return;
     // weapons hit for a fixed amount so they don't stack on top of a heavy middle's power
-    let dmg = (o.weapon ? 10 : att.stats.power) * o.mult * (att.fortifyT > 0 ? 1.2 : 1);
+    let dmg = (o.weapon ? 10 * (o.wMul || att.stats.wDmg || 1) : att.stats.power) * o.mult * (att.fortifyT > 0 ? 1.2 : 1);
     const crit = Math.random() < Math.max(0.02, att.stats.acc - 0.45); if (crit) dmg *= 1.5;
     const hg = att.pos.y - def.pos.y > 0.5; if (hg) dmg *= 1.15;
     // weapons used to slip past most defense, so they carry a bigger multiplier now that armor applies to everything
@@ -4595,7 +4611,7 @@ const Battle = {
     const dir = aim.sub(o).normalize(); // both arms converge on the point straight ahead at the opponent's range
     // lower accuracy throws shots a little off line
     const miss = (1 - f.stats.acc) * 0.18 * rand(-1, 1); dir.applyAxisAngle(new V3(0, 1, 0), miss);
-    const vel = dir.clone().multiplyScalar(W.speed);
+    const cannon = W.proj === 'shell' && W.slot === 'arms', vel = dir.clone().multiplyScalar(W.speed * (cannon ? f.stats.cannonSpd : 1));
     if (W.proj === 'rocket') { const side = new V3(-dir.z, 0, dir.x); vel.multiplyScalar(0.55).addScaledVector(side, (i % 2 ? 1 : -1) * rand(2, 4)).add(new V3(0, rand(3, 5), 0)); }
     if (W.proj === 'bullet') { vel.x += rand(-0.6, 0.6); vel.y += rand(-0.3, 0.3); }
     const mat = W.proj === 'rocket' ? stdMat(0xd80c0c, { metalness: 0.35, roughness: 0.28 }) : new THREE.MeshBasicMaterial({ color: new THREE.Color(W.color).convertSRGBToLinear() });
@@ -4634,7 +4650,7 @@ const Battle = {
       if (hd < T.radius + 0.22 && P.pos.y > T.pos.y + 0.05 && P.pos.y < T.pos.y + T.rig.height + 0.15 && T.state !== 'ko' && !T.invuln) {
         if (this.shielded(T)) { this.burst(P.pos, 0xff3dd8, 8, 4); this.killProj(i); continue; }
         const many = W.count > 3;
-        this.applyHit(P.owner, T, { weapon: true, mult: W.mult, kb: W.kb, stun: W.stun || 0, stop: many ? 0 : 0.05, quiet: many, energy: many ? 0.35 : 1, heavy: W.proj === 'shell', color: W.color });
+        this.applyHit(P.owner, T, { weapon: true, wMul: W.proj === 'shell' && W.slot === 'arms' ? P.owner.stats.cannonDmg : 0, mult: W.mult, kb: W.proj === 'shell' && W.slot === 'arms' ? W.kb * Math.sqrt(P.owner.stats.cannonDmg) : W.kb, stun: W.stun || 0, stop: many ? 0 : 0.05, quiet: many, energy: many ? 0.35 : 1, heavy: W.proj === 'shell', color: W.color });
         if (W.slow) { T.slowT = W.slow; this.popAt(T, 'SLOWED', 'note', 0.7); this.burst(P.pos, 0x9fe8ff, 14, 5); }
         if (W.pull && T.state !== 'ko') { const A = P.owner, n = new V3(A.pos.x - T.pos.x, 0, A.pos.z - T.pos.z), dd = n.length(); const gap = Math.max(0, dd - (A.radius + T.radius + 0.5)); T.knock.copy(n.normalize().multiplyScalar(Math.min(80, gap * 7.2))); }
         if (W.proj === 'rocket' || W.proj === 'shell') this.burst(P.pos, W.color, 10, 5);
