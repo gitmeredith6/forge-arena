@@ -3499,6 +3499,12 @@ const ARENAS = [
     theme: { floor: ['#a07e55', '#7d6040', '#4f3b26'], dirt: true, line: '#e8c48a', l1: 0xffb46b, l2: 0xff7a3d, fog: 0x1a120b, rim: 0x6e5a42, glow: 0xff9a3c, stone: 0x9c8466 },
     solids: [],
     hazards: [0, 1, 2, 3, 4, 5, 6, 7].map(i => { const a = (i + 0.5) / 8 * Math.PI * 2; return { type: 'vent', x: +(Math.sin(a) * 12.3).toFixed(2), z: +(Math.cos(a) * 12.3).toFixed(2), T: 8, phase: i % 2 ? 0 : 4 }; }) },
+  // a steel platform floating in the sky over a volcano that is close to erupting. A knee-high rim stops you walking off,
+  // but a jump (or a big hit while you're in the air) can carry you over it; fall and you lose the round
+  { id: 'caldera', name: 'Caldera', tag: 'Floating platform', desc: 'A platform hanging over a volcano about to blow. A low rim keeps you on, unless you jump or get knocked over it. Fall and the round is lost.',
+    r: 11, sky: true, decor: 'volcano', rim: 0.45, fog: [70, 520],
+    theme: { floor: ['#4a3a34', '#2e2522', '#1a1412'], line: '#ff7a2a', l1: 0xff8a3a, l2: 0xff3a1a, fog: 0x2a0f07, rim: 0x2a221d, glow: 0xff6a1a },
+    solids: [] },
   { id: 'guerrilla', name: 'Guerrilla', tag: 'Cover and platforms', desc: 'Walls, chest-high barriers, two raised platforms and two that glide back and forth. Watch the fire vents in the open lanes.',
     theme: { floor: ['#34352a', '#202119', '#11120e'], line: '#e0c25a', l1: 0xffc46b, l2: 0xff6a4d, fog: 0x0a0b08, rim: 0x2a2c22, glow: 0xffc24a,
       steel: 0x3d4236, concrete: 0x77736a, crate: 0x6e6a44, plat: 0x4a4e44 },
@@ -3605,7 +3611,7 @@ const World = {
     if (s.type === 'cyl') return Math.hypot(x - s.x, z - s.z) <= s.r + pad;
     const [lx, lz] = this.local(s, x, z); return Math.abs(lx) <= s.hw + pad && Math.abs(lz) <= s.hd + pad;
   },
-  groundAt(x, z, maxY = Infinity) { let g = 0; for (const s of this.solids) if (this.inside(s, x, z)) { const h = this.heightAt(s, x, z); if (h <= maxY && h > g) g = h; } return g; },
+  groundAt(x, z, maxY = Infinity) { let g = this.arena && this.arena.sky && Math.hypot(x, z) > ARENA_R + 0.35 ? -1000 : 0; for (const s of this.solids) if (this.inside(s, x, z)) { const h = this.heightAt(s, x, z); if (h <= maxY && h > g) g = h; } return g; },
   solidAt(x, y, z) { if (y < 0) return null; for (const s of this.solids) if (y < s.top && this.inside(s, x, z) && y < this.heightAt(s, x, z)) return s; return null; },
   // first point where the segment a->b enters a solid, or null when the line is clear
   losHit(a, b, skip = 0.3) {
@@ -3720,6 +3726,7 @@ class Fighter {
     this.reset(new V3(), 0);
   }
   reset(p, yaw) {
+    this.fellOut = false;
     this.pos.copy(p); this.yaw = yaw; this.hp = this.stats.hp; this.hpTrail = this.hp; this.energy = 0;
     this.state = 'idle'; this.t = 0; this.knock.set(0, 0, 0); this.moveVel.set(0, 0, 0); this.vy = 0; this.air = false;
     this.dodgeCdT = 0; this.fortifyT = 0; this.buffer = null; this.invuln = false; this.attackId = 0; this.punchSide = 0;
@@ -4233,6 +4240,70 @@ function buildColosseum(R, th) {
   g.add(new THREE.Points(pg, new THREE.PointsMaterial({ size: 0.32, vertexColors: true })));
   return g;
 }
+// Caldera surroundings: the platform's rocky underside with glowing lift thrusters, the knee-high rim, and far below a
+// volcano with a lava-filled crater, lava running down its flanks, smoke, rising embers and a rumble every few seconds
+function buildVolcano(R, th, A) {
+  const g = new THREE.Group(), U = g.userData;
+  const rock = stdMat(0x2b2320, { metalness: 0.05, roughness: 0.95, envMapIntensity: 0.2 }), steel = stdMat(0x3b3532, { metalness: 0.7, roughness: 0.45 });
+  const lavaM = c => new THREE.MeshBasicMaterial({ color: new THREE.Color(c).convertSRGBToLinear() });
+  // platform: steel deck edge, rocky underside tapering to a point, thrusters glowing underneath
+  const FR = (ARENA_R0 + 0.6) * (R / ARENA_R0);
+  const edge = new THREE.Mesh(new THREE.CylinderGeometry(FR, FR - 0.2, 0.6, 96, 1, true), steel); edge.material.side = THREE.DoubleSide; edge.position.y = -0.3; g.add(edge);
+  const under = new THREE.Mesh(new THREE.ConeGeometry(FR - 0.2, 9, 48, 4), rock); under.rotation.x = Math.PI; under.position.y = -0.6 - 4.5; g.add(under);
+  U.thrust = [];
+  for (let i = 0; i < 6; i++) {
+    const a = i / 6 * Math.PI * 2, x = Math.sin(a) * FR * 0.55, z = Math.cos(a) * FR * 0.55;
+    mesh(new THREE.CylinderGeometry(0.9, 1.2, 1.0, 16), steel, g, x, -2.4, z);
+    const fl = new THREE.Mesh(new THREE.ConeGeometry(0.7, 3.2, 14, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x6fd3ff).convertSRGBToLinear(), transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
+    fl.rotation.x = Math.PI; fl.position.set(x, -4.4, z); g.add(fl); U.thrust.push(fl);
+    halo(g, new THREE.Color(0x6fd3ff), x, -3.2, z, 3.2, 0.6);
+  }
+  // the rim: a low steel lip with a glowing hazard band, just under jump height
+  const rimH = A.rim || 0.45;
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.12, R + 0.12, rimH, 96, 1, true), steel); rim.material.side = THREE.DoubleSide; rim.position.y = rimH / 2; g.add(rim);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(R + 0.12, 0.06, 8, 128), glowMat(0xff6a1a)); band.rotation.x = Math.PI / 2; band.position.y = rimH; g.add(band);
+  for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; mesh(new THREE.BoxGeometry(0.14, rimH + 0.1, 0.3), steel, g, Math.sin(a) * (R + 0.12), (rimH + 0.1) / 2, Math.cos(a) * (R + 0.12)).rotation.y = a; }
+  // the volcano far below
+  const VY = -95;
+  const cone = new THREE.Mesh(new THREE.CylinderGeometry(26, 150, 90, 64, 6, true), rock); cone.position.set(8, VY - 45, 30); g.add(cone);
+  const pos = cone.geometry.attributes.position; for (let i = 0; i < pos.count; i++) { const y = pos.getY(i); if (y < 44 && y > -44) { const k = 1 + (Math.random() - 0.5) * 0.12; pos.setX(i, pos.getX(i) * k); pos.setZ(i, pos.getZ(i) * k); } } cone.geometry.computeVertexNormals();
+  const lava = U.lava = new THREE.Mesh(new THREE.CircleGeometry(25, 48), lavaM(0xff5a12)); lava.rotation.x = -Math.PI / 2; lava.position.set(8, VY - 2, 30); g.add(lava);
+  const crust = new THREE.Mesh(new THREE.RingGeometry(10, 24, 48, 3), lavaM(0x7a1c06)); crust.rotation.x = -Math.PI / 2; crust.position.set(8, VY - 1.8, 30); g.add(crust);
+  U.glow = halo(g, new THREE.Color(0xff6a1a), 8, VY + 4, 30, 120, 0.85);
+  // lava streams down the flanks
+  for (let i = 0; i < 9; i++) {
+    const a = i / 9 * Math.PI * 2 + Math.random() * 0.3, len = 50 + Math.random() * 40;
+    const st = new THREE.Mesh(new THREE.PlaneGeometry(2.2 + Math.random() * 2.5, len), lavaM(i % 2 ? 0xff7a1a : 0xff4a0a));
+    const mid = 26 + (len / 2) * 1.2;
+    st.position.set(8 + Math.sin(a) * mid, VY - 4 - len * 0.43, 30 + Math.cos(a) * mid); st.rotation.order = 'YXZ'; st.rotation.y = a; st.rotation.x = -1.0; g.add(st);
+  }
+  // the light from below that warms the platform's underside and the bots
+  const L = U.light = new THREE.PointLight(0xff5a1a, 2.2, 260, 1.2); L.position.set(8, VY + 10, 30); g.add(L);
+  const amb = new THREE.HemisphereLight(0x5a3a30, 0xff5a1a, 0.35); g.add(amb);
+  // smoke columns and embers
+  U.smoke = [];
+  const smokeM = new THREE.MeshBasicMaterial({ color: 0x1a1110, transparent: true, opacity: 0.35, depthWrite: false });
+  for (let i = 0; i < 14; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), smokeM); m.userData.t = Math.random(); g.add(m); U.smoke.push(m); }
+  const N = 500, ep = new Float32Array(N * 3), ev = new Float32Array(N);
+  const seed = i => { ep[i * 3] = 8 + (Math.random() - 0.5) * 40; ep[i * 3 + 1] = VY + Math.random() * 100; ep[i * 3 + 2] = 30 + (Math.random() - 0.5) * 40; ev[i] = 4 + Math.random() * 10; };
+  for (let i = 0; i < N; i++) seed(i);
+  const eg = new THREE.BufferGeometry(); eg.setAttribute('position', new THREE.BufferAttribute(ep, 3));
+  g.add(new THREE.Points(eg, new THREE.PointsMaterial({ color: 0xffa040, size: 0.5, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false })));
+  // every 9-14 seconds the volcano rumbles: the crater flares, embers surge and the platform shakes a little
+  U.next = 6; U.t = 0; U.surge = 0;
+  U.tick = (dt, game) => {
+    U.t += dt; U.surge = Math.max(0, U.surge - dt * 0.6);
+    if (U.t > U.next) { U.next = U.t + 9 + Math.random() * 5; U.surge = 1; if (game.active && !game.paused) game.shake = Math.max(game.shake || 0, 0.14); }
+    const pulse = 0.85 + 0.15 * Math.sin(U.t * 1.7) + U.surge * 0.9;
+    U.light.intensity = 2.0 * pulse; U.glow.material.opacity = Math.min(1, 0.6 * pulse);
+    U.lava.material.color.setRGB(1, 0.25 + 0.15 * Math.sin(U.t * 2.3) + 0.3 * U.surge, 0.03);
+    for (const fl of U.thrust) fl.scale.set(1, 0.85 + Math.random() * 0.3, 1);
+    for (const m of U.smoke) { m.userData.t = (m.userData.t + dt * 0.02 * (1 + U.surge * 2)) % 1; const q = m.userData.t; m.position.set(8 + Math.sin(q * 9 + m.id) * 10 * q, VY + q * 90, 30 + Math.cos(q * 7 + m.id) * 10 * q); m.scale.setScalar(6 + q * 26); m.material.opacity = 0.35; }
+    for (let i = 0; i < N; i++) { ep[i * 3 + 1] += ev[i] * dt * (1 + U.surge * 3); ep[i * 3] += Math.sin(U.t + i) * dt * 0.8; if (ep[i * 3 + 1] > VY + 110) { seed(i); ep[i * 3 + 1] = VY; } }
+    eg.attributes.position.needsUpdate = true;
+  };
+  return g;
+}
 let HAZARD_TEX = null;
 function hazardTex() {
   if (HAZARD_TEX) return HAZARD_TEX;
@@ -4353,11 +4424,11 @@ const Battle = {
     const floor = this.floor = new THREE.Mesh(new THREE.CircleGeometry(ARENA_R0 + 0.6, 96), new THREE.MeshStandardMaterial({ roughness: 0.6, metalness: 0.2, envMapIntensity: 0.35 })); this.floorTex = {};
     floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; bowl.add(floor);
     const wallM = stdMat(0x1a2130, { metalness: 0.6, roughness: 0.4, envMapIntensity: 0.4 });
-    this.wallM = wallM; const wall = new THREE.Mesh(new THREE.CylinderGeometry(ARENA_R0 + 0.9, ARENA_R0 + 0.9, 0.7, 96, 1, true), wallM); wall.position.y = 0.35; wallM.side = THREE.DoubleSide; wall.receiveShadow = true; bowl.add(wall);
+    this.wallM = wallM; const wall = this.bowlWall = new THREE.Mesh(new THREE.CylinderGeometry(ARENA_R0 + 0.9, ARENA_R0 + 0.9, 0.7, 96, 1, true), wallM); wall.position.y = 0.35; wallM.side = THREE.DoubleSide; wall.receiveShadow = true; bowl.add(wall);
     const lip = this.lip = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R0 + 0.9, 0.06, 8, 128), glowMat(0xffb547)); lip.rotation.x = Math.PI / 2; lip.position.y = 0.72; bowl.add(lip);
-    const outer = new THREE.Mesh(new THREE.CylinderGeometry(34, 30, 9, 64, 1, true), stdMat(0x0b0f1a, { side: THREE.BackSide, roughness: 1, metalness: 0, envMapIntensity: 0.1 })); outer.position.y = 2; bowl.add(outer);
+    const outer = this.bowlOuter = new THREE.Mesh(new THREE.CylinderGeometry(34, 30, 9, 64, 1, true), stdMat(0x0b0f1a, { side: THREE.BackSide, roughness: 1, metalness: 0, envMapIntensity: 0.1 })); outer.position.y = 2; bowl.add(outer);
     this.bowlExtras = [];
-    const ground = new THREE.Mesh(new THREE.CircleGeometry(40, 64), stdMat(0x0b0f18, { roughness: 0.9, metalness: 0.1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; bowl.add(ground);
+    const ground = this.bowlGround = new THREE.Mesh(new THREE.CircleGeometry(40, 64), stdMat(0x0b0f18, { roughness: 0.9, metalness: 0.1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; bowl.add(ground);
     for (let i = 0; i < 10; i++) {
       const a = i / 10 * Math.PI * 2, R = ARENA_R0 + 4.5;
       const col = mesh(new THREE.CylinderGeometry(0.45, 0.6, 6, 8), stdMat(0x252d40, { metalness: 0.6, roughness: 0.4 }), bowl, Math.cos(a) * R, 3, Math.sin(a) * R);
@@ -4391,8 +4462,9 @@ const Battle = {
     for (const s of World.solids) G.add(buildSolidMesh(s, th));
     Hazards.build(A, G, th);
     if (A.roof && A.box) G.add(buildRoof(A, th));
-    this.decorG = A.decor === 'colosseum' ? buildColosseum(A.r || ARENA_R0, th) : null; if (this.decorG) G.add(this.decorG);
+    this.decorG = A.decor === 'colosseum' ? buildColosseum(A.r || ARENA_R0, th) : A.decor === 'volcano' ? buildVolcano(A.r || ARENA_R0, th, A) : null; if (this.decorG) G.add(this.decorG);
     for (const o of this.bowlExtras || []) o.visible = !A.decor;
+    for (const o of [this.bowlWall, this.lip, this.bowlGround, this.bowlOuter]) if (o) o.visible = !A.sky;
     this.scene.add(G);
     const fm = this.floor.material; fm.map = this.floorTex[A.id] || (this.floorTex[A.id] = makeFloorTexture(th)); fm.needsUpdate = true;
     this.l1.color.setHex(th.l1); this.l2.color.setHex(th.l2);
@@ -4400,7 +4472,7 @@ const Battle = {
     this.wallM.color.setHex(th.rim).convertSRGBToLinear();
     this.scene.background.setHex(th.fog); this.scene.fog.color.setHex(th.fog);
     const k = ARENA_R / ARENA_R0; this.bowl.scale.set(k, 1, k);
-    this.scene.fog.near = 22 * k; this.scene.fog.far = 60 * k;
+    this.scene.fog.near = A.fog ? A.fog[0] : 22 * k; this.scene.fog.far = A.fog ? A.fog[1] : 60 * k;
     this.sun.position.set(8 * k, 18 * k, 6 * k); Object.assign(this.sun.shadow.camera, { left: -16 * k, right: 16 * k, top: 16 * k, bottom: -16 * k, far: 50 * k }); this.sun.shadow.camera.updateProjectionMatrix();
     this.l1.position.set(-12 * k, 5, -6 * k); this.l2.position.set(12 * k, 5, 6 * k); this.l1.distance = this.l2.distance = 24 * k;
   },
@@ -4796,6 +4868,13 @@ const Battle = {
     const dps = this.labLog.reduce((a, x) => a + x[1], 0) / 5;
     $('labDps').innerHTML = `DPS <b>${Math.round(dps)}</b> · TOTAL <b>${Math.round(this.labTotal).toLocaleString()}</b>`;
   },
+  // fell off a sky platform: in a match that loses the round; in TestLab you're dropped back in the middle
+  ringOut(f) {
+    if (f.pos.y < -60) { f.pos.y = -60; f.vy = 0; }
+    if (f.state === 'ko' || f.fellOut) return;
+    if (this.lab || this.phase !== 'fight') { f.pos.set(0, 0.05, f === this.p1 ? -2 : 2); f.vy = 0; f.knock.set(0, 0, 0); f.moveVel.set(0, 0, 0); f.air = false; this.popAt(f, 'BACK ON', 'note', 0.8); return; }
+    f.fellOut = true; f.hp = 0; this.ko(f, f === this.p1 ? this.p2 : this.p1); this.banner('RING OUT');
+  },
   timeOut() {
     const a = this.p1.hp / this.p1.stats.hp, b = this.p2.hp / this.p2.stats.hp;
     this.phase = 'ko'; this.phaseT = 0; this.slow = 1;
@@ -4887,7 +4966,7 @@ const Battle = {
     $('aimChip').innerHTML = (on ? 'Shoulder view' : 'Arena view') + '<kbd>V</kbd>';
   },
   updateCamera(dt, snap) {
-    const p = this.p1.pos, e = this.p2.pos;
+    const p = this.p1.pos.clone(), e = this.p2.pos.clone(); p.y = Math.max(p.y, -1.5); e.y = Math.max(e.y, -1.5);
     const dir = new V3(p.x - e.x, 0, p.z - e.z); const dist = dir.length(); if (dist > 1e-3) dir.divideScalar(dist); else dir.set(0, 0, -1);
     const side = new V3(dir.z, 0, -dir.x);
     if (this.aimMode) return this.aimCamera(dt, snap);
@@ -4910,7 +4989,7 @@ const Battle = {
     const f = this.p1, e = this.p2, C = CAM_VIEWS.aim, tx = e.pos.x - f.pos.x, tz = e.pos.z - f.pos.z, dist = Math.hypot(tx, tz);
     if (dist > 0.05) { const want = Math.atan2(tx, tz); this.aimYaw += snap ? wrapAngle(want - this.aimYaw) : wrapAngle(want - this.aimYaw) * (1 - Math.exp(-7 * dt)); }
     const flat = new V3(Math.sin(this.aimYaw), 0, Math.cos(this.aimYaw)), rt = new V3(-flat.z, 0, flat.x), close = clamp((5 - dist) / 4, 0, 1);
-    const head = new V3(f.pos.x, f.pos.y + f.rig.height * 0.92 + C.up, f.pos.z);
+    const head = new V3(f.pos.x, Math.max(f.pos.y, -1.5) + f.rig.height * 0.92 + C.up, f.pos.z);
     const want = head.clone().addScaledVector(rt, C.side * (1 + close * 1.4)).addScaledVector(flat, -(C.back + close * 1.3)); want.y += close * 1.5;
     want.y = Math.max(0.5, want.y);
     const blk = World.losHit(head, want); if (blk) want.copy(head).lerp(blk, 0.85);
@@ -4946,9 +5025,10 @@ const Battle = {
         // and under the roof
         if (World.arena.roof) { const top = World.arena.roof - f.rig.height - 0.1; if (f.pos.y > top) { f.pos.y = top; if (f.vy > 0) f.vy = 0; } }
       }
-      const r = Math.hypot(f.pos.x, f.pos.z), max = ARENA_R - f.radius;
-      if (r > max) { f.pos.x *= max / r; f.pos.z *= max / r; const nx = f.pos.x / r, nz = f.pos.z / r; const kn = f.knock.x * nx + f.knock.z * nz; if (kn > 0) { f.knock.x -= 1.5 * kn * nx; f.knock.z -= 1.5 * kn * nz; } }
+      const r = Math.hypot(f.pos.x, f.pos.z), max = ARENA_R - f.radius, sky = World.arena && World.arena.sky;
+      if (r > max && (!sky || (f.pos.y < World.arena.rim && r < ARENA_R + f.radius))) { f.pos.x *= max / r; f.pos.z *= max / r; const nx = f.pos.x / r, nz = f.pos.z / r; const kn = f.knock.x * nx + f.knock.z * nz; if (kn > 0) { f.knock.x -= 1.5 * kn * nx; f.knock.z -= 1.5 * kn * nz; } }
       const land = World.resolve(f, dt);
+      if (sky && f.pos.y < -9) this.ringOut(f);
       if (land > 5) { this.burst(f.pos.clone().setY(f.pos.y + 0.1), 0xc8ccd6, 10, 3); this.sfx('block'); if (f === this.p1) this.shake = Math.max(this.shake, 0.18); }
     }
   },
@@ -4958,6 +5038,7 @@ const Battle = {
     let dt = this.paused ? 0 : rawDt;
     this.phaseT += dt;
     if (this.mStats && this.phase === 'fight') this.mStats.time += dt;
+    if (this.decorG && this.decorG.userData.tick) this.decorG.userData.tick(rawDt, this);
     if (this.phase === 'vs' && this.phaseT > 2.3) { $('vs').hidden = true; this.startRound(); }
     if (this.phase === 'count') {
       const n = Math.floor(this.phaseT);
