@@ -392,6 +392,13 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 .dmg.blk { color: #9fd3ff; font-size: 26px; }
 .dmg.note { color: #cfd8e6; font-size: 24px; letter-spacing: 0.08em; }
 @keyframes rise { 0% { opacity: 0; transform: translate(-50%, -30%) scale(1.4); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -160%) scale(0.9); } }
+/* cannon reticle that follows the mouse (red over the opponent) */
+.reticle { position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; pointer-events: none; z-index: 3; }
+.reticle i { position: absolute; inset: 0; border: 2px solid #ffe14d; border-radius: 50%; box-shadow: 0 0 0 1px #000a, inset 0 0 0 1px #000a; transition: transform 0.1s, border-color 0.1s; }
+.reticle i::after { content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; border-radius: 50%; background: #ffe14d; }
+.reticle.on i { border-color: var(--p2); transform: scale(0.78); }
+.reticle.on i::after { background: var(--p2); }
+#battleCanvas.has-reticle { cursor: none; }
 /* camera switch chip (arena view / shoulder view) */
 .aim-chip { position: absolute; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 4; background: #0b0f18cc; border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; color: var(--cream); font-size: 12px; font-weight: 700; }
 .aim-chip:hover { border-color: #ffffff40; }
@@ -688,6 +695,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     </div>
   </div>
   <div class="banner"><div id="banner"></div></div>
+  <div class="reticle" id="reticle" hidden><i></i></div>
   <button type="button" class="aim-chip" id="aimChip" title="Switch camera (V)"></button>
   <div class="touch" id="touch">
     <div class="stick" id="stick"><i id="stickKnob"></i></div>
@@ -4032,6 +4040,12 @@ bCanvas.addEventListener('mousedown', e => {
 $('aimChip').addEventListener('click', e => { e.currentTarget.blur(); Battle.setAimMode(!Battle.aimMode); });
 addEventListener('mouseup', e => Input.held.delete('mouse' + e.button));
 bCanvas.addEventListener('contextmenu', e => e.preventDefault());
+// the mouse pointer aims your hand cannons; a reticle follows it (red over the opponent) when you have cannons
+bCanvas.addEventListener('mousemove', e => {
+  const r = bCanvas.getBoundingClientRect(); (Battle.mouseNDC || (Battle.mouseNDC = new THREE.Vector2())).set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); Battle.mouseIn = true;
+  const R = $('reticle'); R.style.left = (e.clientX - r.left) + 'px'; R.style.top = (e.clientY - r.top) + 'px';
+});
+bCanvas.addEventListener('mouseleave', () => { Battle.mouseIn = false; });
 // touch
 (() => {
   const coarse = matchMedia('(pointer: coarse)').matches;
@@ -4504,7 +4518,9 @@ const Battle = {
     // opponent's range; the auto-turn lags a moving target, so a quick sidestep or dodge can make a shot miss
     const o = this.originOf(f, W, i), tgt = aimPt(opp), h = new V3(Math.sin(f.yaw), 0, Math.cos(f.yaw));
     const range = Math.max(1, Math.hypot(tgt.x - f.pos.x, tgt.z - f.pos.z));
-    const aim = new V3(f.pos.x, tgt.y, f.pos.z).addScaledVector(h, range);
+    // your hand cannons fire at the mouse pointer (when it is over the arena); everything else fires straight ahead
+    const mouse = f === this.p1 && W.id === 'cannon' ? this.mouseAimPoint(f) : null;
+    const aim = mouse || new V3(f.pos.x, tgt.y, f.pos.z).addScaledVector(h, range);
     const dir = aim.sub(o).normalize(); // both arms converge on the point straight ahead at the opponent's range
     // lower accuracy throws shots a little off line
     const miss = (1 - f.stats.acc) * 0.18 * rand(-1, 1); dir.applyAxisAngle(new V3(0, 1, 0), miss);
@@ -4686,6 +4702,26 @@ const Battle = {
   },
   snapCamera() { this.updateCamera(1, true); },
   // shoulder view (V): an over-the-shoulder camera that stays locked on the opponent (aimCamera)
+  // the point under the mouse pointer for hand cannons: the opponent if the pointer is on them, otherwise the wall it is
+  // over, otherwise the spot on the floor (at your chest height, so the shell flies level). Kept to the front 140 degrees
+  mouseAimPoint(f) {
+    if (!this.mouseIn || !this.cam) return null;
+    const ray = new THREE.Raycaster(); ray.setFromCamera(this.mouseNDC, this.cam);
+    const o = ray.ray.origin, d = ray.ray.direction, e = this.p2, c = aimPt(e);
+    let pt = null; const tc = c.clone().sub(o).dot(d);
+    const near = tc > 0 ? o.clone().addScaledVector(d, tc) : null;
+    if (near && Math.hypot(near.x - c.x, near.z - c.z) < e.radius + 0.45 && near.y > e.pos.y - 0.1 && near.y < e.pos.y + e.rig.height + 0.2) { pt = near; this.mouseOnOpp = true; }
+    else {
+      this.mouseOnOpp = false;
+      const far = d.y < -0.01 ? o.clone().addScaledVector(d, Math.min(80, (o.y - 0.02) / -d.y)) : o.clone().addScaledVector(d, 80);
+      const hit = World.losHit(o, far);
+      pt = hit || far; if (!hit || hit.y < 0.15) pt.y = f.pos.y + f.rig.chestY;
+    }
+    // never behind you: swing anything outside the front arc back to its edge
+    const fy = f.yaw, a = Math.atan2(pt.x - f.pos.x, pt.z - f.pos.z), da = wrapAngle(a - fy), lim = 1.22;
+    if (Math.abs(da) > lim) { const r = Math.max(2, Math.hypot(pt.x - f.pos.x, pt.z - f.pos.z)), aa = fy + Math.sign(da) * lim; pt.set(f.pos.x + Math.sin(aa) * r, pt.y, f.pos.z + Math.cos(aa) * r); }
+    return pt;
+  },
   setAimMode(on) {
     this.aimMode = on; try { localStorage.setItem('forge-arena-aim', on ? '1' : '0'); } catch (e) {}
     if (on && this.p1 && this.p2) this.aimYaw = Math.atan2(this.p2.pos.x - this.p1.pos.x, this.p2.pos.z - this.p1.pos.z);
@@ -4824,6 +4860,8 @@ const Battle = {
     this.p1.visuals(simDt || rawDt * 0.05, time); this.p2.visuals(simDt || rawDt * 0.05, time);
     this.weaponFx(simDt);
     this.updateCamera(rawDt);
+    { const R = $('reticle'), show = this.mouseIn && !this.paused && !!(this.p1.armW && this.p1.armW.some(W => W.id === 'cannon')) && this.p1.state !== 'ko';
+      R.hidden = !show; bCanvas.classList.toggle('has-reticle', show); if (show) { this.mouseAimPoint(this.p1); R.classList.toggle('on', !!this.mouseOnOpp); } }
     this.fadeCover(rawDt);
     this.renderer.render(this.scene, this.cam);
     this.hud(rawDt);
