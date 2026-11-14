@@ -403,6 +403,17 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 .dmg.blk { color: #9fd3ff; font-size: 26px; }
 .dmg.note { color: #cfd8e6; font-size: 24px; letter-spacing: 0.08em; }
 @keyframes rise { 0% { opacity: 0; transform: translate(-50%, -30%) scale(1.8); } 12% { opacity: 1; transform: translate(-50%, -50%) scale(0.92); } 22% { transform: translate(-50%, -60%) scale(1.05); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -170%) scale(0.85); } }
+/* part-damage figure next to each health bar: green when fresh, through yellow, to red when wrecked */
+.hp-side { position: relative; }
+.pdoll { position: absolute; top: 0; left: calc(min(440px, 100%) + 10px); display: grid; grid-template-columns: 5px 12px 5px; grid-template-rows: 8px 14px 13px; gap: 2px; filter: drop-shadow(0 1px 2px #000c); }
+.hp-side.r .pdoll { left: auto; right: calc(min(440px, 100%) + 10px); }
+.pdoll i { background: #4ade80; border-radius: 2px; transition: background 0.2s; }
+.pdoll .h { grid-column: 2; grid-row: 1; border-radius: 4px; }
+.pdoll .al { grid-column: 1; grid-row: 2; } .pdoll .b { grid-column: 2; grid-row: 2; } .pdoll .ar { grid-column: 3; grid-row: 2; }
+.pdoll .l { grid-column: 2; grid-row: 3; }
+.pdoll i.hit { animation: dollhit 0.3s; }
+@keyframes dollhit { 0%, 50% { background: #fff; } }
+@media (max-width: 700px) { .pdoll { display: none; } }
 /* hit marker: four ticks that snap out from the aim point */
 .hitmk { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 4; opacity: 0; }
 .hitmk i { position: absolute; left: -1.5px; top: -16px; width: 3px; height: 9px; background: #fff; border-radius: 2px; box-shadow: 0 0 0 1px #000a, 0 0 6px #fff8; transform-origin: 1.5px 16px; }
@@ -707,6 +718,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   <div class="hud">
     <div class="hp-side">
       <div class="hp-name" id="p1Name"></div>
+      <div class="pdoll" id="p1Doll" title="Part damage"><i class="h"></i><i class="al"></i><i class="b"></i><i class="ar"></i><i class="l"></i></div>
       <div class="hpbar" style="--c: var(--p1)"><div class="trail" id="p1Trail"></div><div class="fill" id="p1Fill"></div><span class="hpnum" id="p1Num"></span></div>
       <div class="wslots" id="p1W"></div>
     </div>
@@ -718,6 +730,7 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     </div>
     <div class="hp-side r">
       <div class="hp-name" id="p2Name"></div>
+      <div class="pdoll" id="p2Doll" title="Part damage"><i class="h"></i><i class="al"></i><i class="b"></i><i class="ar"></i><i class="l"></i></div>
       <div class="hpbar" style="--c: var(--p2)"><div class="trail" id="p2Trail"></div><div class="fill" id="p2Fill"></div><span class="hpnum" id="p2Num"></span></div>
     </div>
   </div>
@@ -1125,6 +1138,10 @@ function halo(parent, color, x, y, z, size, opacity = 0.75) {
 }
 /* ---------- the battle look: HDR render, bloom, ACES grade, sky domes, rim light and ink outlines ----------
    Settings > Graphics switches between High (all of it) and Low (the plain renderer). */
+// body-part damage: each part's share of max health before it is fully worn, how hard hits on it land, and its name
+const ZONE_SHARE = { head: 0.2, arms: 0.3, body: 0.4, legs: 0.3 };
+const ZONE_DMG = { head: 1.5, arms: 0.9, body: 1, legs: 0.85 };
+const ZONE_NAME = { head: 'HEAD', arms: 'ARMS', body: 'BODY', legs: 'LEGS' };
 const GFX = { hi: (() => { try { return localStorage.getItem('forge-arena-gfx') !== 'low'; } catch (e) { return true; } })() };
 function makePost(renderer) {
   const gl2 = renderer.capabilities.isWebGL2;
@@ -2405,7 +2422,7 @@ function makeFighterModel(build, accent, shOff = 0) {
   }
   rig.height = head.position.y + hh * headScale;
   rig.chestY = chestY;
-  rig.hipY = hipY;
+  rig.hipY = hipY; rig.headY = head.position.y - 0.04 * headScale;   // where the head starts (its base), for head shots
   rig.fit = fighterExtent(rig); rig.bubbleY = rig.fit.cy; rig.bubbleR = Math.max(0.95, rig.fit.r * 1.06);
   const shield = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending }));
   shield.scale.set(0.9 + bw * 0.1, rig.height * 0.6, 0.9 + bw * 0.1); shield.position.y = rig.height * 0.5; shield.visible = false; root.add(shield); rig.shield = shield;
@@ -3890,7 +3907,7 @@ class Fighter {
     this.reset(new V3(), 0);
   }
   reset(p, yaw) {
-    this.fellOut = false;
+    this.fellOut = false; this.wear = { head: 0, arms: 0, body: 0, legs: 0 }; this.smokeT = 0;
     this.pos.copy(p); this.yaw = yaw; this.hp = this.stats.hp; this.hpTrail = this.hp; this.energy = 0;
     this.state = 'idle'; this.t = 0; this.knock.set(0, 0, 0); this.moveVel.set(0, 0, 0); this.vy = 0; this.air = false;
     this.dodgeCdT = 0; this.fortifyT = 0; this.buffer = null; this.invuln = false; this.attackId = 0; this.punchSide = 0;
@@ -3898,7 +3915,9 @@ class Fighter {
     this.wcd = [0, 0, 0]; this.heat = 0; this.heatT = 0; this.overheat = false; this.abCd = 0; this.abOn = false; this.abDry = false; this.abFuel = this.ability ? this.ability.dur || 0 : 0; this.jetT = 0; this.empField = null; this.wpn = null; this.burnT = 0; this.burnDps = 0; this.burnBy = null; this.slowT = 0; this.wShieldT = 0; this.tickT = 0; this.shots = 0;
     this.rig.root.rotation.y = yaw; this.rig.shield.visible = false; this.rig.bubble.visible = false;
   }
-  timing(kind) { if (kind === 'kick') return this.kick; const s = (this.slowT > 0 ? 1.3 : 1) / this.stats.atkSpd; return kind === 'light' ? { w: 0.15 * s, a: 0.08 * s, r: 0.22 * s } : { w: 0.48 * s, a: 0.1 * s, r: 0.42 * s }; }
+  // part damage: how worn a part is, 0 (fresh) to 1 (wrecked once it has soaked its share of max health)
+  worn(z) { return this.wear ? Math.min(1, this.wear[z] / (this.stats.hp * ZONE_SHARE[z])) : 0; }
+  timing(kind) { if (kind === 'kick') return this.kick; const s = (this.slowT > 0 ? 1.3 : 1) * (1 + 0.3 * this.worn('arms')) / this.stats.atkSpd; return kind === 'light' ? { w: 0.15 * s, a: 0.08 * s, r: 0.22 * s } : { w: 0.48 * s, a: 0.1 * s, r: 0.42 * s }; }
   inWindup() { if (this.state === 'weapon') return this.t < this.wpn.w + 0.05; return (this.state === 'light' || this.state === 'heavy' || this.state === 'kick') && this.t < this.timing(this.state).w; }
   startAttack(kind, side) { this.state = kind; this.t = 0; this.hitDone = false; this.attackId++; if (kind === 'light') this.punchSide = side === undefined ? this.punchSide ^ 1 : side; }
   // attack with the fitted arm weapon instead of a punch: side 1 = left arm, 0 = right, -1 = both
@@ -3926,7 +3945,7 @@ class Fighter {
     if (this.wShieldT > 0 && a !== 'dodge') return false;
     if (a === 'dodge') {
       if (this.dodgeCdT > 0) return false;
-      this.state = 'dodge'; this.t = 0; this.dodgeCdT = this.stats.dodgeCd;
+      this.state = 'dodge'; this.t = 0; this.dodgeCdT = this.stats.dodgeCd * (1 + 0.5 * this.worn('legs'));
       this.dodgeDir = wish.lengthSq() > 0.01 ? wish.clone().normalize() : fwd.clone().negate();
       this.dodgeLocal = { x: this.dodgeDir.dot(right), z: this.dodgeDir.dot(fwd) };
       if (this === game.p1) game.fovKick = 7;
@@ -3988,8 +4007,9 @@ class Fighter {
       // the left mouse button alternates, so it fires whichever arm is next
       const alt = inp.holdAlt && !inp.holdL, side = alt ? this.punchSide ^ 1 : inp.holdL && !inp.holdR ? 1 : inp.holdR && !inp.holdL ? 0 : -1, W = side >= 0 && this.armW[side];
       if (W && W.id === 'cannon' && !this.overheat) {
-        if (inp.left || inp.right || inp.light) this.autoT = s.cannonRate;
-        else if ((this.autoT = (this.autoT || 0) - dt) <= 0) { this.autoT += s.cannonRate; if (this.autoT < 0) this.autoT = 0; inp = Object.assign({}, inp, alt ? { light: true } : side ? { left: true } : { right: true }); }
+        const rate = s.cannonRate * (1 + 0.45 * this.worn('arms'));
+        if (inp.left || inp.right || inp.light) this.autoT = rate;
+        else if ((this.autoT = (this.autoT || 0) - dt) <= 0) { this.autoT += rate; if (this.autoT < 0) this.autoT = 0; inp = Object.assign({}, inp, alt ? { light: true } : side ? { left: true } : { right: true }); }
       } else this.autoT = 0;
     }
     if (inp) {
@@ -4005,7 +4025,7 @@ class Fighter {
     // jump from the ground while free to move; the world's gravity brings it back down
     this.jumpT = Math.max(0, (this.jumpT || 0) - dt);
     if (inp && inp.jump && !this.air && (this.state === 'idle' || this.state === 'block')) {
-      this.vy = Math.sqrt(2 * 26 * s.jump); this.air = true; this.pos.y += 0.02; this.jumpT = 0.35; this.state = 'idle'; if (this === game.p1) game.fovKick = Math.max(game.fovKick || 0, 3);
+      this.vy = Math.sqrt(2 * 26 * s.jump * (1 - 0.35 * this.worn('legs'))); this.air = true; this.pos.y += 0.02; this.jumpT = 0.35; this.state = 'idle'; if (this === game.p1) game.fovKick = Math.max(game.fovKick || 0, 3);
       game.sfx('jump'); if (this.rig.hover) game.burst(this.pos.clone(), 0xffffff, 8, 3);
     }
     const to = new V3(opp.pos.x - this.pos.x, 0, opp.pos.z - this.pos.z);
@@ -4055,7 +4075,7 @@ class Fighter {
       }
       case 'dodge':
         steer = false; turnRate = 6;
-        this.moveVel.copy(this.dodgeDir).multiplyScalar(s.dodgeSpeed * (1 - (this.t / 0.3) * 0.6));
+        this.moveVel.copy(this.dodgeDir).multiplyScalar(s.dodgeSpeed * (1 - (this.t / 0.3) * 0.6) * (1 - 0.25 * this.worn('legs')));
         this.invuln = this.t < 0.22;
         if (this.t >= 0.3) { this.state = 'idle'; this.invuln = false; }
         break;
@@ -4063,7 +4083,7 @@ class Fighter {
       case 'special': this.updateSpecial(dt, opp, dist, fwd, game); if (this.special.id === 'blink') steer = false; break;
       case 'ko': case 'victory': turnRate = this.state === 'victory' ? 3 : 0; break;
     }
-    if (steer) this.moveVel.lerp(wish.multiplyScalar(s.runSpeed * speedMul * (this.slowT > 0 ? 0.6 : 1)), 1 - Math.exp(-14 * dt));
+    if (steer) this.moveVel.lerp(wish.multiplyScalar(s.runSpeed * speedMul * (this.slowT > 0 ? 0.6 : 1) * (1 - 0.35 * this.worn('legs'))), 1 - Math.exp(-14 * dt));
     const dy = wrapAngle(lockYaw - this.yaw), mt = turnRate * dt;
     this.yaw += clamp(dy, -mt, mt);
     this.rig.root.rotation.y = this.yaw;
@@ -4755,7 +4775,7 @@ const Battle = {
     if (kind === 'kick') {
       const K = att.kick;
       if (d > att.stats.reach + K.reach + def.radius || this.facing(att, def) < K.arc) { this.sfx('whoosh'); return; }
-      this.applyHit(att, def, { mult: K.mult, kb: K.kb, stun: K.stun, stop: 0.08 }); return;
+      this.applyHit(att, def, { mult: K.mult, kb: K.kb, stun: K.stun, stop: 0.08, zone: 'legs' }); return;
     }
     if (d > att.stats.reach + def.radius || this.facing(att, def) < 0.42) { if (kind === 'heavy') this.sfx('whoosh'); return; }
     this.applyHit(att, def, kind === 'light' ? { mult: 1, kb: 4.5, stun: 0.3, stop: 0.05 } : { mult: 2.3 * att.stats.heavyMul, kb: 11, stun: 0.55, guardBreak: true, stop: 0.1, heavy: true });
@@ -4780,24 +4800,27 @@ const Battle = {
     if (this.shielded(def)) return;
     // weapons hit for a fixed amount so they don't stack on top of a heavy middle's power
     let dmg = (o.weapon ? 10 * (o.wMul || att.stats.wDmg || 1) : att.stats.power) * o.mult * (att.fortifyT > 0 ? 1.2 : 1);
-    const crit = Math.random() < Math.max(0.02, att.stats.acc - 0.45); if (crit) dmg *= 1.5;
     const hg = att.pos.y - def.pos.y > 0.5; if (hg) dmg *= 1.15;
+    // which part it lands on: head shots hurt most, and a worn part takes more; worn arms hit weaker, a worn head crits less
+    const zone = this.zoneOf(att, def, o, hg);
+    dmg *= ZONE_DMG[zone] * (1 + 0.4 * def.worn(zone)) * (1 - 0.3 * att.worn('arms'));
+    const crit = Math.random() < Math.max(0.02, att.stats.acc - 0.45) * (1 - 0.6 * att.worn('head')); if (crit) dmg *= 1.5;
     // weapons used to slip past most defense, so they carry a bigger multiplier now that armor applies to everything
     dmg *= DMG_SCALE * (o.weapon ? 1.5 : 1) * (1 - def.stats.armor);
     let kb = o.kb * att.stats.kbDealt, stun = o.stun, blocked = false;
     if (def.state === 'block' && !o.unblockable && this.facing(def, att) > 0.2) {
-      blocked = true; dmg *= 1 - def.stats.blockRed * (o.guardBreak ? 0.5 : 1); kb *= 0.35; stun = o.guardBreak ? 0.25 : 0;
+      blocked = true; dmg *= 1 - def.stats.blockRed * (o.guardBreak ? 0.5 : 1) * (1 - 0.35 * def.worn('head')); kb *= 0.35; stun = o.guardBreak ? 0.25 : 0;
     }
     if (def.fortifyT > 0) { dmg *= 0.6; kb *= 0.25; stun = 0; }
-    kb *= 1 - def.stats.kbRes;
+    kb *= (1 - def.stats.kbRes) * (1 + 0.35 * def.worn('body'));
     if (!o.weapon) stun *= 1 - def.stats.kbRes * 0.5;
-    def.hp = Math.max(0, def.hp - dmg); this.track(def, dmg);
+    def.hp = Math.max(0, def.hp - dmg); this.track(def, dmg); this.wearPart(def, zone, dmg);
     const n = new V3(def.pos.x - att.pos.x, 0, def.pos.z - att.pos.z).normalize();
     def.knock.addScaledVector(n, kb);
     if (stun > 0) { def.state = 'stun'; def.t = 0; def.stunDur = stun; def.buffer = null; def.invuln = false; }
     const en = o.energy ?? 1;
-    att.energy = Math.min(100, att.energy + (blocked ? 4 : 10) * en);
-    def.energy = Math.min(100, def.energy + 5 * en);
+    att.energy = Math.min(100, att.energy + (blocked ? 4 : 10) * en * (1 - 0.4 * att.worn('body')));
+    def.energy = Math.min(100, def.energy + 5 * en * (1 - 0.4 * def.worn('body')));
     if (o.quiet) {
       // rapid ticks (beams, flame, saws, bullets): small sparks and one running damage number instead of a full hit
       def.flash = 0.05;
@@ -4814,9 +4837,9 @@ const Battle = {
     this.flash(hp, blocked ? 0x9fd3ff : att.accent, o.heavy ? 2.6 : 1.6);
     this.hitstop = (o.stop ?? 0.05) * (blocked ? 0.5 : 1);
     this.shake = Math.max(this.shake, o.heavy ? 0.35 : 0.14) * (def === this.p1 ? 1.3 : 1);
-    if (att === this.p1) this.hitMark(blocked ? 'blk' : crit || o.heavy ? 'crit' : ''); else if (def === this.p1 && !blocked) { this.hurt = Math.min(0.5, (this.hurt || 0) + (o.heavy ? 0.35 : 0.2)); this.fovKick = Math.min(this.fovKick || 0, o.heavy ? -4 : -2); }
+    if (att === this.p1) this.hitMark(blocked ? 'blk' : crit || o.heavy || zone === 'head' ? 'crit' : ''); else if (def === this.p1 && !blocked) { this.hurt = Math.min(0.5, (this.hurt || 0) + (o.heavy ? 0.35 : 0.2)); this.fovKick = Math.min(this.fovKick || 0, o.heavy ? -4 : -2); }
     if (blocked) { this.sfx('block'); this.popAt(def, Math.round(dmg) + ' BLOCKED', 'blk'); }
-    else { this.sfx('hit', !!o.heavy); this.popAt(def, (hg ? '▲ ' : '') + (crit ? 'CRIT ' : '') + Math.round(dmg), crit ? 'crit' : ''); }
+    else { this.sfx('hit', !!o.heavy || zone === 'head'); this.popAt(def, (hg ? '▲ ' : '') + (zone === 'head' ? 'HEADSHOT ' : crit ? 'CRIT ' : '') + Math.round(dmg), crit || zone === 'head' ? 'crit' : ''); }
     if (def.hp <= 0) this.ko(def, att);
   },
   /* --- weapons --- */
@@ -4826,10 +4849,30 @@ const Battle = {
     if (!f._accT || now - f._accT > 320) { if (f._acc >= 0.5) this.popAt(f, Math.round(f._acc) + (blocked ? ' BLOCKED' : ''), blocked ? 'blk' : 'tick', 0.6); f._acc = 0; f._accT = now; }
     if (!f._sfxT || now - f._sfxT > 140) { f._sfxT = now; this.sfx(blocked ? 'block' : 'hit', false); }
   },
+  // the part a hit lands on: from the impact point for shots, from the move for melee, mostly the body for beams and the rest
+  zoneOf(att, def, o, hg) {
+    if (o.zone) return o.zone;
+    const r = def.rig;
+    if (o.at) {
+      const y = o.at.y - def.pos.y; if (y >= r.headY) return 'head'; if (y < r.hipY) return 'legs';
+      const sx = Math.cos(def.yaw), sz = -Math.sin(def.yaw), lat = Math.abs((o.at.x - def.pos.x) * sx + (o.at.z - def.pos.z) * sz);
+      return lat > def.radius * 0.55 ? 'arms' : 'body';
+    }
+    const q = Math.random();
+    if (hg) return q < 0.6 ? 'head' : q < 0.85 ? 'body' : 'arms';
+    if (o.heavy && !o.weapon) return q < 0.35 ? 'head' : q < 0.85 ? 'body' : 'arms';
+    return q < 0.12 ? 'head' : q < 0.65 ? 'body' : q < 0.9 ? 'arms' : 'legs';
+  },
+  // add damage to a part; the first time a part passes half and full wear, say so
+  wearPart(f, z, dmg) {
+    if (!f.wear) return;
+    const before = f.worn(z); f.wear[z] += dmg; const after = f.worn(z);
+    for (const [lim, word] of [[0.5, 'DAMAGED'], [1, 'WRECKED']]) if (before < lim && after >= lim && f.state !== 'ko') this.popAt(f, ZONE_NAME[z] + ' ' + word, 'note', 1.0);
+  },
   track(def, dmg) { if (this.mStats && this.phase === 'fight') this.mStats[def === this.p2 ? 'dd' : 'dt'] += dmg; },
   dot(f, dmg) {
     if (f.state === 'ko' || this.phase !== 'fight' || f.wShieldT > 0) return;
-    dmg *= DMG_SCALE * (1 - f.stats.armor); f.hp = Math.max(0, f.hp - dmg); this.track(f, dmg); this.tally(f, dmg, false);
+    dmg *= DMG_SCALE * (1 - f.stats.armor); f.hp = Math.max(0, f.hp - dmg); this.track(f, dmg); this.wearPart(f, 'body', dmg); this.tally(f, dmg, false);
     if (Math.random() < 0.25) { const p = f.pos.clone(); p.y += f.rig.chestY * rand(0.6, 1.2); this.burst(p, 0xff7a1a, 1, 2.5); }
     if (f.hp <= 0) this.ko(f, f.burnBy || (f === this.p1 ? this.p2 : this.p1));
   },
@@ -4942,7 +4985,7 @@ const Battle = {
     const aim = mouse || new V3(f.pos.x, tgt.y, f.pos.z).addScaledVector(h, range);
     const dir = aim.sub(o).normalize(); // both arms converge on the point straight ahead at the opponent's range
     // lower accuracy throws shots a little off line
-    const miss = (1 - f.stats.acc) * 0.18 * rand(-1, 1); dir.applyAxisAngle(new V3(0, 1, 0), miss);
+    const miss = ((1 - f.stats.acc) * 0.18 + f.worn('head') * 0.08) * rand(-1, 1); dir.applyAxisAngle(new V3(0, 1, 0), miss);
     const cannon = W.proj === 'shell' && W.slot === 'arms', vel = dir.clone().multiplyScalar(W.speed * (cannon ? f.stats.cannonSpd : 1));
     if (W.proj === 'rocket') { const side = new V3(-dir.z, 0, dir.x); vel.multiplyScalar(0.55).addScaledVector(side, (i % 2 ? 1 : -1) * rand(2, 4)).add(new V3(0, rand(3, 5), 0)); }
     if (W.proj === 'bullet') { vel.x += rand(-0.6, 0.6); vel.y += rand(-0.3, 0.3); }
@@ -4982,7 +5025,7 @@ const Battle = {
       if (hd < T.radius + 0.22 && P.pos.y > T.pos.y + 0.05 && P.pos.y < T.pos.y + T.rig.height + 0.15 && T.state !== 'ko' && !T.invuln) {
         if (this.shielded(T)) { this.burst(P.pos, 0xff3dd8, 8, 4); this.killProj(i); continue; }
         const many = W.count > 3;
-        this.applyHit(P.owner, T, { weapon: true, wMul: W.proj === 'shell' && W.slot === 'arms' ? P.owner.stats.cannonDmg : 0, mult: W.mult, kb: W.proj === 'shell' && W.slot === 'arms' ? W.kb * Math.sqrt(P.owner.stats.cannonDmg) : W.kb, stun: W.stun || 0, stop: many ? 0 : 0.05, quiet: many, energy: many ? 0.35 : 1, heavy: W.proj === 'shell', color: W.color });
+        this.applyHit(P.owner, T, { at: P.pos.clone(), weapon: true, wMul: W.proj === 'shell' && W.slot === 'arms' ? P.owner.stats.cannonDmg : 0, mult: W.mult, kb: W.proj === 'shell' && W.slot === 'arms' ? W.kb * Math.sqrt(P.owner.stats.cannonDmg) : W.kb, stun: W.stun || 0, stop: many ? 0 : 0.05, quiet: many, energy: many ? 0.35 : 1, heavy: W.proj === 'shell', color: W.color });
         if (W.slow) { T.slowT = W.slow; this.popAt(T, 'SLOWED', 'note', 0.7); this.burst(P.pos, 0x9fe8ff, 14, 5); }
         if (W.pull && T.state !== 'ko') { const A = P.owner, n = new V3(A.pos.x - T.pos.x, 0, A.pos.z - T.pos.z), dd = n.length(); const gap = Math.max(0, dd - (A.radius + T.radius + 0.5)); T.knock.copy(n.normalize().multiplyScalar(Math.min(80, gap * 7.2))); }
         if (W.proj === 'rocket' || W.proj === 'shell') this.burst(P.pos, W.color, 10, 5);
@@ -5049,7 +5092,7 @@ const Battle = {
     }
   },
   ko(loser, winner) {
-    if (this.lab) { loser.hp = loser.stats.hp; loser.hpTrail = loser.hp; this.popAt(loser, 'RESTORED', 'note', 0.9); return; }
+    if (this.lab) { loser.hp = loser.stats.hp; loser.hpTrail = loser.hp; loser.wear = { head: 0, arms: 0, body: 0, legs: 0 }; this.popAt(loser, 'RESTORED', 'note', 0.9); return; }
     loser.state = 'ko'; loser.t = 0; loser.fortifyT = 0; this.wFlash = 0.55; if (winner === this.p1) this.hitMark('kill');
     this.phase = 'ko'; this.phaseT = 0; this.slow = 0.25;
     this.sfx('ko'); this.banner('K.O.');
@@ -5320,6 +5363,11 @@ const Battle = {
     this.p1.visuals(simDt || rawDt * 0.05, time); this.p2.visuals(simDt || rawDt * 0.05, time);
     this.weaponFx(simDt);
     this.rollSounds(rawDt);
+    if (simDt > 0) for (const f of [this.p1, this.p2]) if (f.wear && f.state !== 'ko') for (const z of ['head', 'arms', 'body', 'legs']) {
+      const k = f.worn(z); if (k < 0.5 || Math.random() > simDt * 6 * k) continue;
+      const r = f.rig, y = z === 'head' ? (r.headY + r.height) / 2 : z === 'legs' ? r.hipY * 0.5 : r.chestY * 0.9, sd = z === 'arms' ? (Math.random() < 0.5 ? -1 : 1) * f.radius * 0.8 : 0;
+      this.burst(new V3(f.pos.x + Math.cos(f.yaw) * sd, f.pos.y + y, f.pos.z - Math.sin(f.yaw) * sd), k >= 1 ? 0xff7a1a : 0xffd27a, 1, 2.2);
+    }
     if (this.camBase) this.cam.position.copy(this.camBase);
     this.updateCamera(rawDt);
     this.camFx(rawDt, time);
@@ -5336,6 +5384,9 @@ const Battle = {
   },
   hud(dt) {
     for (const [f, pre] of [[this.p1, 'p1'], [this.p2, 'p2']]) {
+      const D = $(pre + 'Doll').children, col = k => `hsl(${Math.round(140 * (1 - k))}, ${80 - k * 10}%, ${55 - k * 5}%)`;
+      const c = [col(f.worn('head')), col(f.worn('arms')), col(f.worn('body')), col(f.worn('arms')), col(f.worn('legs'))];
+      for (let i = 0; i < 5; i++) if (D[i]._c !== c[i]) { D[i]._c = c[i]; D[i].style.background = c[i]; }
       f.hpTrail = f.hpTrail > f.hp ? Math.max(f.hp, f.hpTrail - f.stats.hp * 0.5 * dt) : f.hp;
       $(pre + 'Fill').style.width = (f.hp / f.stats.hp * 100) + '%';
       $(pre + 'Num').textContent = Math.ceil(f.hp).toLocaleString();
