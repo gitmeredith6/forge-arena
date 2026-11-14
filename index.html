@@ -3437,6 +3437,13 @@ const ARENAS = [
   { id: 'classic', name: 'Classic', tag: 'Open ring', desc: 'The original ring. Nothing between you and your rival.',
     theme: { floor: ['#2a3346', '#161c29', '#0d1119'], line: '#ffb547', l1: 0xffb547, l2: 0xff4d6d, fog: 0x070a12, rim: 0x1a2130, glow: 0xffb547 },
     solids: [] },
+  // a sandy colosseum: raked dirt floor, a stone podium wall with stands climbing away behind it, braziers on the wall,
+  // and eight fire vents spaced round the edge of the floor (four fire at a time, alternating)
+  { id: 'colosseum', name: 'Colosseum', tag: 'Dirt pit', desc: 'A dusty pit ringed by stone and a roaring crowd. Fire vents around the edge, open ground in the middle.',
+    r: 15, decor: 'colosseum',
+    theme: { floor: ['#a07e55', '#7d6040', '#4f3b26'], dirt: true, line: '#e8c48a', l1: 0xffb46b, l2: 0xff7a3d, fog: 0x1a120b, rim: 0x6e5a42, glow: 0xff9a3c, stone: 0x9c8466 },
+    solids: [],
+    hazards: [0, 1, 2, 3, 4, 5, 6, 7].map(i => { const a = (i + 0.5) / 8 * Math.PI * 2; return { type: 'vent', x: +(Math.sin(a) * 12.3).toFixed(2), z: +(Math.cos(a) * 12.3).toFixed(2), T: 8, phase: i % 2 ? 0 : 4 }; }) },
   { id: 'guerrilla', name: 'Guerrilla', tag: 'Cover and platforms', desc: 'Walls, chest-high barriers, two raised platforms and two that glide back and forth. Watch the fire vents in the open lanes.',
     theme: { floor: ['#34352a', '#202119', '#11120e'], line: '#e0c25a', l1: 0xffc46b, l2: 0xff6a4d, fog: 0x0a0b08, rim: 0x2a2c22, glow: 0xffc24a,
       steel: 0x3d4236, concrete: 0x77736a, crate: 0x6e6a44, plat: 0x4a4e44 },
@@ -4067,6 +4074,7 @@ bCanvas.addEventListener('mouseleave', () => { Battle.mouseIn = false; });
 
 /* ---------- arena scene ---------- */
 function makeFloorTexture(th) {
+  if (th.dirt) return makeDirtTexture(th);
   const c = document.createElement('canvas'); c.width = c.height = 1024; const x = c.getContext('2d');
   const g = x.createRadialGradient(512, 512, 40, 512, 512, 512); g.addColorStop(0, th.floor[0]); g.addColorStop(0.8, th.floor[1]); g.addColorStop(1, th.floor[2]);
   x.fillStyle = g; x.fillRect(0, 0, 1024, 1024);
@@ -4088,6 +4096,65 @@ function makeFloorTexture(th) {
   // center emblem
   x.fillStyle = '#ffffff10'; x.font = '700 150px Teko, Impact, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('FORGE', 0, 6);
   const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t;
+}
+// packed dirt: a warm sandy base with darker patches, scattered pebbles, rake marks in rings and a scuffed centre
+function makeDirtTexture(th) {
+  const c = document.createElement('canvas'); c.width = c.height = 1024; const x = c.getContext('2d');
+  const g = x.createRadialGradient(512, 512, 40, 512, 512, 512); g.addColorStop(0, th.floor[0]); g.addColorStop(0.75, th.floor[1]); g.addColorStop(1, th.floor[2]);
+  x.fillStyle = g; x.fillRect(0, 0, 1024, 1024);
+  for (let i = 0; i < 90; i++) { const px = Math.random() * 1024, py = Math.random() * 1024, r = 20 + Math.random() * 90, gg = x.createRadialGradient(px, py, 0, px, py, r); const dark = Math.random() < 0.6; gg.addColorStop(0, dark ? '#2a1a0c22' : '#f4d9a81c'); gg.addColorStop(1, '#00000000'); x.fillStyle = gg; x.fillRect(px - r, py - r, r * 2, r * 2); }
+  for (let i = 0; i < 9000; i++) { const v = Math.random(); x.fillStyle = v < 0.45 ? '#3b2a1830' : v < 0.85 ? '#f1d6a524' : '#1d140b55'; const s = Math.random() < 0.95 ? 1 + Math.random() * 2 : 3 + Math.random() * 4; x.fillRect(Math.random() * 1024, Math.random() * 1024, s, s); }
+  x.translate(512, 512);
+  // rake marks: faint concentric grooves, broken up
+  x.lineWidth = 2;
+  for (let r = 70; r < 500; r += 9) { x.strokeStyle = Math.random() < 0.5 ? '#2a1b0d1c' : '#f6dcae14'; const a0 = Math.random() * Math.PI * 2; x.beginPath(); x.arc(0, 0, r, a0, a0 + Math.PI * (0.6 + Math.random() * 1.2)); x.stroke(); }
+  // scuffs and footprints near the middle
+  for (let i = 0; i < 260; i++) { const a = Math.random() * Math.PI * 2, r = Math.random() * 300; x.fillStyle = '#2a1a0c26'; x.save(); x.translate(Math.cos(a) * r, Math.sin(a) * r); x.rotate(Math.random() * Math.PI); x.fillRect(-9, -4, 18, 8); x.restore(); }
+  x.strokeStyle = '#2a1a0c55'; x.lineWidth = 10; x.beginPath(); x.arc(0, 0, 490, 0, Math.PI * 2); x.stroke();
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t;
+}
+// colosseum surroundings (built at the arena's real size, so not scaled with the bowl): a sandstone podium wall with
+// dark gate arches and braziers, a stone walkway, then stepped stands rising behind with a colonnade on top
+function buildColosseum(R, th) {
+  const g = new THREE.Group(), stone = stdMat(th.stone || 0x9c8466, { metalness: 0.05, roughness: 0.9, envMapIntensity: 0.3 }), dark = stdMat(0x1b130c, { metalness: 0, roughness: 1 });
+  const lit = stdMat(0xb59a78, { metalness: 0.05, roughness: 0.85 });
+  const W = new THREE.Mesh(new THREE.CylinderGeometry(R + 1.0, R + 1.0, 1.5, 120, 1, true), stone); W.material.side = THREE.DoubleSide; W.position.y = 0.75; W.receiveShadow = true; g.add(W);
+  const cap = new THREE.Mesh(new THREE.TorusGeometry(R + 1.08, 0.14, 6, 120), lit); cap.rotation.x = Math.PI / 2; cap.position.y = 1.5; g.add(cap);
+  // walkway ring at the top of the podium, then four stepped tiers of seats
+  const ring = (r0, r1, y) => { const m = new THREE.Mesh(new THREE.RingGeometry(r0, r1, 120, 1), stone); m.rotation.x = -Math.PI / 2; m.position.y = y; m.material.side = THREE.DoubleSide; g.add(m); };
+  ring(R + 1.0, R + 6.2, 1.5);
+  for (let i = 0; i < 6; i++) {
+    const r0 = R + 6.2 + i * 1.5, y0 = 1.5 + i * 1.0;
+    const riser = new THREE.Mesh(new THREE.CylinderGeometry(r0, r0, 1.0, 120, 1, true), i % 2 ? stone : lit); riser.material.side = THREE.DoubleSide; riser.position.y = y0 + 0.5; g.add(riser);
+    ring(r0, r0 + 1.5, y0 + 1.0);
+  }
+  // dark gate arches and braziers round the podium wall
+  const N = 16;
+  for (let i = 0; i < N; i++) {
+    const a = (i + 0.5) / N * Math.PI * 2, cx = Math.sin(a), cz = Math.cos(a);
+    if (i % 2 === 0) {
+      // a gate: dark opening under a round-topped arch (a flat shape, so it sits flush on the curved wall)
+      const sh = new THREE.Shape(); sh.moveTo(-0.6, 0); sh.lineTo(-0.6, 0.75); sh.absarc(0, 0.75, 0.6, Math.PI, 0, true); sh.lineTo(0.6, 0); sh.lineTo(-0.6, 0);
+      const gate = new THREE.Mesh(new THREE.ShapeGeometry(sh, 16), dark); gate.position.set(cx * (R + 0.96), 0, cz * (R + 0.96)); gate.rotation.y = a + Math.PI; g.add(gate);
+    } else {
+      const bx = cx * (R + 1.3), bz = cz * (R + 1.3);
+      mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.5, 10), stdMat(0x3a2a1c, { metalness: 0.5, roughness: 0.6 }), g, bx, 1.75, bz);
+      mesh(new THREE.CylinderGeometry(0.3, 0.18, 0.18, 12), stdMat(0x2a1f16, { metalness: 0.6, roughness: 0.5 }), g, bx, 2.05, bz);
+      const fl = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.6, 10), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xff8a2a).convertSRGBToLinear(), transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false })); fl.position.set(bx, 2.42, bz); g.add(fl);
+      halo(g, new THREE.Color(0xff9a3c), bx, 2.4, bz, 1.6, 0.7);
+      (g.userData.flames = g.userData.flames || []).push(fl);
+    }
+  }
+  // colonnade on the top tier
+  const top = R + 6.2 + 6 * 1.5, ty = 1.5 + 6 * 1.0;
+  for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2; mesh(new THREE.CylinderGeometry(0.3, 0.36, 3.2, 10), lit, g, Math.sin(a) * (top + 0.4), ty + 1.6, Math.cos(a) * (top + 0.4)); }
+  const beam = new THREE.Mesh(new THREE.TorusGeometry(top + 0.4, 0.32, 6, 120), stone); beam.rotation.x = Math.PI / 2; beam.position.y = ty + 3.3; g.add(beam);
+  // a crowd: little warm dots packed on the tiers
+  const pts = [], cols = [];
+  for (let i = 0; i < 2600; i++) { const t = Math.floor(Math.random() * 6), a = Math.random() * Math.PI * 2, r = R + 6.2 + t * 1.5 + 0.3 + Math.random() * 1.0; pts.push(Math.sin(a) * r, 1.5 + t * 1.0 + 1.0 + 0.25, Math.cos(a) * r); const c = new THREE.Color().setHSL(Math.random() * 0.12, 0.4 + Math.random() * 0.4, 0.3 + Math.random() * 0.4); cols.push(c.r, c.g, c.b); }
+  const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); pg.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+  g.add(new THREE.Points(pg, new THREE.PointsMaterial({ size: 0.32, vertexColors: true })));
+  return g;
 }
 let HAZARD_TEX = null;
 function hazardTex() {
@@ -4212,17 +4279,19 @@ const Battle = {
     this.wallM = wallM; const wall = new THREE.Mesh(new THREE.CylinderGeometry(ARENA_R0 + 0.9, ARENA_R0 + 0.9, 0.7, 96, 1, true), wallM); wall.position.y = 0.35; wallM.side = THREE.DoubleSide; wall.receiveShadow = true; bowl.add(wall);
     const lip = this.lip = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R0 + 0.9, 0.06, 8, 128), glowMat(0xffb547)); lip.rotation.x = Math.PI / 2; lip.position.y = 0.72; bowl.add(lip);
     const outer = new THREE.Mesh(new THREE.CylinderGeometry(34, 30, 9, 64, 1, true), stdMat(0x0b0f1a, { side: THREE.BackSide, roughness: 1, metalness: 0, envMapIntensity: 0.1 })); outer.position.y = 2; bowl.add(outer);
+    this.bowlExtras = [];
     const ground = new THREE.Mesh(new THREE.CircleGeometry(40, 64), stdMat(0x0b0f18, { roughness: 0.9, metalness: 0.1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; bowl.add(ground);
     for (let i = 0; i < 10; i++) {
       const a = i / 10 * Math.PI * 2, R = ARENA_R0 + 4.5;
       const col = mesh(new THREE.CylinderGeometry(0.45, 0.6, 6, 8), stdMat(0x252d40, { metalness: 0.6, roughness: 0.4 }), bowl, Math.cos(a) * R, 3, Math.sin(a) * R);
       col.castShadow = false;
       const cap = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.18, 0.9), glowMat(i % 2 ? 0xff4d6d : 0xffb547)); cap.position.set(Math.cos(a) * R, 6.1, Math.sin(a) * R); bowl.add(cap);
+      this.bowlExtras.push(col, cap);
     }
     // crowd lights (stands)
     const pts = []; for (let i = 0; i < 700; i++) { const a = Math.random() * Math.PI * 2, R = rand(24, 31), y = rand(1, 6.5); pts.push(Math.cos(a) * R, y, Math.sin(a) * R); }
     const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    this.crowd = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0xffd9a8, size: 0.14, transparent: true, opacity: 0.7 })); bowl.add(this.crowd);
+    this.crowd = new THREE.Points(pg, new THREE.PointsMaterial({ color: 0xffd9a8, size: 0.14, transparent: true, opacity: 0.7 })); bowl.add(this.crowd); this.bowlExtras.push(this.crowd);
     // particle pool
     this.parts = [];
     const pgeo = new THREE.BoxGeometry(0.08, 0.08, 0.08);
@@ -4245,6 +4314,8 @@ const Battle = {
     for (const s of World.solids) G.add(buildSolidMesh(s, th));
     Hazards.build(A, G, th);
     if (A.roof && A.box) G.add(buildRoof(A, th));
+    this.decorG = A.decor === 'colosseum' ? buildColosseum(A.r || ARENA_R0, th) : null; if (this.decorG) G.add(this.decorG);
+    for (const o of this.bowlExtras || []) o.visible = !A.decor;
     this.scene.add(G);
     const fm = this.floor.material; fm.map = this.floorTex[A.id] || (this.floorTex[A.id] = makeFloorTexture(th)); fm.needsUpdate = true;
     this.l1.color.setHex(th.l1); this.l2.color.setHex(th.l2);
