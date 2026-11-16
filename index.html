@@ -2437,7 +2437,7 @@ function makeFighterModel(build, accent, shOff = 0) {
   }
   rig.height = head.position.y + hh * headScale;
   rig.chestY = chestY;
-  rig.hipY = hipY; rig.headY = head.position.y - 0.04 * headScale;   // where the head starts (its base), for head shots
+  rig.hipY = hipY; rig.legKind = B.type; rig.legW = B.w; rig.headY = head.position.y - 0.04 * headScale;   // where the head starts (its base), for head shots
   rig.fit = fighterExtent(rig); rig.bubbleY = rig.fit.cy; rig.bubbleR = Math.max(0.95, rig.fit.r * 1.06);
   const shield = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending }));
   shield.scale.set(0.9 + bw * 0.1, rig.height * 0.6, 0.9 + bw * 0.1); shield.position.y = rig.height * 0.5; shield.visible = false; root.add(shield); rig.shield = shield;
@@ -2560,7 +2560,7 @@ function animateRig(rig, f, dt, time) {
     P.lR.x = -g * A; P.lL.x = g * A;
     P.lR.k = Math.max(0, Math.cos(w)) * G.kn * sp; P.lL.k = Math.max(0, -Math.cos(w)) * G.kn * sp;
     P.lR.y = P.lL.y = rig.hipYaw;
-    const sn = Math.floor(w / Math.PI); if (f && free && sn !== rig.stepN && rig.stepN !== undefined) Battle.footstep(f, sp); rig.stepN = sn;
+    const sn = Math.floor(w / Math.PI); if (f && free && sn !== rig.stepN && rig.stepN !== undefined && !rig.spider && !rig.snake && !rig.ball && !rig.roller) Battle.footstep(f, sp); rig.stepN = sn;
   }
   // resting guard: upper arms down and slightly out, elbows at 90 degrees, fists held forward clear of the body
   const az = rig.back ? -1 : 1; // arms swing with the stride
@@ -2725,6 +2725,7 @@ function animateRig(rig, f, dt, time) {
     S.sg.rotation.y = S.yaw;
     const along = vx * Math.sin(S.yaw) + vz * Math.cos(S.yaw), gs = clamp(Math.abs(along) / 4, 0, 1.2) + (v > 0.4 ? 0.3 : 0);
     S.phase += dt * (2 + gs * 9) * (along < 0 ? -1 : 1);
+    { const n = Math.floor(S.phase / Math.PI); if (f && v > 0.4 && !f.air && n !== S.stepN && S.stepN !== undefined) Battle.footstep(f, Math.min(1, gs)); S.stepN = n; }   // a set of four feet plants every half cycle
     S.sg.position.y = Math.abs(Math.sin(S.phase * 2)) * 0.02 * Math.min(1, gs); S.sg.rotation.z = Math.sin(S.phase) * 0.025 * Math.min(1, gs);
     let st0 = 0, st1 = 0;
     if (kick) { const tm = f.timing('kick'), t = f.t; if (t < tm.w) st0 = t / tm.w; else if (t < tm.w + tm.a + tm.r * 0.5) st1 = 1; }
@@ -2763,6 +2764,7 @@ function animateRig(rig, f, dt, time) {
     // slither: a sideways wave runs down the body (faster when moving), little legs paddle, and the tail lashes during a whip
     const S = rig.snake, nS = S.n, up = new V3(0, 1, 0), back = new V3(0, 0, -1);
     S.phase += dt * (2.2 + sp * 9);
+    { const n = Math.floor(S.phase / Math.PI); if (f && sp > 0.12 && !f.air && n !== S.stepN && S.stepN !== undefined) Battle.footstep(f, sp); S.stepN = n; }
     // when moving, the coiled tail uncoils and trails out behind the direction of travel in an S-shaped slither
     let mvx = 0, mvz = 0;
     if (f && st !== 'ko') { const wx = f.moveVel.x, wz = f.moveVel.z, yaw = rig.root.rotation.y, c = Math.cos(yaw), sn = Math.sin(yaw); mvx = wx * c - wz * sn; mvz = wx * sn + wz * c; }
@@ -2933,7 +2935,7 @@ const SFX = {
     try {
       if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); const n = this.ctx.sampleRate * 0.5; this.noiseBuf = this.ctx.createBuffer(1, n, this.ctx.sampleRate); const d = this.noiseBuf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1; }
       if (this.ctx.state === 'suspended') this.ctx.resume();
-      this.loadCannon(); this.loadClicks(); this.loadTractor(); this.loadSnd();
+      this.loadCannon(); this.loadClicks(); this.loadTractor(); this.loadSnd(); this.makeLoops();
     } catch (e) { this.ctx = null; }
   },
   env(node, gain, dur) { const g = this.ctx.createGain(); const t = this.ctx.currentTime; g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); node.connect(g); g.connect(this.ctx.destination); return t; },
@@ -2962,6 +2964,34 @@ const SFX = {
   special() { if (this.play('ability', 0.45)) return; this.tone(200, 900, 0.35, 'sawtooth', 0.08); },
   ko() { if (this.play('ko', 0.7)) { this.play('boom', 0.5, 0.8); return; } this.tone(110, 30, 0.9, 'sine', 0.6); this.noise(0.6, 250, 0.4); },
   beep(hi) { if (this.play(hi ? 'horn' : 'beep', hi ? 0.45 : 0.4)) return; this.tone(hi ? 880 : 440, hi ? 880 : 440, hi ? 0.35 : 0.12, 'triangle', 0.12); },
+  // ---- movement sounds, made here rather than recorded so each kind of bottom gets its own ----
+  // a metal foot landing: a low thud, a sharp click and a few ringing inharmonic partials (the clink)
+  metalStep(kind, g = 1, delay = 0) {
+    if (!this.ctx || this.muted || g < 0.01) return;
+    const P = { light: [2500, 0.08, 700, 0.05, 0.45], mech: [1650, 0.13, 320, 0.08, 0.8], heavy: [900, 0.22, 150, 0.15, 1.1], spider: [3300, 0.05, 1200, 0.03, 0.35] }[kind] || [1650, 0.13, 320, 0.08, 0.8];
+    const [f0, ring, thudF, thudD, thudG] = P, x = this.ctx, t = x.currentTime + delay, v = 0.9 + Math.random() * 0.2;
+    try {
+      const out = x.createGain(); out.gain.value = g; out.connect(x.destination);
+      const env = (node, a, d) => { const e = x.createGain(); e.gain.setValueAtTime(a, t); e.gain.exponentialRampToValueAtTime(0.0005, t + d); node.connect(e); e.connect(out); };
+      const n = x.createBufferSource(); n.buffer = this.noiseBuf; const lp = x.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = thudF * v; n.connect(lp); env(lp, thudG, thudD); n.start(t, Math.random() * 0.3); n.stop(t + thudD + 0.02);
+      const c = x.createBufferSource(); c.buffer = this.noiseBuf; const hp = x.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3500; c.connect(hp); env(hp, 0.3, 0.018); c.start(t, Math.random() * 0.3); c.stop(t + 0.04);
+      for (const [m, a] of [[1, 0.2], [2.76, 0.11], [5.4, 0.05]]) { const o = x.createOscillator(); o.type = 'sine'; o.frequency.value = f0 * m * v; env(o, a, ring / Math.pow(m, 0.3)); o.start(t); o.stop(t + ring + 0.05); }
+    } catch (e) {}
+  },
+  // the snake tail: a short scrape of metal scales along the floor
+  slither(g = 1) {
+    if (!this.ctx || this.muted || g < 0.01) return;
+    try { const x = this.ctx, t = x.currentTime, n = x.createBufferSource(); n.buffer = this.noiseBuf; const bp = x.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200 + Math.random() * 800; bp.Q.value = 0.7;
+      const e = x.createGain(); e.gain.setValueAtTime(0.0001, t); e.gain.linearRampToValueAtTime(0.22 * g, t + 0.07); e.gain.exponentialRampToValueAtTime(0.0005, t + 0.26);
+      n.connect(bp); bp.connect(e); e.connect(x.destination); n.start(t, Math.random() * 0.2); n.stop(t + 0.3); } catch (e) {}
+  },
+  // looping beds built once: 'roll' (a ball or drum grinding over the floor) and 'hover' (a thruster hum)
+  makeLoops() {
+    if (!this.ctx || this.bufs.roll) return;
+    const x = this.ctx, sr = x.sampleRate, N = sr * 2, mk = fn => { const b = x.createBuffer(1, N, sr), d = b.getChannelData(0); fn(d); let m = 0; for (let i = 0; i < N; i++) m = Math.max(m, Math.abs(d[i])); for (let i = 0; i < N; i++) d[i] /= m || 1; const F = Math.floor(sr * 0.08); for (let i = 0; i < F; i++) { const k = i / F; d[i] = d[i] * k + d[N - F + i] * (1 - k); } return b; };
+    this.bufs.roll = mk(d => { let a = 0, b = 0; for (let i = 0; i < N; i++) { const t = i / sr; a += (Math.random() * 2 - 1 - a) * 0.04; b += (a - b) * 0.2; d[i] = b * (0.75 + 0.25 * Math.sin(t * Math.PI * 2 * 8)) + (Math.random() < 0.0009 ? (Math.random() - 0.5) * 0.6 : 0); } });
+    this.bufs.hover = mk(d => { let a = 0; for (let i = 0; i < N; i++) { const t = i / sr; a += (Math.random() * 2 - 1 - a) * 0.12; d[i] = a * 0.7 * (1 + 0.15 * Math.sin(t * Math.PI * 2 * 18)) + Math.sin(t * Math.PI * 2 * 110) * 0.22 + Math.sin(t * Math.PI * 2 * 220) * 0.1 + Math.sin(t * Math.PI * 2 * 55) * 0.18; } });
+  },
   killTone() { this.tone(1320, 1320, 0.12, 'triangle', 0.1); },
   // recorded cannon blast for hand-cannon shots: decoded once, then played through Web Audio so rapid shots can overlap
   cannonBuf: null, cannonLoad: null, cannonVoices: [],
@@ -4804,14 +4834,28 @@ const Battle = {
   sfx(n, a) { SFX[n] && SFX[n](a); },
   // how loud a sound at a spot (or a bot) should be: full for your own bot, fading with distance from the camera
   vol(x) { if (x === this.p1) return 1; const p = x && x.pos ? x.pos : x; if (!p || !this.cam) return 1; return clamp(1.15 - this.cam.position.distanceTo(p) / 26, 0.3, 1); },
-  footstep(f, sp) { if (!this.active || this.paused) return; SFX.play('step', (f === this.p1 ? 0.16 : 0.12) * this.vol(f) * (0.6 + 0.4 * Math.min(1, sp)), (f.rig.height > 2.1 ? 0.85 : f.rig.height < 1.7 ? 1.2 : 1) * SFX.vary()); },
-  // treads (and the rolling ball) hum while moving: a looped rattle that rises with speed
+  // one foot (or set of feet) landing: each kind of legs has its own metal sound; balls, treads, drums and hovers loop instead
+  footstep(f, sp) {
+    if (!this.active || this.paused) return;
+    const r = f.rig, k = r.legKind, g = (f === this.p1 ? 1 : 0.8) * this.vol(f) * (0.6 + 0.4 * Math.min(1, sp));
+    if (k === 'sculpt') SFX.metalStep('light', 0.5 * g);
+    else if (k === 'mech') SFX.metalStep('mech', 0.5 * g);
+    else if (k === 'legs') { SFX.metalStep('heavy', 0.55 * g); SFX.play('step', 0.1 * g, 0.9 * SFX.vary()); }
+    else if (k === 'spider') { SFX.metalStep('spider', 0.4 * g); SFX.metalStep('spider', 0.32 * g, 0.045); SFX.metalStep('spider', 0.26 * g, 0.09); }   // four feet land a hair apart
+    else if (k === 'snake') SFX.slither(0.8 * g);
+  },
+  // looped movement beds: treads rattle, the ball and the drum roll, the hover's thrusters hum (louder and higher as it speeds up)
   rollSounds(dt) {
     for (const f of [this.p1, this.p2]) {
-      if (!f || !(f.rig.treads || f.rig.roller)) continue;
-      const v = Math.hypot(f.moveVel.x, f.moveVel.z), k = this.paused || f.state === 'ko' || f.air ? 0 : Math.min(1, v / 3.5);
-      if (!f.rollSnd && k > 0.05) f.rollSnd = SFX.play('treads', 0.003, 1, true);
-      if (f.rollSnd && SFX.ctx) { const t = SFX.ctx.currentTime; f.rollSnd.g.gain.setTargetAtTime(SFX.muted ? 0 : k * 0.32 * this.vol(f), t, 0.08); f.rollSnd.s.playbackRate.setTargetAtTime(0.75 + k * 0.45, t, 0.1); }
+      if (!f) continue;
+      const r = f.rig, kind = r.treads ? 'treads' : r.ball || r.roller ? 'roll' : r.hover ? 'hover' : null; if (!kind) continue;
+      const v = Math.hypot(f.moveVel.x + f.knock.x, f.moveVel.z + f.knock.z), k = Math.min(1, v / 4), off = this.paused || f.state === 'ko';
+      let gain, rate;
+      if (kind === 'hover') { gain = off ? 0 : (0.07 + 0.11 * k) * (f.air ? 1.2 : 1); rate = 0.85 + 0.35 * k + (f.air ? 0.1 : 0); }
+      else if (kind === 'roll') { gain = off || f.air ? 0 : k * 0.42; rate = (r.roller ? 0.55 : 0.75) + k * (r.roller ? 0.35 : 0.6); }
+      else { gain = off || f.air ? 0 : k * 0.32; rate = 0.75 + k * 0.45; }
+      if (!f.rollSnd && gain > 0.02) f.rollSnd = SFX.play(kind, 0.003, 1, true);
+      if (f.rollSnd && SFX.ctx) { const t = SFX.ctx.currentTime; f.rollSnd.g.gain.setTargetAtTime(SFX.muted ? 0 : gain * this.vol(f), t, 0.08); f.rollSnd.s.playbackRate.setTargetAtTime(rate, t, 0.1); }
     }
   },
   stopLoops() { for (const f of [this.p1, this.p2]) if (f && f.rollSnd) { SFX.fadeOut(f.rollSnd, 0.15); f.rollSnd = null; } },
