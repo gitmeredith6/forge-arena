@@ -405,10 +405,9 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
 @keyframes rise { 0% { opacity: 0; transform: translate(-50%, -30%) scale(1.8); } 12% { opacity: 1; transform: translate(-50%, -50%) scale(0.92); } 22% { transform: translate(-50%, -60%) scale(1.05); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -170%) scale(0.85); } }
 /* part-damage figure next to each health bar: green when fresh, through yellow, to red when wrecked */
 .hp-side { position: relative; }
-.pdoll { position: absolute; top: 0; left: calc(min(440px, 100%) + 10px); display: grid; grid-template-columns: 5px 12px 5px; grid-template-rows: 8px 14px 13px; gap: 2px; filter: drop-shadow(0 1px 2px #000c); }
-.hp-side.r .pdoll { left: auto; right: calc(min(440px, 100%) + 10px); }
+.pdoll { display: grid; grid-template-columns: 9px 20px 9px; grid-template-rows: 14px 24px 22px; gap: 3px; margin: 6px 0 4px; filter: drop-shadow(0 1px 2px #000c); }
 .pdoll i { background: #4ade80; border-radius: 2px; transition: background 0.2s; }
-.pdoll .h { grid-column: 2; grid-row: 1; border-radius: 4px; }
+.pdoll .h { grid-column: 2; grid-row: 1; border-radius: 6px; }
 .pdoll .al { grid-column: 1; grid-row: 2; } .pdoll .b { grid-column: 2; grid-row: 2; } .pdoll .ar { grid-column: 3; grid-row: 2; }
 .pdoll .l { grid-column: 2; grid-row: 3; }
 .pdoll i.hit { animation: dollhit 0.3s; }
@@ -718,8 +717,8 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
   <div class="hud">
     <div class="hp-side">
       <div class="hp-name" id="p1Name"></div>
-      <div class="pdoll" id="p1Doll" title="Part damage"><i class="h"></i><i class="al"></i><i class="b"></i><i class="ar"></i><i class="l"></i></div>
       <div class="hpbar" style="--c: var(--p1)"><div class="trail" id="p1Trail"></div><div class="fill" id="p1Fill"></div><span class="hpnum" id="p1Num"></span></div>
+      <div class="pdoll" id="p1Doll" title="Part damage"><i class="h"></i><i class="al"></i><i class="b"></i><i class="ar"></i><i class="l"></i></div>
       <div class="wslots" id="p1W"></div>
     </div>
     <div class="center-hud">
@@ -730,8 +729,8 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     </div>
     <div class="hp-side r">
       <div class="hp-name" id="p2Name"></div>
-      <div class="pdoll" id="p2Doll" title="Part damage"><i class="h"></i><i class="al"></i><i class="b"></i><i class="ar"></i><i class="l"></i></div>
       <div class="hpbar" style="--c: var(--p2)"><div class="trail" id="p2Trail"></div><div class="fill" id="p2Fill"></div><span class="hpnum" id="p2Num"></span></div>
+      <div class="pdoll" id="p2Doll" title="Part damage"><i class="h"></i><i class="al"></i><i class="b"></i><i class="ar"></i><i class="l"></i></div>
     </div>
   </div>
   <div class="banner"><div id="banner"></div></div>
@@ -861,33 +860,37 @@ function jumpHeight(build) {
 const MAX_HP = 3000;
 // raw hit damage is scaled so a 3,000-health fight lasts as long as the old health numbers did
 const DMG_SCALE = 40;
-/* ---------- part levels: every head, arms, middle and bottom levels up from 1 to 20 by fighting with it ----------
-   Each level adds 0.5% to that part's own perk (so +10% at level 20), and reaching 20 adds another 10% on top.
-   Only the part's positive perk values grow, never its drawbacks. Kept in this browser. */
-const LEVEL_MAX = 20, LEVEL_SECS = ['head', 'top', 'middle', 'bottom'], XP_WIN = 120, XP_LOSS = 50;
+/* ---------- part levels: every head, arms, middle and bottom levels up from 1 to 20 by winning with it ----------
+   Every 5 match wins with a part is a level. Weapons level by the damage they deal in matches instead (25,000 a level, about five matches of steady use).
+   Each level adds 0.5% to that part's own perk (so +10% at level 20), and reaching 20 adds another 10% on top; for a
+   weapon it is that much more damage. Only a part's positive perk values grow, never its drawbacks. Kept in this browser.
+   (The key changed from forge-arena-levels when levels moved from XP to wins, so everything restarted at level 1.) */
+const LEVEL_MAX = 20, LEVEL_SECS = ['head', 'top', 'middle', 'bottom'], WINS_PER_LEVEL = 5, WDMG_PER_LEVEL = 25000;
 const Levels = {
-  key: 'forge-arena-levels',
+  key: 'forge-arena-levels2',
   all() { try { return JSON.parse(localStorage.getItem(this.key) || '{}') || {}; } catch (e) { return {}; } },
   get(sec, id, A) { const e = (A || this.all())[sec + ':' + id]; return e && e.lvl ? e : { lvl: 1, xp: 0 }; },
-  need(lvl) { return 60 + 20 * (lvl - 1); },
+  need(lvl, sec) { return sec === 'weapon' ? WDMG_PER_LEVEL : WINS_PER_LEVEL; },
   bonus(lvl) { return lvl * 0.005 + (lvl >= LEVEL_MAX ? 0.10 : 0); },
-  // hand out xp to every part in a build; returns the parts that levelled up
-  award(b, xp) {
+  // after a match: a win counts for every part in the build, and each weapon banks the damage it dealt; returns what levelled up
+  award(b, won, wdmg) {
     const A = this.all(), ups = [];
-    for (const sec of LEVEL_SECS) {
-      const k = sec + ':' + b[sec], e = A[k] = Object.assign({ lvl: 1, xp: 0 }, A[k]), from = e.lvl;
-      if (e.lvl >= LEVEL_MAX) continue;
-      e.xp += xp; while (e.lvl < LEVEL_MAX && e.xp >= this.need(e.lvl)) { e.xp -= this.need(e.lvl); e.lvl++; }
+    const add = (sec, id, n, name) => {
+      const k = sec + ':' + id, e = A[k] = Object.assign({ lvl: 1, xp: 0 }, A[k]), from = e.lvl;
+      if (e.lvl >= LEVEL_MAX || !(n > 0)) return;
+      e.xp += n; while (e.lvl < LEVEL_MAX && e.xp >= this.need(e.lvl, sec)) { e.xp -= this.need(e.lvl, sec); e.lvl++; }
       if (e.lvl >= LEVEL_MAX) e.xp = 0;
-      if (e.lvl > from) ups.push({ sec, id: b[sec], name: sec === 'head' ? headById(b[sec]).name : partById(sec, b[sec]).name, lvl: e.lvl });
-    }
+      if (e.lvl > from) ups.push({ sec, id, name, lvl: e.lvl });
+    };
+    if (won) for (const sec of LEVEL_SECS) add(sec, b[sec], 1, sec === 'head' ? headById(b[sec]).name : partById(sec, b[sec]).name);
+    for (const id of b.weapons || []) { const W = WEAPONS.find(w => w.id === id); if (W) add('weapon', id, Math.round((wdmg || {})[id] || 0), W.name); }
     try { localStorage.setItem(this.key, JSON.stringify(A)); } catch (e) {}
     return ups;
   },
   // a small "Lv 7" chip with a progress bar, gold at max
   chip(sec, id, A) {
-    const e = this.get(sec, id, A), max = e.lvl >= LEVEL_MAX, pc = max ? 100 : Math.round(e.xp / this.need(e.lvl) * 100);
-    return `<span class="lv${max ? ' max' : ''}" title="${max ? 'Max level: +20% to this part\'s perk' : `Level ${e.lvl}: +${(this.bonus(e.lvl) * 100).toFixed(1)}% perk · ${e.xp}/${this.need(e.lvl)} XP`}">${max ? 'MAX' : 'Lv ' + e.lvl}<i style="width:${pc}%"></i></span>`;
+    const e = this.get(sec, id, A), max = e.lvl >= LEVEL_MAX, need = this.need(e.lvl, sec), pc = max ? 100 : Math.round(e.xp / need * 100), wpn = sec === 'weapon';
+    return `<span class="lv${max ? ' max' : ''}" title="${max ? (wpn ? 'Max level: +20% damage' : 'Max level: +20% to this part\'s perk') : `Level ${e.lvl}: +${(this.bonus(e.lvl) * 100).toFixed(1)}% ${wpn ? 'damage' : 'perk'} · ${wpn ? e.xp.toLocaleString() + '/' + need.toLocaleString() + ' damage dealt' : e.xp + '/' + need + ' wins'} to the next level`}">${max ? 'MAX' : 'Lv ' + e.lvl}<i style="width:${pc}%"></i></span>`;
   },
 };
 function computeStats(build, levelled) {
@@ -3134,7 +3137,7 @@ function renderWeapons() {
       b.type = 'button'; b.className = 'part wrap'; b.id = `weapon-${wpn.id}`; b.setAttribute('aria-pressed', String(on));
       if (!on && full) b.classList.add('dim');
       const key = on ? `<span class="wkey">${weaponKey(build.weapons, wpn.id)}</span>` : '';
-      b.innerHTML = `<span class="pn">${weaponIcon(wpn)}${key}${wpn.name}</span><span class="pp">${wpn.desc} <i>${wpn.slot === 'arms' ? 'Replaces punches' : wpn.cd + 's cooldown'}</i></span>`;
+      b.innerHTML = `<span class="pn">${weaponIcon(wpn)}${key}${wpn.name}${editing === 'me' ? Levels.chip('weapon', wpn.id) : ''}</span><span class="pp">${wpn.desc} <i>${wpn.slot === 'arms' ? 'Replaces punches' : wpn.cd + 's cooldown'}</i></span>`;
       b.onclick = () => {
         let ws = build.weapons.slice();
         if (on) ws = ws.filter(id => id !== wpn.id);
@@ -4703,6 +4706,7 @@ const Battle = {
     this.ai = this.lab ? new LabAI() : new AIController(difficulty);
     this.wins = [0, 0]; this.round = 0;
     this.mStats = this.lab ? null : { dd: 0, dt: 0, ko: 0, time: 0 };
+    { const A = Levels.all(); this.wBonus = Object.fromEntries((myBuild.weapons || []).map(id => [id, Levels.bonus(Levels.get('weapon', id, A).lvl)])); }
     $('p1Name').innerHTML = `${buildName(myBuild)}<small>YOU</small>`;
     const AB = this.p1.ability;
     // weapon and ability icons stack down the left under your health bar. A dark shade fills each one from the top while it
@@ -4805,6 +4809,7 @@ const Battle = {
     const zone = this.zoneOf(att, def, o, hg);
     dmg *= ZONE_DMG[zone] * (1 + 0.4 * def.worn(zone)) * (1 - 0.3 * att.worn('arms'));
     const crit = Math.random() < Math.max(0.02, att.stats.acc - 0.45) * (1 - 0.6 * att.worn('head')); if (crit) dmg *= 1.5;
+    if (o.wid && att === this.p1 && this.wBonus) dmg *= 1 + (this.wBonus[o.wid] || 0);   // weapon level
     // weapons used to slip past most defense, so they carry a bigger multiplier now that armor applies to everything
     dmg *= DMG_SCALE * (o.weapon ? 1.5 : 1) * (1 - def.stats.armor);
     let kb = o.kb * att.stats.kbDealt, stun = o.stun, blocked = false;
@@ -4815,6 +4820,7 @@ const Battle = {
     kb *= (1 - def.stats.kbRes) * (1 + 0.35 * def.worn('body'));
     if (!o.weapon) stun *= 1 - def.stats.kbRes * 0.5;
     def.hp = Math.max(0, def.hp - dmg); this.track(def, dmg); this.wearPart(def, zone, dmg);
+    if (o.wid && att === this.p1 && this.mStats) { const W = this.mStats.wdmg || (this.mStats.wdmg = {}); W[o.wid] = (W[o.wid] || 0) + dmg; }
     const n = new V3(def.pos.x - att.pos.x, 0, def.pos.z - att.pos.z).normalize();
     def.knock.addScaledVector(n, kb);
     if (stun > 0) { def.state = 'stun'; def.t = 0; def.stunDur = stun; def.buffer = null; def.invuln = false; }
@@ -4915,7 +4921,7 @@ const Battle = {
       const face = this.facing(f, opp);
       const ok = W.kind === 'beam' ? d <= W.range + opp.radius && face > 0.94 : W.kind === 'cone' ? d <= W.range + opp.radius && face > 0.72 : d <= f.stats.reach + W.reach + opp.radius && face > 0.3;
       if (!ok || opp.invuln || (W.kind !== 'grind' && World.losHit(this.originOf(f, W, 0), aimPt(opp))) || this.shielded(opp)) return;
-      this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.pull ? 0 : W.kb || 0.3, stun: W.stun || 0, quiet: true, energy: 0.25, color: W.color });
+      this.applyHit(f, opp, { wid: W.id, weapon: true, mult: W.mult, kb: W.pull ? 0 : W.kb || 0.3, stun: W.stun || 0, quiet: true, energy: 0.25, color: W.color });
       if (W.kind === 'grind') this.sawSparks(f, opp);
       // tractor beam: haul the target in, stopping just short of you (heavier, sturdier bottoms resist a little)
       if (W.pull) {
@@ -4940,9 +4946,9 @@ const Battle = {
     } else if (W.kind === 'zap') {
       const blk = World.losHit(this.originOf(f, W, 0), aimPt(opp)), hit = d <= W.range + opp.radius && !blk;
       this.zapFx(f, opp, W, hit, blk); this.sfx('special');
-      if (hit && !opp.invuln && !this.shielded(opp)) this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.kb, stun: W.stun, stop: 0.08, heavy: true });
+      if (hit && !opp.invuln && !this.shielded(opp)) this.applyHit(f, opp, { wid: W.id, weapon: true, mult: W.mult, kb: W.kb, stun: W.stun, stop: 0.08, heavy: true });
     } else if (W.kind === 'melee') {
-      if (d <= f.stats.reach + W.reach + opp.radius && this.facing(f, opp) >= W.arc) this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.kb, stun: W.stun, stop: 0.09, heavy: true });
+      if (d <= f.stats.reach + W.reach + opp.radius && this.facing(f, opp) >= W.arc) this.applyHit(f, opp, { wid: W.id, weapon: true, mult: W.mult, kb: W.kb, stun: W.stun, stop: 0.09, heavy: true });
       else this.sfx('whoosh');
     } else if (W.kind === 'shield') { f.abOn = true; f.wShieldT = f.abFuel; fitToPose(f.rig); f.bubFitT = 0.25; this.sfx('special'); }
     else if (W.kind === 'jet') {
@@ -5025,7 +5031,7 @@ const Battle = {
       if (hd < T.radius + 0.22 && P.pos.y > T.pos.y + 0.05 && P.pos.y < T.pos.y + T.rig.height + 0.15 && T.state !== 'ko' && !T.invuln) {
         if (this.shielded(T)) { this.burst(P.pos, 0xff3dd8, 8, 4); this.killProj(i); continue; }
         const many = W.count > 3;
-        this.applyHit(P.owner, T, { at: P.pos.clone(), weapon: true, wMul: W.proj === 'shell' && W.slot === 'arms' ? P.owner.stats.cannonDmg : 0, mult: W.mult, kb: W.proj === 'shell' && W.slot === 'arms' ? W.kb * Math.sqrt(P.owner.stats.cannonDmg) : W.kb, stun: W.stun || 0, stop: many ? 0 : 0.05, quiet: many, energy: many ? 0.35 : 1, heavy: W.proj === 'shell', color: W.color });
+        this.applyHit(P.owner, T, { wid: W.id, at: P.pos.clone(), weapon: true, wMul: W.proj === 'shell' && W.slot === 'arms' ? P.owner.stats.cannonDmg : 0, mult: W.mult, kb: W.proj === 'shell' && W.slot === 'arms' ? W.kb * Math.sqrt(P.owner.stats.cannonDmg) : W.kb, stun: W.stun || 0, stop: many ? 0 : 0.05, quiet: many, energy: many ? 0.35 : 1, heavy: W.proj === 'shell', color: W.color });
         if (W.slow) { T.slowT = W.slow; this.popAt(T, 'SLOWED', 'note', 0.7); this.burst(P.pos, 0x9fe8ff, 14, 5); }
         if (W.pull && T.state !== 'ko') { const A = P.owner, n = new V3(A.pos.x - T.pos.x, 0, A.pos.z - T.pos.z), dd = n.length(); const gap = Math.max(0, dd - (A.radius + T.radius + 0.5)); T.knock.copy(n.normalize().multiplyScalar(Math.min(80, gap * 7.2))); }
         if (W.proj === 'rocket' || W.proj === 'shell') this.burst(P.pos, W.color, 10, 5);
@@ -5154,7 +5160,7 @@ const Battle = {
     const W = E.W, r = W.radius * Math.min(1, E.t / 0.28 + 0.35), d = Math.hypot(opp.pos.x - f.pos.x, opp.pos.z - f.pos.z);
     if (d <= r + opp.radius && Math.abs(opp.pos.y - f.pos.y) < r && !opp.invuln && !this.shielded(opp) && opp.state !== 'ko') {
       E.hit = true;
-      this.applyHit(f, opp, { weapon: true, mult: W.mult, kb: W.kb, stun: W.emp, unblockable: true, stop: 0.1, heavy: true, color: W.color });
+      this.applyHit(f, opp, { wid: W.id, weapon: true, mult: W.mult, kb: W.kb, stun: W.emp, unblockable: true, stop: 0.1, heavy: true, color: W.color });
       if (opp.state === 'stun') { opp.empT = W.emp; this.popAt(opp, 'EMP', 'note', 1.0); }
     }
   },
@@ -5419,10 +5425,12 @@ const Battle = {
     this.phase = 'over';
     const won = this.wins[0] >= 2; if (won) SFX.play('win', 0.5);
     if (this.mStats) Career.record(Object.assign({ won, rw: this.wins[0], rl: this.wins[1], build: myBuild, diff: difficulty, arena: arenaId }, this.mStats));
-    const xp = won ? XP_WIN : XP_LOSS, ups = this.mStats ? Levels.award(myBuild, xp) : [];
+    const ups = this.mStats ? Levels.award(myBuild, won, this.mStats.wdmg) : [];
+    const pl = Levels.get('top', myBuild.top), wd = Object.entries((this.mStats && this.mStats.wdmg) || {}).filter(([, v]) => v >= 1);
     this.mStats = null;
     this.banner('');
-    const lvTxt = ` Each part earned ${xp} XP.` + ups.map(u => u.lvl >= LEVEL_MAX ? ` ${u.name} hit MAX level!` : ` ${u.name} reached level ${u.lvl}.`).join('');
+    const lvTxt = (won ? ` Your parts each banked a win (${pl.lvl >= LEVEL_MAX ? 'max level' : pl.xp + ' of ' + WINS_PER_LEVEL + ' toward the next level'}).` : ' Parts level up with wins.')
+      + (wd.length ? ' Weapon damage: ' + wd.map(([id, v]) => (WEAPONS.find(w => w.id === id) || { name: id }).name + ' ' + Math.round(v).toLocaleString()).join(', ') + '.' : '') + ups.map(u => u.lvl >= LEVEL_MAX ? ` ${u.name} hit MAX level!` : ` ${u.name} reached level ${u.lvl}.`).join('');
     this.showOverlay(won ? 'Victory' : 'Defeat', `${this.wins[0]} – ${this.wins[1]} against ${buildName(this.enemyBuild)}.` + lvTxt,
       [['Rematch', () => this.start(), true], ['Change arena', () => this.toArenas()], ['Change build', () => this.exit()], ['Main menu', () => { this.exit(); goMenu(); }]]);
   },
