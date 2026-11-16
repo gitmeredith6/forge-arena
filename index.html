@@ -1217,6 +1217,7 @@ const LOOK = {
   colosseum: { top: 0x3f7fd0, hor: 0xffd9a8, bot: 0x6a5038, fog: 0xf0c99a, sunC: 0xffd08a, sun: [0xffe6c2, 2.3], hemi: [0xcfe2ff, 0x7a5a3a, 0.65], fill: 0.9, expo: 0.82 },
   caldera:   { top: 0x1a0a14, hor: 0x9a3a1c, bot: 0x40100a, fog: 0x5a2010, sunC: 0xff7a30, sun: [0xffd0a8, 2.0], hemi: [0x9a7aa0, 0xff5a1a, 0.7], fill: 1.0, expo: 1.1 },
   guerrilla: { top: 0x2c3f78, hor: 0xffa070, bot: 0x2a2620, fog: 0xc98a68, sunC: 0xffa060, sun: [0xffd6a8, 2.6], hemi: [0xa8c0ff, 0x4a3a28, 0.8], fill: 1.0, expo: 1.05 },
+  platforms: { top: 0x3a78d0, hor: 0xa8c8ec, bot: 0x3a4a5a, fog: 0xa8c8ec, sunC: 0xfff0d0, sun: [0xfff4e0, 2.4], hemi: [0xcfe0ff, 0x4a4a40, 0.8], fill: 1.0, expo: 0.95 },
   bunker:    { top: 0x3a4250, hor: 0x8a94a4, bot: 0x30343c, fog: 0x6c7484, sunC: 0xdfe6f0, sun: [0xf2f6ff, 1.6], hemi: [0xd0dcf0, 0x40444c, 0.6], fill: 1.0, expo: 0.75 },
 };
 // rim light: a cool edge glow on everything a bot is made of, so builds read clearly against any background
@@ -3711,6 +3712,46 @@ const ARENAS = [
       { type: 'vent', x: 2.2, z: -4.9, T: 8, phase: 1.5 },
       { type: 'vent', x: -2.2, z: 4.9, T: 8, phase: -2.5 },
     ] },
+  // the biggest map: an open-air yard with a clear circle in the middle, a three-storey stepped building in two corners
+  // (ramps up every level), sliding platforms, lifts that carry you up to high perches, and barriers scattered about
+  { id: 'platforms', name: 'Platforms', tag: 'Three storeys', desc: 'The biggest map. A clear circle in the middle, three-storey buildings with ramps between floors, lifts up to high perches, sliding platforms and cover everywhere.',
+    r: 43, box: { x: 30.05, z: 30.05 }, spawn: { z: 6, y: 0 },
+    theme: { floor: ['#5a6272', '#3e4554', '#272c36'], line: '#7fd4ff', l1: 0x9fdcff, l2: 0xff4d6d, fog: 0x0a0e14, rim: 0x2c3240, glow: 0x7fd4ff,
+      steel: 0x4c5466, concrete: 0x9a968c, crate: 0x7a6a44, plat: 0x5c6478 },
+    solids: mirrorLayout([
+      // the building: three stacked floors (2.2, 4.4 and 6.6 m), a ramp from the ground on two sides and one up to each floor
+      { type: 'box', kind: 'plat', x: 18, z: 14, w: 12, d: 12, h: 2.2 },
+      { type: 'box', kind: 'plat', x: 19, z: 15, w: 8, d: 8, h: 4.4 },
+      { type: 'box', kind: 'plat', x: 21, z: 17, w: 4, d: 4, h: 6.6 },
+      { type: 'ramp', kind: 'ramp', x: 15, z: 5.5, w: 2.6, d: 5, h0: 0, h1: 2.2 },
+      { type: 'ramp', kind: 'ramp', x: 9.5, z: 17, w: 2.6, d: 5, h0: 0, h1: 2.2, rot: Math.PI / 2 },
+      { type: 'ramp', kind: 'ramp', x: 13.5, z: 13, w: 2.2, d: 3.4, h0: 2.2, h1: 4.4, rot: Math.PI / 2 },
+      { type: 'ramp', kind: 'ramp', x: 21, z: 13.2, w: 2.0, d: 4, h0: 4.4, h1: 6.6 },
+      // a lift beside a tall perch in the opposite corner
+      { type: 'box', kind: 'plat', x: -26.5, z: 22, w: 4, d: 6, h: 4.4 },
+      { type: 'box', kind: 'plat', x: -22.2, z: 22, w: 3.6, d: 3.6, h: 4.4, lift: { lo: 0.25, hi: 4.4, T: 11, phase: 0 } },
+      // sliding platforms
+      { type: 'box', kind: 'plat', x: -14, z: 10, w: 4, d: 3, h: 1.0, slide: { ax: 0, az: 1, dist: 4, T: 10, phase: 0 } },
+      { type: 'box', kind: 'plat', x: 0, z: 26, w: 5, d: 3, h: 0.8, slide: { ax: 1, az: 0, dist: 6, T: 12, phase: 3 } },
+      // a lift in the open that rises and drops on its own
+      { type: 'box', kind: 'plat', x: -20, z: -4, w: 3.4, d: 3.4, h: 3.2, lift: { lo: 0.25, hi: 3.2, T: 9, phase: 4 } },
+      // cover, all outside the clear circle in the middle (radius 8)
+      { type: 'box', kind: 'barrier', x: 0, z: 13, w: 4, d: 0.6, h: 1.45 },
+      { type: 'box', kind: 'barrier', x: -9, z: -3.5, w: 3, d: 0.6, h: 1.45, rot: 1.2 },
+      { type: 'box', kind: 'barrier', x: 10, z: -4.5, w: 3, d: 0.6, h: 1.45, rot: 0.4 },
+      { type: 'box', kind: 'barrier', x: 4, z: 21, w: 3, d: 0.6, h: 1.45, rot: -0.5 },
+      { type: 'box', kind: 'barrier', x: -19, z: 3, w: 3, d: 0.6, h: 1.45, rot: 0.2 },
+      { type: 'box', kind: 'wall', x: -8, z: 18, w: 3.4, d: 0.45, h: 2.3, rot: 0.6 },
+      { type: 'box', kind: 'wall', x: 25, z: -14, w: 0.45, d: 4, h: 2.3 },
+      { type: 'cyl', kind: 'pillar', x: 24, z: -5, r: 0.8, h: 5 },
+      { type: 'cyl', kind: 'pillar', x: -5, z: 27, r: 0.7, h: 4 },
+      { type: 'box', kind: 'crate', x: -11, z: 24, w: 1.3, d: 1.3, h: 1.2, rot: 0.3 },
+      { type: 'box', kind: 'crate', x: -12.4, z: 24.6, w: 1.1, d: 1.1, h: 2.2, rot: -0.2 },
+      { type: 'box', kind: 'crate', x: 27, z: 4, w: 1.2, d: 1.2, h: 1.1 },
+      // outer walls
+      { type: 'box', kind: 'wall', x: 0, z: 30.3, w: 61, d: 0.5, h: 3.5 },
+      { type: 'box', kind: 'wall', x: 30.3, z: 0, w: 0.5, d: 61, h: 3.5 },
+    ]) },
   // built from Sam's sky-view sketch: a big walled concrete yard (about three times the size of the ring arenas), a start
   // platform at each end with ramps off both sides, a broken line of tall dividers in front of each platform, six tall
   // pillars down the flanks, and a broken ring of walls with an X inside it in the middle; it plays like a maze
@@ -3747,7 +3788,7 @@ const ARENAS = [
 const arenaById = id => ARENAS.find(a => a.id === id);
 
 const World = {
-  solids: [], plats: [], ramps: [], movers: [], sliders: [], box: null,
+  solids: [], plats: [], ramps: [], movers: [], sliders: [], lifts: [], box: null,
   // inside the playable area with margin m: the arena's rectangle (arena.box, half sizes to the wall faces) or its ring
   // walls with a move cycle sink into the floor and rise again: up, sink, down, rise, over move.T seconds.
   // Height feeds collision, line of sight and cover directly, and anyone standing on top rides it
@@ -3764,6 +3805,13 @@ const World = {
       s.dx = nx - s.x; s.dz = nz - s.z; s.x = nx; s.z = nz;
       if (s.group) s.group.position.set(nx, s.group.position.y, nz);
     }
+    // lifts: platforms that rise to lift.hi and sink back to lift.lo, pausing at each end; anyone standing on one rides it
+    // (World.resolve keeps a standing fighter on the ground under it)
+    for (const s of this.lifts) {
+      const L = s.lift, u = (((t + (L.phase || 0)) / L.T) % 1 + 1) % 1, k = u < 0.2 ? 0 : u < 0.5 ? (u - 0.2) / 0.3 : u < 0.7 ? 1 : 1 - (u - 0.7) / 0.3, e = k * k * (3 - 2 * k);
+      s.h = s.top = L.lo + (L.hi - L.lo) * e;
+      if (s.group) s.group.position.y = s.h - s.fullH;
+    }
   },
   inBounds(x, z, m = 0) { return this.box ? Math.abs(x) < this.box.x - m && Math.abs(z) < this.box.z - m : Math.hypot(x, z) < ARENA_R - m; },
   set(arena) {
@@ -3776,11 +3824,12 @@ const World = {
     });
     this.movers = this.solids.filter(s => s.move); for (const s of this.movers) s.fullH = s.h;
     this.sliders = this.solids.filter(s => s.slide); for (const s of this.sliders) { s.x0 = s.x; s.z0 = s.z; s.dx = s.dz = 0; }
+    this.lifts = this.solids.filter(s => s.lift); for (const s of this.lifts) { s.fullH = s.h; s.h = s.top = s.lift.lo; }
     this.plats = this.solids.filter(s => s.kind === 'plat'); this.ramps = this.solids.filter(s => s.type === 'ramp');
     for (const P of this.plats) P.ramps = [];
     for (const R of this.ramps) {
       const [tx, tz] = this.world(R, 0, R.hd + 0.3);
-      R.plat = this.plats.find(P => this.inside(P, tx, tz));
+      R.plat = this.plats.filter(P => this.inside(P, tx, tz)).sort((a, b) => Math.abs(a.h - R.top) - Math.abs(b.h - R.top))[0];   // stacked floors: the one the ramp tops out at
       const [fx, fz] = this.world(R, 0, -R.hd - 0.7), [ux, uz] = this.world(R, 0, R.hd + 0.9);
       R.foot = new V3(fx, 0, fz); R.up = new V3(ux, R.top, uz);
       if (R.plat) R.plat.ramps.push(R);
@@ -4515,6 +4564,7 @@ function buildRoof(A, th) {
   return g;
 }
 function buildSolidMesh(s, th) {
+  if (s.lift) { const h = s.h; s.h = s.fullH; const g = buildSolidMesh(Object.assign({}, s, { lift: null }), th); s.h = h; g.position.y = h - s.fullH; s.group = g; s.mats = g.userData.mats; s.fade = 1; return g; }   // lifts are built at full height and slid down
   const g = new THREE.Group(); g.position.set(s.x, 0, s.z); g.rotation.y = s.rot;
   const steel = stdMat(th.steel || 0x3a4152, { metalness: 0.6, roughness: 0.45, envMapIntensity: 0.5 });
   const glow = glowMat(th.glow);
@@ -4562,7 +4612,7 @@ function buildSolidMesh(s, th) {
   }
   g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   const mats = new Set(); g.traverse(o => { if (o.material) mats.add(o.material); });
-  s.mats = [...mats].map(m => ({ m, op: m.opacity })); s.fade = 1; s.group = g;
+  s.mats = g.userData.mats = [...mats].map(m => ({ m, op: m.opacity })); s.fade = 1; s.group = g;
   return g;
 }
 // top-down map of an arena for the picker
