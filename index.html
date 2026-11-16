@@ -3725,8 +3725,8 @@ const ARENAS = [
     ] },
   // the biggest map: an open-air yard with a clear circle in the middle, a three-storey stepped building in two corners
   // (ramps up every level), sliding platforms, lifts that carry you up to high perches, and barriers scattered about
-  { id: 'platforms', name: 'Platforms', tag: 'Three storeys', desc: 'The biggest map. A clear circle in the middle, three-storey buildings with ramps between floors, lifts up to high perches, sliding platforms and cover everywhere.',
-    r: 43, box: { x: 30.05, z: 30.05 }, spawn: { z: 6, y: 0 },
+  { id: 'platforms', name: 'Platforms', tag: 'Three storeys', desc: 'The biggest map. You start at opposite ends: hide and wait, or head straight for the fight. A clear circle in the middle, three-storey buildings with ramps between floors, lifts up to high perches, sliding platforms and cover everywhere.',
+    r: 43, box: { x: 30.05, z: 30.05 }, spawn: { z: 28, y: 0 },
     theme: { floor: ['#5a6272', '#3e4554', '#272c36'], line: '#7fd4ff', l1: 0x9fdcff, l2: 0xff4d6d, fog: 0x0a0e14, rim: 0x2c3240, glow: 0x7fd4ff,
       steel: 0x4c5466, concrete: 0x9a968c, crate: 0x7a6a44, plat: 0x5c6478 },
     solids: mirrorLayout([
@@ -3743,14 +3743,14 @@ const ARENAS = [
       { type: 'box', kind: 'plat', x: -22.2, z: 22, w: 3.6, d: 3.6, h: 4.4, lift: { lo: 0.25, hi: 4.4, T: 11, phase: 0 } },
       // sliding platforms
       { type: 'box', kind: 'plat', x: -14, z: 10, w: 4, d: 3, h: 1.0, slide: { ax: 0, az: 1, dist: 4, T: 10, phase: 0 } },
-      { type: 'box', kind: 'plat', x: 0, z: 26, w: 5, d: 3, h: 0.8, slide: { ax: 1, az: 0, dist: 6, T: 12, phase: 3 } },
+      { type: 'box', kind: 'plat', x: 0, z: 24, w: 5, d: 3, h: 0.8, slide: { ax: 1, az: 0, dist: 6, T: 12, phase: 3 } },
       // a lift in the open that rises and drops on its own
       { type: 'box', kind: 'plat', x: -20, z: -4, w: 3.4, d: 3.4, h: 3.2, lift: { lo: 0.25, hi: 3.2, T: 9, phase: 4 } },
       // cover, all outside the clear circle in the middle (radius 8)
       { type: 'box', kind: 'barrier', x: 0, z: 13, w: 4, d: 0.6, h: 1.45 },
       { type: 'box', kind: 'barrier', x: -9, z: -3.5, w: 3, d: 0.6, h: 1.45, rot: 1.2 },
       { type: 'box', kind: 'barrier', x: 10, z: -4.5, w: 3, d: 0.6, h: 1.45, rot: 0.4 },
-      { type: 'box', kind: 'barrier', x: 4, z: 21, w: 3, d: 0.6, h: 1.45, rot: -0.5 },
+      { type: 'box', kind: 'barrier', x: 5, z: 18.5, w: 3, d: 0.6, h: 1.45, rot: -0.5 },
       { type: 'box', kind: 'barrier', x: -19, z: 3, w: 3, d: 0.6, h: 1.45, rot: 0.2 },
       { type: 'box', kind: 'wall', x: -8, z: 18, w: 3.4, d: 0.45, h: 2.3, rot: 0.6 },
       { type: 'box', kind: 'wall', x: 25, z: -14, w: 0.45, d: 4, h: 2.3 },
