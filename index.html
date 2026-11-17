@@ -660,6 +660,17 @@ kbd { font-family: var(--f-body); font-weight: 700; font-size: 12px; color: var(
     <div class="key-head"><h3>Controls</h3><button type="button" class="btn" id="keyReset">Reset to defaults</button></div>
     <p class="key-note">Click a key, then press the one you want. If that key is already taken, the two actions swap. The mouse always aims and fires: left click alternates arms, right click fires the right arm, both together is the double shot.</p>
     <div class="key-list" id="keyList"></div>
+    <div class="key-head"><h3>PS5 controller</h3></div>
+    <p class="key-note">Plug in or pair a DualSense (or any standard controller) and press a button; the game switches to it, and back to keyboard and mouse as soon as you use them.</p>
+    <div class="key-list">
+      <div class="key-row"><span>Move</span><b class="key-btn">L stick</b></div><div class="key-row"><span>Aim</span><b class="key-btn">R stick</b></div>
+      <div class="key-row"><span>Right arm</span><b class="key-btn">R2</b></div><div class="key-row"><span>Left arm</span><b class="key-btn">L2</b></div>
+      <div class="key-row"><span>Double shot</span><b class="key-btn">L2 + R2</b></div><div class="key-row"><span>Block (hold)</span><b class="key-btn">R1</b></div>
+      <div class="key-row"><span>Jump</span><b class="key-btn">✕</b></div><div class="key-row"><span>Dodge</span><b class="key-btn">○</b></div>
+      <div class="key-row"><span>Kick</span><b class="key-btn">□</b></div><div class="key-row"><span>Ability</span><b class="key-btn">L1</b></div>
+      <div class="key-row"><span>Weapon 1</span><b class="key-btn">△</b></div><div class="key-row"><span>Weapons 2 / 3</span><b class="key-btn">D-pad ↑ ↓</b></div>
+      <div class="key-row"><span>Switch camera</span><b class="key-btn">R3</b></div><div class="key-row"><span>Pause</span><b class="key-btn">Options</b></div>
+    </div>
   </div>
 </section>
 
@@ -3462,6 +3473,12 @@ addEventListener('keydown', e => {
 $('keyReset').onclick = () => { Keys.reset(); keyListen = null; renderKeys(); if (typeof renderAll === 'function') renderAll(); };
 // the strip of control hints along the bottom of a fight, written from the current bindings
 function renderHint() {
+  let pad = false; try { pad = Input.usingPad; } catch (e) {}   // Input isn't set up yet on the first call
+  if (pad) {
+    $('hint').innerHTML = '<span><kbd>L stick</kbd> move</span><span><kbd>R stick</kbd> aim</span><span><kbd>R2</kbd><kbd>L2</kbd> arms (both: double)</span><span><kbd>✕</kbd> jump</span><span><kbd>○</kbd> dodge</span><span><kbd>R1</kbd> block</span><span><kbd>□</kbd> kick</span><span><kbd>L1</kbd> ability</span><span><kbd>△</kbd><kbd>D-pad</kbd> weapons</span><span><kbd>R3</kbd> camera</span><span><kbd>Options</kbd> pause</span>';
+    try { if (Battle.renderer) $('aimChip').innerHTML = (Battle.aimMode ? 'Shoulder view' : 'Arena view') + '<kbd>R3</kbd>'; } catch (e) {}
+    return;
+  }
   const k = a => `<kbd>${Keys.of(a)}</kbd>`, m = Keys.map;
   const move = m.up === 'KeyW' && m.left === 'KeyA' && m.down === 'KeyS' && m.right === 'KeyD' ? '<kbd>WASD</kbd>' : k('up') + k('left') + k('down') + k('right');
   $('hint').innerHTML = `<span>${move} move</span><span>mouse aim</span><span>click fire (hold both for double)</span><span>${k('jump')} jump</span><span>${k('dodge')} dodge</span><span>${k('block')} block</span><span>${k('kick')} kick</span><span>${k('ability')} ability</span><span>${k('w1')}${k('w2')} weapons</span><span>${k('armL')}${k('armR')} arms</span><span>${k('camera')} camera</span>`;
@@ -4433,8 +4450,44 @@ class LabAI {
 }
 
 /* ---------- input ---------- */
+/* ---------- PS5 / any standard gamepad ----------
+   Buttons use the browser's standard layout (DualSense names): left stick moves, right stick moves the aim reticle (it
+   drifts back onto the opponent when you let go), R2 right arm, L2 left arm, both triggers the double shot, R1 block,
+   Cross jump, Circle dodge, Square kick, L1 ability, Triangle weapon 1, D-pad up/down weapons 2 and 3, R3 camera, Options pause */
+const PAD = { jump: 'pad0', dodge: 'pad1', kick: 'pad2', ability: 'pad4', w1: 'pad3', block: 'pad5', armL: 'pad6', armR: 'pad7', camera: 'pad11', pause: 'pad9', w2: 'pad12', w3: 'pad13' };
 const Input = {
   held: new Set(), pressed: new Set(), touchMove: { x: 0, y: 0 }, touchHeld: new Set(),
+  padMove: { x: 0, y: 0 }, padDown: [], usingPad: false, aimIdle: 9,
+  // read the first connected gamepad once a frame: its buttons become 'padN' codes in held/pressed like keys, its sticks drive movement and aim
+  poll(dt) {
+    const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [], g = pads.find(q => q.mapping === 'standard') || pads[0];
+    this.padMove.x = this.padMove.y = 0;
+    if (!g) { if (this.usingPad) this.setPad(false); return; }
+    let any = false;
+    g.buttons.forEach((b, i) => {
+      const on = b.pressed || b.value > 0.35, was = this.padDown[i];
+      if (on && !was) { this.pressed.add('pad' + i); any = true; } if (on) this.held.add('pad' + i); else this.held.delete('pad' + i);
+      this.padDown[i] = on;
+    });
+    const dz = v => Math.abs(v) < 0.18 ? 0 : (v - Math.sign(v) * 0.18) / 0.82, ax = g.axes;
+    const lx = dz(ax[0] || 0), ly = dz(ax[1] || 0), rx = dz(ax[2] || 0), ry = dz(ax[3] || 0);
+    if (lx || ly) { const m = Math.min(1, Math.hypot(lx, ly)), a = Math.atan2(lx, -ly); this.padMove.x = Math.sin(a) * m; this.padMove.y = Math.cos(a) * m; any = true; }
+    if (any || rx || ry) this.setPad(true);
+    if (!this.usingPad || !Battle.active) return;
+    if (this.pressed.has(PAD.pause)) { this.pressed.delete(PAD.pause); Battle.togglePause(); }
+    if (this.pressed.has(PAD.camera)) { this.pressed.delete(PAD.camera); Battle.setAimMode(!Battle.aimMode); }
+    // aim: the right stick pushes the reticle round the screen; let go and it slides back onto the opponent's chest
+    const N = Battle.mouseNDC || (Battle.mouseNDC = new THREE.Vector2());
+    if (rx || ry) { this.aimIdle = 0; N.x = clamp(N.x + rx * dt * 1.5, -0.95, 0.95); N.y = clamp(N.y - ry * dt * 1.5, -0.9, 0.9); }
+    else { this.aimIdle += dt; if (this.aimIdle > 0.6 && Battle.p2 && Battle.cam) { const v = aimPt(Battle.p2).project(Battle.cam); if (v.z < 1) N.lerp(new THREE.Vector2(clamp(v.x, -0.95, 0.95), clamp(v.y, -0.9, 0.9)), 1 - Math.exp(-6 * dt)); } }
+    Battle.mouseIn = true;
+    const R = $('reticle'); R.style.left = ((N.x + 1) / 2 * innerWidth) + 'px'; R.style.top = ((1 - N.y) / 2 * innerHeight) + 'px';
+  },
+  setPad(on) { this.usingPad = on; if (typeof renderHint === 'function') renderHint(); },
+  rumble(strong, weak, ms) {
+    if (!this.usingPad) return;
+    try { const g = [...navigator.getGamepads()].find(Boolean), A = g && g.vibrationActuator; if (A && A.playEffect) A.playEffect('dual-rumble', { duration: ms, strongMagnitude: strong, weakMagnitude: weak }); } catch (e) {}
+  },
   clearPressed() { this.pressed.clear(); },
   player() {
     const h = this.held;
@@ -4442,24 +4495,25 @@ const Input = {
     let mx = (h.has(k.right) || h.has(fr('ArrowRight')) ? 1 : 0) - (h.has(k.left) || h.has(fr('ArrowLeft')) ? 1 : 0);
     let mz = (h.has(k.up) || h.has(fr('ArrowUp')) ? 1 : 0) - (h.has(k.down) || h.has(fr('ArrowDown')) ? 1 : 0);
     if (this.touchMove.x || this.touchMove.y) { mx = this.touchMove.x; mz = this.touchMove.y; }
+    if (this.padMove.x || this.padMove.y) { mx = this.padMove.x; mz = this.padMove.y; }
     const p = this.pressed, t = this.touchHeld;
     // each arm has its own button; pressing one while the other is held (or both at once) is the double-arm smash
     // the arm keys fire one arm each. The left mouse button alternates arms (hold it to keep firing), the right button fires the
     // right arm, and both mouse buttons together (or J and K) give the double-arm attack
-    const pl = p.has(k.armL) || p.has('t-left'), pr = p.has(k.armR) || p.has('mouse2') || p.has('t-right'), pa = p.has('mouse0');
-    const hl = h.has(k.armL) || t.has('left'), hr = h.has(k.armR) || h.has('mouse2') || t.has('right'), ha = h.has('mouse0');
+    const pl = p.has(k.armL) || p.has('t-left') || p.has(PAD.armL), pr = p.has(k.armR) || p.has('mouse2') || p.has('t-right') || p.has(PAD.armR), pa = p.has('mouse0');
+    const hl = h.has(k.armL) || t.has('left') || h.has(PAD.armL), hr = h.has(k.armR) || h.has('mouse2') || t.has('right') || h.has(PAD.armR), ha = h.has('mouse0');
     const both = (pl && (pr || hr)) || (pr && (hl || ha)) || (pa && (pr || hr));
     return {
       holdL: hl, holdR: hr && !ha, holdAlt: ha && !hr,
       mx, mz,
       heavy: both, left: pl && !both, right: pr && !both, light: pa && !both,
-      kick: p.has(k.kick) || p.has('t-kick'),
-      w1: p.has(k.w1) || p.has(fr('Numpad1')) || p.has('t-w1'), w2: p.has(k.w2) || p.has(fr('Numpad2')) || p.has('t-w2'), w3: p.has(k.w3) || p.has(fr('Numpad3')) || p.has('t-w3'),
-      dodge: p.has(k.dodge) || p.has('t-dodge'),
-      jump: p.has(k.jump) || p.has('t-jump'),
+      kick: p.has(k.kick) || p.has('t-kick') || p.has(PAD.kick),
+      w1: p.has(k.w1) || p.has(fr('Numpad1')) || p.has('t-w1') || p.has(PAD.w1), w2: p.has(k.w2) || p.has(fr('Numpad2')) || p.has('t-w2') || p.has(PAD.w2), w3: p.has(k.w3) || p.has(fr('Numpad3')) || p.has('t-w3') || p.has(PAD.w3),
+      dodge: p.has(k.dodge) || p.has('t-dodge') || p.has(PAD.dodge),
+      jump: p.has(k.jump) || p.has('t-jump') || p.has(PAD.jump),
       special: false, // parts no longer come with special moves
-      ability: p.has(k.ability) || p.has('t-ability'),
-      block: h.has(k.block) || h.has('mouse1') || this.touchHeld.has('block'),
+      ability: p.has(k.ability) || p.has('t-ability') || p.has(PAD.ability),
+      block: h.has(k.block) || h.has('mouse1') || this.touchHeld.has('block') || h.has(PAD.block),
     };
   },
 };
@@ -4469,7 +4523,7 @@ addEventListener('keydown', e => {
   if (e.code === Keys.map.camera) { if (!e.repeat) Battle.setAimMode(!Battle.aimMode); e.preventDefault(); return; }
   if (!e.ctrlKey && !e.metaKey && (Keys.used(e.code) || ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code))) e.preventDefault();
   if (!e.repeat) Input.pressed.add(e.code);
-  Input.held.add(e.code);
+  Input.held.add(e.code); if (Input.usingPad) Input.setPad(false);
 });
 addEventListener('keyup', e => Input.held.delete(e.code));
 addEventListener('blur', () => { Input.held.clear(); Input.touchHeld.clear(); });
@@ -4482,10 +4536,12 @@ addEventListener('mouseup', e => Input.held.delete('mouse' + e.button));
 bCanvas.addEventListener('contextmenu', e => e.preventDefault());
 // the mouse pointer aims your hand cannons; a reticle follows it (red over the opponent) when you have cannons
 bCanvas.addEventListener('mousemove', e => {
+  if (Input.usingPad) { if (Math.abs(e.movementX) + Math.abs(e.movementY) < 4) return; Input.setPad(false); }
   const r = bCanvas.getBoundingClientRect(); (Battle.mouseNDC || (Battle.mouseNDC = new THREE.Vector2())).set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); Battle.mouseIn = true;
   const R = $('reticle'); R.style.left = (e.clientX - r.left) + 'px'; R.style.top = (e.clientY - r.top) + 'px';
 });
-bCanvas.addEventListener('mouseleave', () => { Battle.mouseIn = false; });
+bCanvas.addEventListener('mouseleave', () => { if (!Input.usingPad) Battle.mouseIn = false; });
+addEventListener('gamepadconnected', () => { Input.setPad(true); });
 // touch
 (() => {
   const coarse = matchMedia('(pointer: coarse)').matches;
@@ -5019,7 +5075,7 @@ const Battle = {
     this.flash(hp, blocked ? 0x9fd3ff : att.accent, o.heavy ? 2.6 : 1.6);
     this.hitstop = (o.stop ?? 0.05) * (blocked ? 0.5 : 1);
     this.shake = Math.max(this.shake, o.heavy ? 0.35 : 0.14) * (def === this.p1 ? 1.3 : 1);
-    if (att === this.p1) this.hitMark(blocked ? 'blk' : crit || o.heavy || zone === 'head' ? 'crit' : ''); else if (def === this.p1 && !blocked) { this.hurt = Math.min(0.5, (this.hurt || 0) + (o.heavy ? 0.35 : 0.2)); this.fovKick = Math.min(this.fovKick || 0, o.heavy ? -4 : -2); }
+    if (att === this.p1) this.hitMark(blocked ? 'blk' : crit || o.heavy || zone === 'head' ? 'crit' : ''); else if (def === this.p1 && !blocked) { Input.rumble(o.heavy ? 0.9 : 0.4, o.heavy ? 0.6 : 0.5, o.heavy ? 220 : 110); this.hurt = Math.min(0.5, (this.hurt || 0) + (o.heavy ? 0.35 : 0.2)); this.fovKick = Math.min(this.fovKick || 0, o.heavy ? -4 : -2); }
     if (blocked) { this.sfx('block'); this.popAt(def, Math.round(dmg) + ' BLOCKED', 'blk'); }
     else { this.sfx('hit', !!o.heavy || zone === 'head'); this.popAt(def, (hg ? '▲ ' : '') + (zone === 'head' ? 'HEADSHOT ' : crit ? 'CRIT ' : '') + Math.round(dmg), crit || zone === 'head' ? 'crit' : ''); }
     if (def.hp <= 0) this.ko(def, att);
@@ -5479,6 +5535,7 @@ const Battle = {
   /* --- main step --- */
   frame(rawDt, time) {
     if (!this.active) return;
+    Input.poll(rawDt);
     let dt = this.paused ? 0 : rawDt;
     this.phaseT += dt;
     if (this.mStats && this.phase === 'fight') this.mStats.time += dt;
