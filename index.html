@@ -1011,7 +1011,7 @@ const FURNACE_JETPACK = false;
 /* abilities: pick one. Used with R in a fight, each on its own cooldown. They run through the weapon state like a weapon would */
 const ABILITIES = [
   { id: 'jetpack',  name: 'Jetpack',       desc: 'Twin fuel tanks strapped to your back. Press {A} to blast off and {A} again to cut the engines. The tank holds 5 seconds of flight and slowly refills while the engines are off; run it dry and it has to refill halfway before it will light again. You can move and fire while flying.', cd: 10, dur: 5, toggle: true, w: 0.06, a: 0.1, r: 0.12, move: 1, kind: 'jet', color: 0xffb547 },
-  { id: 'teleport', name: 'Teleport',      desc: 'Press {A} to vanish in a flash and reappear right behind your opponent.', cd: 9, w: 0.2, a: 0.05, r: 0.15, move: 0, kind: 'blink', color: 0xb57bff },
+  { id: 'teleport', name: 'Teleport',      desc: 'Press {A} to vanish in a flash and reappear wherever you are aiming (up to 16 m away). Aim at your opponent to land right in front of them.', cd: 9, w: 0.2, a: 0.05, r: 0.15, move: 0, kind: 'blink', color: 0xb57bff },
   { id: 'tractor',  name: 'Tractor Beam',  desc: 'Press {A} and a green beam from an emitter on your brow locks on and drags the opponent right up to you.', cd: 9, w: 0.2, a: 0.9, r: 0.3, move: 0.2, kind: 'beam', from: 'brow', tick: 0.1, mult: 0.08, kb: 0, pull: 9, stun: 0.15, range: 10, color: 0x4dff88, beamR: 0.05 },
   { id: 'bubble',   name: 'Bubble Shield', desc: 'Press {A} to raise a magenta bubble and {A} again to drop it. It holds 10 seconds and slowly recharges while down; run it dry and it has to recharge halfway before it will go up again. Nothing can hurt you and it bounces away anyone who bumps into it, but you cannot attack while it is up.', cd: 30, toggle: true, w: 0.15, a: 0.1, r: 0.2, move: 1, kind: 'shield', dur: 10, color: 0xff3dd8 },
 ];
@@ -1019,7 +1019,7 @@ const ABILITY = Object.fromEntries(ABILITIES.map(a => [a.id, a]));
 // movement / defensive abilities still work while you roam after a K.O. (the tractor beam does not)
 const ROAM_ABILITIES = new Set(['jetpack', 'teleport', 'bubble']);
 // no abilities for the first seconds of each round
-const ABILITY_LOCK = 10;
+const ABILITY_LOCK = 0;   // abilities work from the first second of a round (was 10 s)
 // hand cannons heat up as they fire: each shot adds heat, and a full gauge overheats them until they cool right down.
 // Heat bleeds off on its own once you stop firing for a moment
 const HEAT = { shot: 0.085, delay: 0.6, cool: 0.32, ventCool: 0.45 };
@@ -4143,7 +4143,9 @@ class Fighter {
       const A = this.ability; if (!A || this.abCd > 0 || this.abOn || this.abDry || (A.toggle && this.abFuel <= 0.05)) return false;
       if (game.abilityLocked && game.abilityLocked()) { if (this === game.p1) game.lockedNote(); return false; }
       this.state = 'weapon'; this.wpn = A; this.wpn2 = null; this.t = 0; this.hitDone = false; this.tickT = 0; this.shots = 0; this.attackId++;
-      if (!A.toggle) this.abCd = A.cd; this.abDir = wish.lengthSq() > 0.01 ? wish.clone().normalize() : fwd.clone(); game.onWeaponStart(this, A); return true;
+      if (!A.toggle) this.abCd = A.cd; this.abDir = wish.lengthSq() > 0.01 ? wish.clone().normalize() : fwd.clone();
+      this.tpSpot = A.kind === 'blink' && this === game.p1 && game.mouseIn ? game.teleportSpot(this, game.p2) : null;   // teleport goes where you aimed when you pressed it
+      game.onWeaponStart(this, A); return true;
     }
     if (a[0] === 'w') {
       const i = +a[1] - 1, W = this.weapons[i];
@@ -5191,11 +5193,12 @@ const Battle = {
       else f.vy = Math.max(f.vy, 4);
       this.burst(f.pos.clone(), W.color, 14, 4); this.sfx('whoosh');
     } else if (W.kind === 'blink') {
-      // reappear just behind the opponent, or beside them if that spot is outside the ring or inside cover
+      // the player reappears where they aim (teleportSpot); the CPU reappears just behind the opponent, or beside them if
+      // that spot is outside the ring or inside cover
       const n = new V3(opp.pos.x - f.pos.x, 0, opp.pos.z - f.pos.z); if (n.lengthSq() < 1e-4) n.set(0, 0, 1); n.normalize();
       const gap = opp.radius + f.radius + 0.55, from = f.pos.clone();
-      let to = null;
-      for (const [a, b] of [[1, 0], [0, 1], [0, -1], [-1, 0]]) {
+      let to = f === this.p1 && this.mouseIn ? (f.tpSpot || this.teleportSpot(f, opp)) : null; f.tpSpot = null;
+      if (!to && !(f === this.p1 && this.mouseIn)) for (const [a, b] of [[1, 0], [0, 1], [0, -1], [-1, 0]]) {
         const d = new V3(n.x * a - n.z * b, 0, n.z * a + n.x * b), c = opp.pos.clone().addScaledVector(d, gap); c.y = opp.pos.y;
         if (World.inBounds(c.x, c.z, 0.8) && !(World.solids.length && World.solidAt(c.x, c.y + 0.6, c.z))) { to = c; break; }
       }
@@ -5417,6 +5420,36 @@ const Battle = {
     d.style.left = ((v.x + 1) / 2 * innerWidth + rand(-20, 20)) + 'px'; d.style.top = ((1 - v.y) / 2 * innerHeight) + 'px';
     $('fx').appendChild(d); setTimeout(() => d.remove(), (life || 0.85) * 1000);
   },
+  // where the aim reticle points on the ground (or on top of cover / a platform), at most 16 m away; on the opponent it
+  // means just in front of them. Pulled back toward you until the spot is in bounds and clear of walls
+  teleportSpot(f, opp) {
+    const ray = new THREE.Raycaster(); ray.setFromCamera(this.mouseNDC, this.cam);
+    const o = ray.ray.origin, d = ray.ray.direction; let hit = null;
+    this.mouseAimPoint(f);
+    if (this.mouseOnOpp) { const n = new V3(f.pos.x - opp.pos.x, 0, f.pos.z - opp.pos.z); if (n.lengthSq() < 1e-4) n.set(0, 0, -1); n.normalize(); hit = opp.pos.clone().addScaledVector(n, opp.radius + f.radius + 0.6); }
+    else for (let t = 0.5; t < 90; t += 0.2) {
+      const x = o.x + d.x * t, y = o.y + d.y * t, z = o.z + d.z * t, g = World.groundAt(x, z, y + 0.05);
+      if (y <= g + 0.02) { hit = new V3(x, 0, z); break; }
+      // the side of a wall or barrier: land on the floor just short of it
+      const q = World.solids.length && World.solidAt(x, y, z);
+      if (q) {
+        // crossed down through the top of a platform or ramp: land on it; otherwise it's a wall's side, so stop short of it
+        if ((q.kind === 'plat' || q.type === 'ramp') && World.heightAt(q, x, z) - y < 0.35 + Math.abs(d.y) * 0.2) { hit = new V3(x, 0, z); break; }
+        const b = t - 0.6; hit = new V3(o.x + d.x * b, 0, o.z + d.z * b); break;
+      }
+    }
+    if (!hit) hit = new V3(f.pos.x + Math.sin(f.yaw) * 16, 0, f.pos.z + Math.cos(f.yaw) * 16);
+    const dx = hit.x - f.pos.x, dz = hit.z - f.pos.z, L = Math.hypot(dx, dz), k = L > 16 ? 16 / L : 1;
+    for (let s = 1; s >= 0; s -= 0.04) {
+      const x = f.pos.x + dx * k * s, z = f.pos.z + dz * k * s, y = World.groundAt(x, z);
+      if (y < -5 || !World.inBounds(x, z, f.radius + 0.2)) continue;
+      if (y > 0.05 && !World.solids.some(q => (q.kind === 'plat' || q.type === 'ramp') && World.inside(q, x, z) && Math.abs(World.heightAt(q, x, z) - y) < 0.05)) continue;   // only floors, platforms and ramps, never on top of a wall
+      if (World.solids.length && (World.solidAt(x, y + 0.6, z) || World.solids.some(q => q.top > y + STEP && World.inside(q, x, z, f.radius)))) continue;
+      if (Math.hypot(x - opp.pos.x, z - opp.pos.z) < opp.radius + f.radius + 0.2) continue;
+      return new V3(x, y, z);
+    }
+    return null;
+  },
   snapCamera() { this.camBase = null; this.updateCamera(1, true); },
   // smooth shake (layered sines, a little roll) and a field-of-view kick for dodges and big hits, applied on top of
   // the camera's own path so neither one drifts it
@@ -5610,7 +5643,7 @@ const Battle = {
     if (this.camBase) this.cam.position.copy(this.camBase);
     this.updateCamera(rawDt);
     this.camFx(rawDt, time);
-    { const R = $('reticle'), show = this.mouseIn && !this.paused && !!(this.p1.armW && this.p1.armW.some(W => W.id === 'cannon')) && this.p1.state !== 'ko';
+    { const R = $('reticle'), show = this.mouseIn && !this.paused && (!!(this.p1.armW && this.p1.armW.some(W => W.id === 'cannon')) || (this.p1.ability && this.p1.ability.kind === 'blink')) && this.p1.state !== 'ko';
       R.hidden = !show; bCanvas.classList.toggle('has-reticle', show); if (show) { this.mouseAimPoint(this.p1); R.classList.toggle('on', !!this.mouseOnOpp); } }
     this.fadeCover(rawDt);
     this.sky.position.copy(this.cam.position);
